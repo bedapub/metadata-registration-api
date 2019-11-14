@@ -1,0 +1,16 @@
+# Credentials
+.credentials.yaml
+
+# Compiled / optimized files
+__pycharch__
+*.py[cod]
+*$py.class
+
+.idea
+
+# Flask
+instance/
+.webassets-cache
+
+# snippets
+Flask-App/snippets/
