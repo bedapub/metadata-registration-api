@@ -39,7 +39,7 @@ class ApiControlledVocabulary(Resource):
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
 class ApiControlledVocabulary(Resource):
-    @api.marshal_with(property_model, envelope='properties')
+    @api.marshal_with(property_model)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return ControlledVocabulary.objects(id=id).first()

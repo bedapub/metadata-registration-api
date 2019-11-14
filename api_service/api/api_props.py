@@ -41,7 +41,7 @@ class ApiProperties(Resource):
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
 class ApiProperty(Resource):
-    @api.marshal_with(property_model, envelope='properties')
+    @api.marshal_with(property_model)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return Property.objects(id=id).first()

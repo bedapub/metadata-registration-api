@@ -3,7 +3,7 @@ import os
 from flask import Flask
 from mongoengine import connect
 
-from property_service.my_utils import load_credentials
+from api_service.my_utils import load_credentials
 
 
 def config_app(app, credentials):
@@ -40,11 +40,11 @@ def create_app(config='DEVELOPMENT'):
             password=app.config['MONGODB_PASSWORD'],
             )
 
-    from property_service.model import Property
+    from api_service.model import Property
     Property._meta['collection'] = app.config['MONGODB_COL_PROPERTY']
     Property._meta['collection'] = app.config['MONGODB_COL_CTRL_VOC']
 
-    from property_service.api import api
+    from api_service.api import api
     api.init_app(app)
 
     return app

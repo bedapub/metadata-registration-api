@@ -1,3 +1,3 @@
-from property_service.app import create_app
+from api_service.app import create_app
 
 app = create_app()
