@@ -1,5 +1,5 @@
+from flask import request
 from flask_restplus import Namespace, Resource, fields
-from mongoengine.errors import NotUniqueError
 
 from ..model import ControlledVocabulary
 
@@ -8,11 +8,11 @@ api = Namespace('Controlled Vocabulary', description='Controlled vocabulary rela
 
 
 property_model = api.model('Controlled Vocabulary', {
-    'id': fields.String(attribute='pk', description='The unique identifier of the entry'),
-    'label': fields.String(description='A human readable description of the entry'),
-    'primary_name': fields.String(description='The name of the entry (in snake_case)'),
+    'id': fields.String(attribute='pk', description='Unique identifier of the entry'),
+    'label': fields.String(description='Human readable description of the entry'),
+    'primary_name': fields.String(description='Name of the entry (in snake_case)'),
     'synonyms': fields.List(fields.String(description='Alternatives to the primary name')),
-    'description': fields.String(description='A detailed description of the intended use', default=''),
+    'description': fields.String(description='Detailed description of the intended use', default=''),
     'deprecate': fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
 })
 
@@ -21,19 +21,25 @@ property_model = api.model('Controlled Vocabulary', {
 class ApiControlledVocabulary(Resource):
     @api.marshal_with(property_model)
     def get(self):
-        """ Fetch a list with all entries """
-        res = ControlledVocabulary.objects().all()
+        """ Fetch a list with all entries
+
+            query parameters:
+            - deprecate: boolean: Indicate if deprecated entries should be returned as well (default False)
+        """
+        include_deprecate = request.args.get('deprecate', False)
+
+        if not include_deprecate:
+            res = ControlledVocabulary.objects(deprecate=False).all()
+        else:
+            res = ControlledVocabulary.objects().all()
         return list(res)
 
     @api.expect(property_model)
     def post(self):
         """ Add a new entry """
         p = ControlledVocabulary(**api.payload)
-        try:
-            p.save()
-            return {'message': 'Added property with name {}'.format(p.primary_name)}, 201
-        except NotUniqueError:
-            return {'message': 'Property already exists'}
+        p.save()
+        return {"message": "Add entry '{}'".format(p.primary_name)}, 201
 
 
 @api.route('/id/<id>')
@@ -42,45 +48,28 @@ class ApiControlledVocabulary(Resource):
     @api.marshal_with(property_model)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
-        return ControlledVocabulary.objects(id=id).first()
+        return ControlledVocabulary.objects(id=id).get()
 
     @api.expect(property_model)
     def put(self, id):
         """ Update an entry given its unique identifier """
-        p = ControlledVocabulary.objects(id=id).first()
-        p.update(**api.payload)
-        return {'message': "Successfully updated {}".format(p.primary_name)}
+        entry = ControlledVocabulary.objects(id=id).get()
+        entry.update(**api.payload)
+        return {'message': "Update entry '{}'".format(entry.primary_name)}
 
     def delete(self, id):
-        """ Delete an entry given its unique identifier """
-        p = ControlledVocabulary.objects(id=id).first()
-        p.delete()
-        return {'message': "Delete entry with id {}".format(id)}
+        """ Delete an entry given its unique identifier
 
+            query parameters:
+            - complete: boolean: Delete entry instead of deprecate it (cannot be undone) (default False)
+        """
 
-@api.route('/name/<id>')
-@api.param('name', 'The property name')
-class ApiControlledVocabulary(Resource):
-    @api.marshal_with(property_model)
-    def get(self, name):
-        """Fetch an entry given its unique name"""
-        return ControlledVocabulary.objects(primary_name=name).first()
+        force_delete = request.args.get('complete', False)
 
-    @api.expect(property_model)
-    def put(self, name):
-        """ Update an entry given its unique name """
-        try:
-            entry = ControlledVocabulary.objects(primary_name=name).first()
-            entry.update(**api.payload)
-            return {'message': "Successfully updated {}".format(entry.primary_name)}
-        except:
-            return {'message': "Error occurred"}
-
-    def delete(self, name):
-        """ Delete an entry given its unique name """
-        try:
-            entry = ControlledVocabulary.objects(primary_name=name).first()
+        entry = ControlledVocabulary.objects(id=id).get()
+        if not force_delete:
+            entry.update(deprecate=True)
+            return {'message': "Deprecate entry '{}'".format(entry.primary_name)}
+        else:
             entry.delete()
-            return {'message': "Delete entry with id {}".format(id)}
-        except:
-            return {'message': "Error occurred"}
+            return {'message': "Delete entry {}".format(entry.primary_name)}
