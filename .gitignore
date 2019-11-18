@@ -1,6 +1,8 @@
 # Credentials
 .credentials.yaml
 
+start_up.sh
+
 # Compiled / optimized files
 __pycharch__
 *.py[cod]

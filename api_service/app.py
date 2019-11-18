@@ -43,9 +43,9 @@ def create_app(config='DEVELOPMENT'):
             password=app.config['MONGODB_PASSWORD'],
             )
 
-    from api_service.model import Property
+    from api_service.model import Property, ControlledVocabulary
     Property._meta['collection'] = app.config['MONGODB_COL_PROPERTY']
-    Property._meta['collection'] = app.config['MONGODB_COL_CTRL_VOC']
+    ControlledVocabulary._meta['collection'] = app.config['MONGODB_COL_CTRL_VOC']
 
     from api_service.api import api
     api.init_app(app)

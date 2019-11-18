@@ -6,7 +6,7 @@ from .api_props import ns as ns_1
 from .api_ctrl_voc import api as ns_2
 
 api = Api(title='Property and Controlled Vocabulary Service',
-          version='0.2.0 beta',
+          version='0.2.1 beta',
           description='An API to manage properties and controlled vocabularies. Contact: <rafael.mueller@roche.com>',
           contact="rafael.mueller@roche.com")
 
