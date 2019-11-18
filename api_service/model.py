@@ -20,6 +20,7 @@ class Property(Document):
         self.primary_name = to_snake_case(self.primary_name)
         map(to_snake_case, self.synonyms)
 
+
 class ControlledVocabulary(Document):
     deprecate = BooleanField(default=False)
 

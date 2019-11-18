@@ -33,6 +33,9 @@ def create_app(config='DEVELOPMENT'):
     credentials = load_credentials(path=cert_path, template_location=cert_temp_path)
     config_app(app, credentials[config])
 
+    # Restplus API
+    app.config['ERROR_404_HELP'] = False
+
     connect(app.config['MONGODB_DB'],
             host=app.config['MONGODB_HOST'],
             port=app.config['MONGODB_PORT'],
