@@ -21,6 +21,7 @@ def config_app(app, credentials):
     app.config['MONGODB_PASSWORD'] = credentials['database']['mongodb']['password']
     app.config['MONGODB_CONNECT'] = False
 
+    # Load mongo collection names
     app.config['MONGODB_COL_PROPERTY'] = credentials['database']['mongodb']['collection']['property']
     app.config['MONGODB_COL_CTRL_VOC'] = credentials['database']['mongodb']['collection']['ctrl_voc']
 
@@ -28,9 +29,8 @@ def config_app(app, credentials):
 def create_app(config='DEVELOPMENT'):
     app = Flask(__name__)
 
-    cert_temp_path = os.path.join(os.path.dirname(__file__), 'templates')
     cert_path = os.path.join(os.path.dirname(__file__), '..', '.credentials.yaml')
-    credentials = load_credentials(path=cert_path, template_location=cert_temp_path)
+    credentials = load_credentials(path=cert_path)
     config_app(app, credentials[config])
 
     # Restplus API

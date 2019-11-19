@@ -1,13 +1,12 @@
 from flask import request
 from flask_restplus import Namespace, Resource, fields
 
-from ..model import Property
+from api_service.model import Property
 
 
-ns = Namespace('Properties', description='Property related operations')
+api = Namespace('Properties', description='Property related operations')
 
-property_model = ns.model('Property', {
-    'id': fields.String(attribute='pk', description='The unique identifier of the entry'),
+entry_model = api.model('Property', {
     'label': fields.String(description='A human readable description of the entry'),
     'primary_name': fields.String(description='The unique name of the entry (in snake_case)'),
     'level': fields.String(description='The level the property is associated with (e.g. Study, Sample, ...)'),
@@ -16,11 +15,14 @@ property_model = ns.model('Property', {
     'deprecate': fields.Boolean(default=False)
 })
 
+entry_model_id = api.model('Property', entry_model,{
+    'id': fields.String(attribute='pk', description='The unique identifier of the entry'),
+})
 
-@ns.route('/')
+@api.route('/')
 class ApiProperties(Resource):
 
-    @ns.marshal_with(property_model)
+    @api.marshal_with(entry_model_id)
     def get(self):
         """ Fetch a list with all entries
 
@@ -37,28 +39,31 @@ class ApiProperties(Resource):
 
         return list(entries)
 
-    @ns.expect(property_model)
+    @api.expect(entry_model)
     def post(self):
-        """ Add a new entry """
-        entry = Property(**ns.payload)
+        """ Add a new entry
+
+            NOTE: The unique identifier is generated internally.
+        """
+        entry = Property(**api.payload)
         entry.save()
         return {"message": "Add entry '{}'".format(entry.primary_name)}, 201
 
 
-@ns.route('/id/<id>')
-@ns.param('id', 'The property identifier')
+@api.route('/id/<id>')
+@api.param('id', 'The property identifier')
 class ApiProperty(Resource):
 
-    @ns.marshal_with(property_model)
+    @api.marshal_with(entry_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return Property.objects(id=id).get()
 
-    @ns.expect(property_model)
+    @api.expect(entry_model)
     def put(self, id):
         """ Update entry given its unique identifier """
         entry = Property.objects(id=id).first()
-        entry.update(**ns.payload)
+        entry.update(**api.payload)
         return {'message': "Update entry '{}'".format(entry.primary_name)}
 
     def delete(self, id):
@@ -67,7 +72,6 @@ class ApiProperty(Resource):
             query parameters:
             - complete: boolean: Delete entry instead of deprecate it (cannot be undone) (default False)
         """
-
         force_delete = request.args.get('complete', False)
 
         entry = Property.objects(id=id).get()
