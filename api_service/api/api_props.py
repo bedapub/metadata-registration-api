@@ -15,7 +15,7 @@ entry_model = api.model('Property', {
     'deprecate': fields.Boolean(default=False)
 })
 
-entry_model_id = api.model('Property with id', entry_model,{
+entry_model_id = api.inherit('Property with id', entry_model, {
     'id': fields.String(attribute='pk', description='The unique identifier of the entry'),
 })
 
