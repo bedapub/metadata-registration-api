@@ -2,11 +2,11 @@ from flask_restplus import Api
 
 from mongoengine.errors import NotUniqueError, ValidationError
 
-from .api_props import ns as ns_1
+from .api_props import api as ns_1
 from .api_ctrl_voc import api as ns_2
 
 api = Api(title='Property and Controlled Vocabulary Service',
-          version='0.2.1 beta',
+          version='0.2.3',
           description='An API to manage properties and controlled vocabularies. Contact: <rafael.mueller@roche.com>',
           contact="rafael.mueller@roche.com")
 
@@ -21,5 +21,5 @@ def handle_validation_error(error):
 
 
 @api.errorhandler(NotUniqueError)
-def handle_not_unique_error():
-    return {"message": "Property already exists."}, 404
+def handle_not_unique_error(error):
+    return {"message": "The entry already exists. {}".format(error)}, 404
