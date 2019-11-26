@@ -23,12 +23,10 @@ entry_model_id = api.inherit('Property with id', entry_model, {
 class ApiProperties(Resource):
 
     @api.marshal_with(entry_model_id)
+    @api.doc(params={'deprecate': "Boolean indicator which determines if deprecated entries should be returned as "
+                                  "well  (default False)"})
     def get(self):
-        """ Fetch a list with all entries
-
-            query parameters:
-            - deprecate: boolean: Indicate if deprecated entries should be returned as well (default False)
-        """
+        """ Fetch a list with all entries """
         include_deprecate = request.args.get('deprecate', False)
 
         if not include_deprecate:
@@ -43,7 +41,18 @@ class ApiProperties(Resource):
     def post(self):
         """ Add a new entry
 
-            NOTE: The unique identifier is generated internally.
+            The primary_name has to be unique and is internally used as a variable name. The passed string is
+            preprocessed before it is inserted into the database. Preprocessing: All characters are converted to
+            lower case, the leading and trailing white spaces are removed, and intermediate white spaces are replaced
+            with underscores ("_").
+
+            Do not pass a unique identifier since it is generated internally.
+
+            synonyms (optional)
+
+            deprecate (default=False)
+
+
         """
         entry = Property(**api.payload)
         entry.save()
@@ -66,16 +75,15 @@ class ApiProperty(Resource):
         entry.update(**api.payload)
         return {'message': "Update entry '{}'".format(entry.primary_name)}
 
+    @api.doc(params={'complete': "Boolean indicator to remove an entry instead of deprecating it (cannot be undone) "
+                                 "(default False)"})
     def delete(self, id):
-        """ Deprecates an entry given its unique identifier
-
-            query parameters:
-            - complete: boolean: Delete entry instead of deprecate it (cannot be undone) (default False)
-        """
+        """ Deprecates an entry given its unique identifier """
         force_delete = request.args.get('complete', False)
 
         entry = Property.objects(id=id).get()
-        if not force_delete:
+        # see issue https://github.com/noirbizarre/flask-restplus/issues/199
+        if not force_delete or (isinstance(force_delete, str) and force_delete.lower() == 'false'):
             entry.update(deprecate=True)
             return {'message': "Deprecate entry '{}'".format(entry.primary_name)}
         else:
