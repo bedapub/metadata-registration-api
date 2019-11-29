@@ -1,15 +1,27 @@
-from flask import request
+from bson import ObjectId
+
 from flask_restplus import Namespace, Resource, fields
+from flask_restplus import reqparse, inputs
 
 from api_service.model import Property
+from api_service.model import ControlledVocabulary
+
+
+from bson.errors import InvalidId, InvalidDocument
 
 
 api = Namespace('Properties', description='Property related operations')
 
+cv_model = api.model("Vocabulary Type", {
+    'data_type': fields.String(description="The data type of the entry"),
+    'controlled_vocabulary': fields.String(description="The unique identifier of the controlled vocabulary")
+})
+
 entry_model = api.model('Property', {
     'label': fields.String(description='A human readable description of the entry'),
-    'primary_name': fields.String(description='The unique name of the entry (in snake_case)'),
+    'name': fields.String(description='The unique name of the entry (in snake_case)'),
     'level': fields.String(description='The level the property is associated with (e.g. Study, Sample, ...)'),
+    'vocabulary_type': fields.Nested(cv_model),
     'synonyms': fields.List(fields.String(description='Alternatives to the priamry name')),
     'description': fields.String(description='A detailed description of the intended use', default=''),
     'deprecate': fields.Boolean(default=False)
@@ -27,21 +39,26 @@ class ApiProperties(Resource):
                                   "well  (default False)"})
     def get(self):
         """ Fetch a list with all entries """
-        include_deprecate = request.args.get('deprecate', False)
+
+        # Convert query parameters
+        parser = reqparse.RequestParser()
+        parser.add_argument('deprecate', type=inputs.boolean, location="args", default=False)
+        args = parser.parse_args()
+
+        include_deprecate = args['deprecate']
 
         if not include_deprecate:
             entries = Property.objects(deprecate=False).all()
         else:
             # Include entries which are deprecated
             entries = Property.objects().all()
-
         return list(entries)
 
     @api.expect(entry_model)
     def post(self):
         """ Add a new entry
 
-            The primary_name has to be unique and is internally used as a variable name. The passed string is
+            The name has to be unique and is internally used as a variable name. The passed string is
             preprocessed before it is inserted into the database. Preprocessing: All characters are converted to
             lower case, the leading and trailing white spaces are removed, and intermediate white spaces are replaced
             with underscores ("_").
@@ -54,9 +71,14 @@ class ApiProperties(Resource):
 
 
         """
+
         entry = Property(**api.payload)
+
+        # Ensure that a passed controlled vocabulary is valid
+        validate_controlled_vocabulary(entry, api.payload)
+
         entry.save()
-        return {"message": "Add entry '{}'".format(entry.primary_name)}, 201
+        return {"message": "Add entry '{}'".format(entry.name)}, 201
 
 
 @api.route('/id/<id>')
@@ -73,19 +95,41 @@ class ApiProperty(Resource):
         """ Update entry given its unique identifier """
         entry = Property.objects(id=id).first()
         entry.update(**api.payload)
-        return {'message': "Update entry '{}'".format(entry.primary_name)}
+        return {'message': "Update entry '{}'".format(entry.name)}
 
     @api.doc(params={'complete': "Boolean indicator to remove an entry instead of deprecating it (cannot be undone) "
                                  "(default False)"})
     def delete(self, id):
         """ Deprecates an entry given its unique identifier """
-        force_delete = request.args.get('complete', False)
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('complete', type=inputs.boolean, default=False)
+        args = parser.parse_args()
+
+        force_delete = args['complete']
 
         entry = Property.objects(id=id).get()
-        # see issue https://github.com/noirbizarre/flask-restplus/issues/199
-        if not force_delete or (isinstance(force_delete, str) and force_delete.lower() == 'false'):
+        if not force_delete:
             entry.update(deprecate=True)
-            return {'message': "Deprecate entry '{}'".format(entry.primary_name)}
+            return {'message': "Deprecate entry '{}'".format(entry.name)}
         else:
             entry.delete()
-            return {'message': "Delete entry '{}'".format(entry.primary_name)}
+            return {'message': "Delete entry '{}'".format(entry.name)}
+
+
+def validate_controlled_vocabulary(entry, data):
+
+    cv_data_type = data.get('vocabulary_type', {}).get('data_type')
+
+    # If property is a controlled vocabulary
+    if cv_data_type == "cv":
+        cv_id = api.payload['vocabulary_type']['controlled_vocabulary']
+
+        # TODO: Should we support name of controlled vocabulary?
+
+        if not ObjectId.is_valid(cv_id):
+            raise InvalidId(f"controlled_vocabulary (id={cv_id}) does not have the format of an id.")
+        if ControlledVocabulary.objects(id=cv_id).count() != 1:
+            raise InvalidDocument(f"Controlled_vocabulary with id={cv_id} was not found")
+
+    return entry

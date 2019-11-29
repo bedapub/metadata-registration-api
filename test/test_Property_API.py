@@ -1,0 +1,182 @@
+import unittest
+
+from test.test_utils import AbstractTest
+from api_service.app import create_app
+
+class MyTestCase(unittest.TestCase, AbstractTest):
+    
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.app = create_app(config="TESTING").test_client()
+        AbstractTest.clear_collection(cls.app)
+
+    def setUp(self) -> None:
+        MyTestCase.clear_collection(MyTestCase.app)
+        MyTestCase.clear_collection(MyTestCase.app, entrypoint="/ctrl_voc")
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # GET
+
+    def test_get_property_no_param(self):
+        """ Get list of properties without query parameter"""
+        MyTestCase.insert_two(self.app)
+
+        res = self.app.get("/properties", follow_redirects=True)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.json), 1)
+
+    def test_get_property_deprecate_param(self):
+        """ Get list of properties with query parameter deprecate """
+        MyTestCase.insert_two(self.app)
+
+        for deprecate in [True, False]:
+            res = self.app.get(f"/properties?deprecate={deprecate}", follow_redirects=True)
+
+            self.assertEqual(res.status_code, 200)
+            if deprecate:
+                self.assertEqual(len(res.json), 2)
+            else:
+                self.assertEqual(len(res.json), 1)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # POST
+
+    def test_post_property(self):
+        """ Insert a property without controlled vocabulary """
+
+        data = {"label": "Test",
+                "name": "Test",
+                "level": "TEST",
+                "description": "Simple description"}
+
+        res = MyTestCase.insert(MyTestCase.app, data)
+        self.assertEqual(res.status_code, 201, f"Could not create entry: {res.data}")
+
+    def test_post_property_cv_(self):
+        """ Insert property with correct cv """
+
+        cv = {"label": "Test CV",
+              "name": "Test CV",
+              "description": "Test CV",
+              "items": [
+                  {"label": "test 1", "name": "test 1"}, { "label": "test 2", "name": "test 2" }
+              ]
+              }
+
+        MyTestCase.insert(MyTestCase.app, data=cv, entrypoint="/ctrl_voc")
+
+        id = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_voc").json[0]['id']
+
+        data = {"label": "string",
+                "name": "string",
+                "level": "string",
+                "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": id},
+                "synonyms": ["string", ],
+                "description": "string",
+                "deprecate": False
+                }
+
+        res = self.insert(MyTestCase.app, data)
+
+        self.assertTrue(res.status_code, 201)
+
+    def test_post_property_cv_not_id_error(self):
+        """ Insert property with id in wrong format"""
+
+        data = {"label": "string",
+                "name": "string",
+                "level": "string",
+                "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": "abc"},
+                "synonyms": ["string", ],
+                "description": "string",
+                "deprecate": False
+                }
+
+        res = self.insert(MyTestCase.app, data, check_status=False)
+
+        self.assertEqual(res.status_code, 404)
+        self.assertTrue("does not have the format of an id" in res.json['message'])
+
+    def test_post_property_cv_not_found_error(self):
+        """" Insert property with invalid id (does not exist)"""
+
+        data = {"label": "string",
+                "name": "string",
+                "level": "string",
+                "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": "5b6bf449acf15441d0f87b4f"},
+                "synonyms": ["string", ],
+                "description": "string",
+                "deprecate": False
+                }
+
+        res = self.insert(MyTestCase.app, data, check_status=False)
+
+        self.assertEqual(res.status_code, 404)
+        self.assertTrue("was not found" in res.json['message'])
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Delete
+
+    def test_delete_no_param(self):
+        MyTestCase.clear_collection(MyTestCase.app)
+        MyTestCase.insert_two(self.app)
+
+        res = MyTestCase.get_ids(MyTestCase.app)
+
+        for entry in res.json:
+            res = self.app.delete(f"/properties/id/{entry['id']}", follow_redirects=True)
+
+        res_deprecate = self.app.get("/properties?deprecate=True", follow_redirects=True)
+        res = self.app.get("/properties?deprecate=False", follow_redirects=True)
+
+        self.assertEqual(len(res_deprecate.json), 2)
+        self.assertEqual(len(res.json), 0)
+
+    def test_delete_complete_param(self):
+        for complete in [True, False]:
+            MyTestCase.clear_collection(MyTestCase.app)
+            MyTestCase.insert_two(self.app)
+
+            # Get all entries (also the deprecated) to delete the completely
+            res = MyTestCase.get_ids(MyTestCase.app, deprecate=complete)
+
+            for entry in res.json:
+                self.app.delete(f"/properties/id/{entry['id']}?complete={complete}", follow_redirects=True)
+
+            res_deprecate = self.app.get("/properties?deprecate=True", follow_redirects=True)
+            if complete:
+                self.assertEqual(len(res_deprecate.json), 0)
+            else:
+                self.assertEqual(len(res_deprecate.json), 2)
+
+            res = self.app.get("/properties?deprecate=False", follow_redirects=True)
+            self.assertEqual(len(res.json), 0)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Helper methods
+
+
+
+    @staticmethod
+    def insert_two(app):
+        """ Insert a normal and a deprecated entry"""
+
+        data1 = {"label": "label1",
+                 "name": "name1",
+                 "level": "level_1",
+                 "description": "description 1",
+                 "deprecate": False}
+
+        data2 = {"label": "label2",
+                 "name": "name2",
+                 "level": "level_2",
+                 "description": "description 2",
+                 "deprecate": True}
+
+        for data in [data1, data2]:
+            MyTestCase.insert(MyTestCase.app, data)
+
+
+if __name__ == '__main__':
+    unittest.main()
