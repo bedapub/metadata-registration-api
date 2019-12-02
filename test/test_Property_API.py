@@ -1,6 +1,8 @@
 import unittest
 
-from test.test_utils import AbstractTest
+from mongoengine.errors import NotUniqueError
+
+from test.test_API_Base import AbstractTest
 from api_service.app import create_app
 
 class MyTestCase(unittest.TestCase, AbstractTest):
@@ -38,6 +40,18 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 self.assertEqual(len(res.json), 2)
             else:
                 self.assertEqual(len(res.json), 1)
+
+    def test_get_property_deprecate_param(self):
+        """ Get single property by id """
+        MyTestCase.insert_two(self.app)
+
+        entrypoint = "/properties"
+
+        res = MyTestCase.get_ids(MyTestCase.app, entrypoint=entrypoint)
+        id = res.json[0]['id']
+        res = self.app.get(f"{entrypoint}/id/{id}", follow_redirects=True)
+
+        self.assertEqual(res.status_code, 200)
 
     # ------------------------------------------------------------------------------------------------------------------
     # POST
@@ -80,6 +94,18 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = self.insert(MyTestCase.app, data)
 
         self.assertTrue(res.status_code, 201)
+
+    def test_post_property_double_entry(self):
+        """ Insert a property without controlled vocabulary """
+        results_1 = MyTestCase.insert_two(MyTestCase.app)
+        for res in results_1:
+            self.assertEqual(res.status_code, 201)
+
+        results_2 = MyTestCase.insert_two(MyTestCase.app, check_status=False)
+
+        for res in results_2:
+            self.assertEqual(res.status_code, 404)
+            self.assertTrue("The entry already exists." in res.json['message'])
 
     def test_post_property_cv_not_id_error(self):
         """ Insert property with id in wrong format"""
@@ -159,7 +185,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
 
     @staticmethod
-    def insert_two(app):
+    def insert_two(app, check_status=True):
         """ Insert a normal and a deprecated entry"""
 
         data1 = {"label": "label1",
@@ -174,8 +200,11 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                  "description": "description 2",
                  "deprecate": True}
 
+        res = []
         for data in [data1, data2]:
-            MyTestCase.insert(MyTestCase.app, data)
+            res.append(MyTestCase.insert(MyTestCase.app, data, check_status=check_status))
+
+        return res
 
 
 if __name__ == '__main__':
