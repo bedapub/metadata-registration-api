@@ -1,3 +1,5 @@
+from bson import ObjectId
+
 from mongoengine import Document, EmbeddedDocument
 from mongoengine.fields import *
 
@@ -63,6 +65,10 @@ class VocabularyType (EmbeddedDocument):
     """ Defines which type of vocabulary (e.g. text, numeric, controlled vocabulary) is allowed. """
     data_type = StringField(required=True)
     controlled_vocabulary = ReferenceField(ControlledVocabulary)
+
+    def clean(self):
+        if not ObjectId.is_valid(self.controlled_vocabulary):
+            self.controlled_vocabulary = None
 
 
 class Property(Document):

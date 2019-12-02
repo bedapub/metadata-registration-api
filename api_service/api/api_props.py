@@ -69,13 +69,13 @@ class ApiProperties(Resource):
 
             deprecate (default=False)
 
-
+            If a data type other than "cv" is added, the controlled_vocabullary is not considered.
         """
 
         entry = Property(**api.payload)
 
         # Ensure that a passed controlled vocabulary is valid
-        validate_controlled_vocabulary(entry, api.payload)
+        validate_controlled_vocabulary(entry)
 
         entry.save()
         return {"message": "Add entry '{}'".format(entry.name)}, 201
@@ -117,19 +117,22 @@ class ApiProperty(Resource):
             return {'message': "Delete entry '{}'".format(entry.name)}
 
 
-def validate_controlled_vocabulary(entry, data):
+def validate_controlled_vocabulary(entry):
 
-    cv_data_type = data.get('vocabulary_type', {}).get('data_type')
+    if entry.vocabulary_type:
+        cv_data_type = entry.vocabulary_type.data_type
+    else:
+        return
 
     # If property is a controlled vocabulary
     if cv_data_type == "cv":
-        cv_id = api.payload['vocabulary_type']['controlled_vocabulary']
+        cv = entry.vocabulary_type.controlled_vocabulary
 
         # TODO: Should we support name of controlled vocabulary?
 
-        if not ObjectId.is_valid(cv_id):
-            raise InvalidId(f"controlled_vocabulary (id={cv_id}) does not have the format of an id.")
-        if ControlledVocabulary.objects(id=cv_id).count() != 1:
-            raise InvalidDocument(f"Controlled_vocabulary with id={cv_id} was not found")
+        if ControlledVocabulary.objects(id=cv.pk).count() != 1:
+            raise InvalidDocument(f"Controlled_vocabulary with id={cv.pk} was not found")
+    # If a vocabulary type is given but is not cv, remove controlled_vocabulary
+    elif entry.vocabulary_type:
+        entry.vocabulary_type.controlled_vocabulary = None
 
-    return entry

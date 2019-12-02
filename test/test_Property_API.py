@@ -67,7 +67,23 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = MyTestCase.insert(MyTestCase.app, data)
         self.assertEqual(res.status_code, 201, f"Could not create entry: {res.data}")
 
-    def test_post_property_cv_(self):
+    def test_post_property_cv(self):
+        """ Insert property with vocabulary other than cv"""
+
+        data = {"label": "string",
+                "name": "string",
+                "level": "string",
+                "vocabulary_type": {"data_type": "text", "controlled_vocabulary": "String"},
+                "synonyms": ["string", ],
+                "description": "string",
+                "deprecate": False
+                }
+
+        res = self.insert(MyTestCase.app, data)
+
+        self.assertTrue(res.status_code, 201)
+
+    def test_post_property_cv_reference(self):
         """ Insert property with correct cv """
 
         cv = {"label": "Test CV",
@@ -122,7 +138,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = self.insert(MyTestCase.app, data, check_status=False)
 
         self.assertEqual(res.status_code, 404)
-        self.assertTrue("does not have the format of an id" in res.json['message'])
+        self.assertTrue("Trying to dereference unknown document DBRef" in res.json['message'])
 
     def test_post_property_cv_not_found_error(self):
         """" Insert property with invalid id (does not exist)"""
@@ -139,7 +155,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = self.insert(MyTestCase.app, data, check_status=False)
 
         self.assertEqual(res.status_code, 404)
-        self.assertTrue("was not found" in res.json['message'])
+        self.assertTrue("Trying to dereference unknown document DBRef" in res.json['message'])
 
     # ------------------------------------------------------------------------------------------------------------------
     # Delete
