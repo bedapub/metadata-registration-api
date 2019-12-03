@@ -57,7 +57,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     # POST
 
     def test_post_property(self):
-        """ Insert a property without controlled vocabulary """
+        """ Insert a minimal property (w/o controlled vocabulary) """
 
         data = {"label": "Test",
                 "name": "Test",
@@ -65,7 +65,20 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 "description": "Simple description"}
 
         res = MyTestCase.insert(MyTestCase.app, data)
-        self.assertEqual(res.status_code, 201, f"Could not create entry: {res.data}")
+        self.assertEqual(res.status_code, 201, f"Could not create entry: {res.json}")
+
+    def test_post_property_wrong_format(self):
+        """ Try to insert a property in the wrong format """
+
+        data = {"label": "Test",
+                # "name": "Test", # name is required
+                "level": "TEST",
+                "description": "Simple description"
+                }
+
+        res = MyTestCase.insert(MyTestCase.app, data, check_status=False)
+        self.assertEqual(res.status_code, 400)
+        self.assertTrue("Validation error:" in res.json["message"])
 
     def test_post_property_cv(self):
         """ Insert property with vocabulary other than cv"""
@@ -112,7 +125,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         self.assertTrue(res.status_code, 201)
 
     def test_post_property_double_entry(self):
-        """ Insert a property without controlled vocabulary """
+        """ Try to insert properties twice """
         results_1 = MyTestCase.insert_two(MyTestCase.app)
         for res in results_1:
             self.assertEqual(res.status_code, 201)
@@ -120,7 +133,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         results_2 = MyTestCase.insert_two(MyTestCase.app, check_status=False)
 
         for res in results_2:
-            self.assertEqual(res.status_code, 404)
+            self.assertEqual(res.status_code, 409)
             self.assertTrue("The entry already exists." in res.json['message'])
 
     def test_post_property_cv_not_id_error(self):

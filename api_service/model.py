@@ -5,7 +5,14 @@ from mongoengine.fields import *
 
 
 def to_snake_case(name):
-    return name.lower().strip().replace(" ", "_")
+    """ Convert a string into an internal representation (no leading and trailing whitespace, and intermediate
+    whitespace replaced with underscore)
+
+    :param name:
+    :return: name in snake_case or None
+    """
+    if name:
+        return name.lower().strip().replace(" ", "_")
 
 
 """ Controlled vocabulary model
@@ -85,7 +92,6 @@ class Property(Document):
     deprecate = BooleanField(default=False)
 
     def clean(self):
-
         self.name = to_snake_case(self.name)
         map(to_snake_case, self.synonyms)
 

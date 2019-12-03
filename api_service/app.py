@@ -48,7 +48,14 @@ def create_app(config='DEVELOPMENT'):
     ControlledVocabulary._meta['collection'] = app.config['MONGODB_COL_CTRL_VOC']
 
     from api_service.api import api
-    api.init_app(app)
+    api.init_app(app,
+                 title="Property and Controlled Vocabulary Service",
+                 contact="Rafael Müller",
+                 contact_email="rafael.mueller@roche.com",
+                 description="An API to manage properties and controlled vocabularies."
+                             "\n\n"
+                             "The code is available here: https://github.roche.com/rafaelsm/ApiService. Any issue "
+                             "reports or feature requests are appreciated.")
 
     return app
 
