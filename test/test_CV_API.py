@@ -43,7 +43,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     # ------------------------------------------------------------------------------------------------------------------
     # POST
 
-    def test_insert_cv(self):
+    def test_insert_cv_minimal(self):
+        """ Add minimal controlled vocabulary """
 
         data = {"label": "Test CV",
                 "name": "Test CV",
@@ -54,6 +55,22 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
         self.assertEqual(res.status_code, 201)
 
+    def test_insert_cv_full(self):
+        """ Add a controlled vocabulary containing a description and a synonyms """
+
+        data = {"label": "Test CV",
+                "name": "Test CV",
+                "description": "Test CV",
+                "items": [{"label": "Test item 1",
+                           "name": "Test item 1",
+                           "description": "Simple description",
+                           "synonyms": ["A test", "This is a test label"]
+                           }]
+                }
+
+        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc")
+
+        self.assertEqual(res.status_code, 201)
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
 

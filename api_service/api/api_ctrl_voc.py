@@ -9,7 +9,9 @@ api = Namespace('Controlled Vocabulary', description='Controlled vocabulary rela
 
 cv_item_model = api.model("CV item", {
     'label': fields.String(description='Human readable name of the entry'),
-    'name': fields.String(description='Internal representation of the entry (in snake_case)')
+    'name': fields.String(description='Internal representation of the entry (in snake_case)'),
+    'description': fields.String(description="Detailed explanation of the intended use"),
+    'synonyms': fields.List(fields.String())
 })
 
 property_model = api.model('Controlled Vocabulary', {

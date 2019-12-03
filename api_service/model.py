@@ -31,6 +31,8 @@ class CvItem(EmbeddedDocument):
     """ An item in the list of controlled vocabularies """
     label = StringField(required=True)
     name = StringField(required=True)
+    description = StringField()
+    synonyms = ListField(field=StringField())
 
     def clean(self):
         self.name = to_snake_case(self.name)
@@ -39,6 +41,7 @@ class CvItem(EmbeddedDocument):
 class ControlledVocabulary(Document):
     label = StringField(required=True)
     name = StringField(required=True, unique=True)
+
 
     description = StringField(required=True)
 

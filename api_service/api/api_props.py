@@ -118,21 +118,6 @@ class ApiProperty(Resource):
 
 
 def validate_controlled_vocabulary(entry):
-
-    if entry.vocabulary_type:
-        cv_data_type = entry.vocabulary_type.data_type
-    else:
-        return
-
-    # If property is a controlled vocabulary
-    if cv_data_type == "cv":
-        cv = entry.vocabulary_type.controlled_vocabulary
-
-        # TODO: Should we support name of controlled vocabulary?
-
-        if ControlledVocabulary.objects(id=cv.pk).count() != 1:
-            raise InvalidDocument(f"Controlled_vocabulary with id={cv.pk} was not found")
-    # If a vocabulary type is given but is not cv, remove controlled_vocabulary
-    elif entry.vocabulary_type:
+    if entry.vocabulary_type and entry.vocabulary_type.data_type != "cv":
         entry.vocabulary_type.controlled_vocabulary = None
 

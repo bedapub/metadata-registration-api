@@ -21,6 +21,7 @@ def handle_validation_error(error):
 def handle_not_unique_error(error):
     return {"message": f"The entry already exists. {error}"}, 409
 
+
 @api.errorhandler(DoesNotExist)
 def handle_does_not_exist_error(error):
     return {"message": f"The entry does not exist. {error}"}, 404

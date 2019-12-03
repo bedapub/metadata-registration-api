@@ -86,15 +86,31 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
+                "vocabulary_type": {"data_type": "text"},
+                "synonyms": ["string", ],
+                "description": "string",
+                "deprecate": False
+                }
+
+        res = self.insert(MyTestCase.app, data, check_status=False)
+
+        self.assertEqual(res.status_code, 201)
+
+    def test_post_property_cv_error(self):
+        """ Insert property with vocabulary other than cv"""
+
+        data = {"label": "string",
+                "name": "string",
+                "level": "string",
                 "vocabulary_type": {"data_type": "text", "controlled_vocabulary": "String"},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecate": False
                 }
 
-        res = self.insert(MyTestCase.app, data)
+        res = self.insert(MyTestCase.app, data, check_status=False)
 
-        self.assertTrue(res.status_code, 201)
+        self.assertEqual(res.status_code, 201)
 
     def test_post_property_cv_reference(self):
         """ Insert property with correct cv """
@@ -122,7 +138,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
         res = self.insert(MyTestCase.app, data)
 
-        self.assertTrue(res.status_code, 201)
+        self.assertEqual(res.status_code, 201)
 
     def test_post_property_double_entry(self):
         """ Try to insert properties twice """
