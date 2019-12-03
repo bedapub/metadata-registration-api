@@ -1,13 +1,7 @@
-from bson import ObjectId
-
 from flask_restplus import Namespace, Resource, fields
 from flask_restplus import reqparse, inputs
 
 from api_service.model import Property
-from api_service.model import ControlledVocabulary
-
-
-from bson.errors import InvalidId, InvalidDocument
 
 
 api = Namespace('Properties', description='Property related operations')

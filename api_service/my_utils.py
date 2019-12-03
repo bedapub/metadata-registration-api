@@ -1,6 +1,4 @@
 import yaml
-import os
-import shutil
 
 
 def load_credentials(path='./.credentials.yaml'):

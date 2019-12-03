@@ -2,8 +2,8 @@ from flask_restplus import Api
 
 from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
 
-from .api_props import api as ns_1
-from .api_ctrl_voc import api as ns_2
+from api_service.api.api_props import api as ns_1
+from api_service.api.api_ctrl_voc import api as ns_2
 
 api = Api(version="0.3.1")
 
