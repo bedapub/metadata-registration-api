@@ -25,6 +25,13 @@ entry_model_id = api.inherit('Property with id', entry_model, {
     'id': fields.String(attribute='pk', description='The unique identifier of the entry'),
 })
 
+
+post_response_model = api.model("Post response", {
+    'message': fields.String(),
+    'id': fields.String(description="Id of inserted entry")
+})
+
+
 @api.route('/')
 class ApiProperties(Resource):
 
@@ -49,6 +56,7 @@ class ApiProperties(Resource):
         return list(entries)
 
     @api.expect(entry_model)
+    @api.response(201, "Success", post_response_model)
     def post(self):
         """ Add a new entry
 

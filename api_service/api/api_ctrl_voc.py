@@ -25,6 +25,11 @@ property_model_id = api.inherit("Controlled Vocabulary with id", property_model,
     'id': fields.String(attribute='pk', description='Unique identifier of the entry'),
 })
 
+post_response_model = api.model("Post response", {
+    'message': fields.String(),
+    'id': fields.String(description="Id of inserted entry")
+})
+
 
 @api.route('/')
 class ApiControlledVocabulary(Resource):
@@ -50,6 +55,7 @@ class ApiControlledVocabulary(Resource):
         return list(res)
 
     @api.expect(property_model)
+    @api.response(201, "Success", post_response_model)
     def post(self):
         """ Add a new entry """
         p = ControlledVocabulary(**api.payload)
