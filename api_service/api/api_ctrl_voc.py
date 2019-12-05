@@ -25,6 +25,11 @@ property_model_id = api.inherit("Controlled Vocabulary with id", property_model,
     'id': fields.String(attribute='pk', description='Unique identifier of the entry'),
 })
 
+post_response_model = api.model("Post response", {
+    'message': fields.String(),
+    'id': fields.String(description="Id of inserted entry")
+})
+
 
 @api.route('/')
 class ApiControlledVocabulary(Resource):
@@ -32,9 +37,8 @@ class ApiControlledVocabulary(Resource):
     @api.doc(params={'deprecate': "Boolean indicator which determines if deprecated entries should be returned as "
                                   "well  (default False)"})
     def get(self):
-        """ Fetch a list with all entries
+        """ Fetch a list with all entries """
 
-        """
         # Convert query parameters
         parser = reqparse.RequestParser()
         parser.add_argument('deprecate', type=inputs.boolean, location="args", default=False)
@@ -43,18 +47,21 @@ class ApiControlledVocabulary(Resource):
         include_deprecate = args['deprecate']
 
         if not include_deprecate:
+            # Select only active entries
             res = ControlledVocabulary.objects(deprecate=False).all()
         else:
-            # Include entries which are deprecated
+            # Include deprecated entries
             res = ControlledVocabulary.objects().all()
         return list(res)
 
     @api.expect(property_model)
+    @api.response(201, "Success", post_response_model)
     def post(self):
         """ Add a new entry """
         p = ControlledVocabulary(**api.payload)
-        p.save()
-        return {"message": "Add entry '{}'".format(p.name)}, 201
+        p = p.save()
+        return {"message": "Add entry '{}'".format(p.name),
+                "id": str(p.id)}, 201
 
 
 @api.route('/id/<id>')

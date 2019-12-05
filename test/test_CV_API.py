@@ -55,6 +55,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc")
 
         self.assertEqual(res.status_code, 201)
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
     def test_insert_cv_full(self):
         """ Add a controlled vocabulary containing a description and a synonyms """
@@ -72,6 +73,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc")
 
         self.assertEqual(res.status_code, 201)
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
+
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
 

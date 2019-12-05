@@ -5,6 +5,7 @@ from mongoengine.errors import NotUniqueError
 from test.test_api_base import AbstractTest
 from api_service.app import create_app
 
+
 class MyTestCase(unittest.TestCase, AbstractTest):
     
     @classmethod
@@ -41,15 +42,12 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             else:
                 self.assertEqual(len(res.json), 1)
 
-    def test_get_property_deprecate_param(self):
+    def test_get_property_singe(self):
         """ Get single property by id """
-        MyTestCase.insert_two(self.app)
+        results = MyTestCase.insert_two(self.app)
 
         entrypoint = "/properties"
-
-        res = MyTestCase.get_ids(MyTestCase.app, entrypoint=entrypoint)
-        id = res.json[0]['id']
-        res = self.app.get(f"{entrypoint}/id/{id}", follow_redirects=True)
+        res = self.app.get(f"{entrypoint}/id/{results[0].json['id']}", follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
 
