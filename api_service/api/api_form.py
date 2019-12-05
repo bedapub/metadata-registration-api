@@ -7,6 +7,21 @@ from api_service.api.api_props import property_model_id
 
 api = Namespace('Form', description='Form related operations')
 
+field_add_model = api.model("Add Field", {
+    'property_id': fields.String(),
+    'args': fields.String(),
+    'kwargs': fields.String()
+})
+
+form_add_model = api.model("Add Form", {
+    'label': fields.String(description='Human readable name of the entry'),
+    'name': fields.String(description='Internal representation of the entry (in snake_case)'),
+    'description': fields.String(description='Detailed description of the intended use', default=''),
+    'fields': fields.List(fields.Nested(field_add_model)),
+    'deprecate': fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
+})
+
+
 field_model = api.model("Field", {
     # 'name': fields.String(attribute='property_model_id.name'),
     'property': fields.Nested(property_model_id),
@@ -49,7 +64,7 @@ class ApiForm(Resource):
             res = Form.objects().all()
         return list(res)
 
-    @api.expect(form_model)
+    @api.expect(form_add_model)
     def post(self):
         """ Add a new entry """
         p = Form(**api.payload)

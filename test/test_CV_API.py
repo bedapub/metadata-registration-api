@@ -1,7 +1,8 @@
 import unittest
 
 from api_service.app import create_app
-from test.test_API_Base import AbstractTest
+from test.test_api_base import AbstractTest
+
 
 class MyTestCase(unittest.TestCase, AbstractTest):
 
