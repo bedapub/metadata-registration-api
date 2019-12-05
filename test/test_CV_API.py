@@ -1,7 +1,8 @@
 import unittest
 
 from api_service.app import create_app
-from test.test_API_Base import AbstractTest
+from test.test_Base_API import AbstractTest
+
 
 class MyTestCase(unittest.TestCase, AbstractTest):
 
@@ -54,6 +55,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc")
 
         self.assertEqual(res.status_code, 201)
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
     def test_insert_cv_full(self):
         """ Add a controlled vocabulary containing a description and a synonyms """
@@ -71,6 +73,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc")
 
         self.assertEqual(res.status_code, 201)
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
+
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
 
@@ -89,7 +93,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                  "deprecate": True}
 
         for data in [data1, data2]:
-            res = AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_voc")
+            AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_voc")
 
 if __name__ == '__main__':
     unittest.main()

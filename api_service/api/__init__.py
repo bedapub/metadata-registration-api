@@ -5,7 +5,7 @@ from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
 from api_service.api.api_props import api as ns_1
 from api_service.api.api_ctrl_voc import api as ns_2
 
-api = Api(version="0.3.1")
+api = Api(version="0.3.2")
 
 
 api.add_namespace(ns_1, path='/properties')

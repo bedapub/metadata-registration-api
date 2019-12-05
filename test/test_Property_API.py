@@ -2,8 +2,9 @@ import unittest
 
 from mongoengine.errors import NotUniqueError
 
-from test.test_API_Base import AbstractTest
+from test.test_Base_API import AbstractTest
 from api_service.app import create_app
+
 
 class MyTestCase(unittest.TestCase, AbstractTest):
     
@@ -41,15 +42,12 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             else:
                 self.assertEqual(len(res.json), 1)
 
-    def test_get_property_deprecate_param(self):
+    def test_get_property_singe(self):
         """ Get single property by id """
-        MyTestCase.insert_two(self.app)
+        results = MyTestCase.insert_two(self.app)
 
         entrypoint = "/properties"
-
-        res = MyTestCase.get_ids(MyTestCase.app, entrypoint=entrypoint)
-        id = res.json[0]['id']
-        res = self.app.get(f"{entrypoint}/id/{id}", follow_redirects=True)
+        res = self.app.get(f"{entrypoint}/id/{results[0].json['id']}", follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
 
@@ -66,6 +64,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
         res = MyTestCase.insert(MyTestCase.app, data)
         self.assertEqual(res.status_code, 201, f"Could not create entry: {res.json}")
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
     def test_post_property_wrong_format(self):
         """ Try to insert a property in the wrong format """
@@ -95,8 +94,9 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = self.insert(MyTestCase.app, data, check_status=False)
 
         self.assertEqual(res.status_code, 201)
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
-    def test_post_property_cv_error(self):
+    def test_post_property_cv_other_than_cv(self):
         """ Insert property with vocabulary other than cv"""
 
         data = {"label": "string",
@@ -111,6 +111,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = self.insert(MyTestCase.app, data, check_status=False)
 
         self.assertEqual(res.status_code, 201)
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
     def test_post_property_cv_reference(self):
         """ Insert property with correct cv """
@@ -123,14 +124,12 @@ class MyTestCase(unittest.TestCase, AbstractTest):
               ]
               }
 
-        MyTestCase.insert(MyTestCase.app, data=cv, entrypoint="/ctrl_voc")
-
-        id = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_voc").json[0]['id']
+        res = MyTestCase.insert(MyTestCase.app, data=cv, entrypoint="/ctrl_voc")
 
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
-                "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": id},
+                "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": res.json['id']},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecate": False
@@ -139,6 +138,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = self.insert(MyTestCase.app, data)
 
         self.assertEqual(res.status_code, 201)
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
     def test_post_property_double_entry(self):
         """ Try to insert properties twice """
@@ -226,8 +226,6 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
-
-
 
     @staticmethod
     def insert_two(app, check_status=True):

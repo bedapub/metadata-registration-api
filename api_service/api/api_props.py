@@ -71,8 +71,9 @@ class ApiProperties(Resource):
         # Ensure that a passed controlled vocabulary is valid
         validate_controlled_vocabulary(entry)
 
-        entry.save()
-        return {"message": "Add entry '{}'".format(entry.name)}, 201
+        entry = entry.save()
+        return {"message": "Add entry '{}'".format(entry.name),
+                "id": str(entry.id)}, 201
 
 
 @api.route('/id/<id>')

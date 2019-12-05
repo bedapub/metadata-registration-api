@@ -32,9 +32,8 @@ class ApiControlledVocabulary(Resource):
     @api.doc(params={'deprecate': "Boolean indicator which determines if deprecated entries should be returned as "
                                   "well  (default False)"})
     def get(self):
-        """ Fetch a list with all entries
+        """ Fetch a list with all entries """
 
-        """
         # Convert query parameters
         parser = reqparse.RequestParser()
         parser.add_argument('deprecate', type=inputs.boolean, location="args", default=False)
@@ -43,9 +42,10 @@ class ApiControlledVocabulary(Resource):
         include_deprecate = args['deprecate']
 
         if not include_deprecate:
+            # Select only active entries
             res = ControlledVocabulary.objects(deprecate=False).all()
         else:
-            # Include entries which are deprecated
+            # Include deprecated entries
             res = ControlledVocabulary.objects().all()
         return list(res)
 
@@ -53,8 +53,9 @@ class ApiControlledVocabulary(Resource):
     def post(self):
         """ Add a new entry """
         p = ControlledVocabulary(**api.payload)
-        p.save()
-        return {"message": "Add entry '{}'".format(p.name)}, 201
+        p = p.save()
+        return {"message": "Add entry '{}'".format(p.name),
+                "id": str(p.id)}, 201
 
 
 @api.route('/id/<id>')
