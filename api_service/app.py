@@ -24,6 +24,7 @@ def config_app(app, credentials):
     # Load mongo collection names
     app.config['MONGODB_COL_PROPERTY'] = credentials['database']['mongodb']['collection']['property']
     app.config['MONGODB_COL_CTRL_VOC'] = credentials['database']['mongodb']['collection']['ctrl_voc']
+    app.config['MONGODB_COL_FORM'] = credentials['database']['mongodb']['collection']['form']
 
 
 def create_app(config='DEVELOPMENT'):
@@ -43,9 +44,10 @@ def create_app(config='DEVELOPMENT'):
             password=app.config['MONGODB_PASSWORD'],
             )
 
-    from api_service.model import Property, ControlledVocabulary
+    from api_service.model import Property, ControlledVocabulary, Form
     Property._meta['collection'] = app.config['MONGODB_COL_PROPERTY']
     ControlledVocabulary._meta['collection'] = app.config['MONGODB_COL_CTRL_VOC']
+    Form._meta['collection'] = app.config['MONGODB_COL_FORM']
 
     from api_service.api import api
     api.init_app(app,

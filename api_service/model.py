@@ -14,16 +14,34 @@ def to_snake_case(name):
     if name:
         return name.lower().strip().replace(" ", "_")
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+""" Abstract model
+
+A Base class for all top-level documents. 
+
+A model contains a `label` and a `name` which is displayed to the end user (external representation) and  is used for 
+the internal representation, respectively. The model ensures that the `name` is converted to snake case.
+
+Instead of deleting entries, they are deprecated.
+"""
+
+class DeprecateDocument(Document):
+    label = StringField(required=True)
+    name = StringField(required=True, unique=True)
+    deprecate = BooleanField(default=False)
+
+    def clean(self):
+        self.name = to_snake_case(self.name)
+
+    meta = {'allow_inheritance': True, 'abstract': True}
+
 
 """ Controlled vocabulary model
-    
-    A  controlled vocabulary contains a `label` and a `name` which is displayed to the end user (external 
-    representation) and  is used for the internal representation, respectively. The model ensures that the `name` is 
-    converted to snake case.
-    
-    The description of the controlled vocabulary describes its purpose.
-    
-    The items contains a list of embedded items. An item stores an allowed vocabularies.
+
+The description of the controlled vocabulary describes its purpose.
+The items contains a list of embedded items. An item stores an allowed vocabularies.
 """
 
 
@@ -34,40 +52,23 @@ class CvItem(EmbeddedDocument):
     description = StringField()
     synonyms = ListField(field=StringField())
 
-    def clean(self):
-        self.name = to_snake_case(self.name)
 
-
-class ControlledVocabulary(Document):
-    label = StringField(required=True)
-    name = StringField(required=True, unique=True)
-
-
+class ControlledVocabulary(DeprecateDocument):
     description = StringField(required=True)
 
     items = ListField(EmbeddedDocumentField(CvItem), required=True)
 
-    # Instead of removing, we deprecate
-    deprecate = BooleanField(default=False)
-
-    def clean(self):
-        self.name = to_snake_case(self.name)
-
 
 """ Property model
     
-    A property contains a `label` and a `name` which is displayed to the end user (external representation) and  is used 
-    for the internal representation, respectively. The model ensures that the `name` is converted to snake case.
+The synonym is a list of alternative labels.
     
-    The synonym is a list of alternative labels.
+A property is assigned to a level in the property hierarchy (e.g. Study, Sample).
     
-    A property is assigned to a level in the property hierarchy (e.g. Study, Sample).
+The description of the property clarifies its purpose.
     
-    The description of the property clarifies its purpose.
-    
-    The `vocabulary_type` is nested into the property and defines the 
-    data type of the input. If the data type is a controlled vocabulary, the `controlled_vocabulary` references to 
-    an entry in the controlled vocabulary model.
+The `vocabulary_type` is nested into the property and defines the data type of the input. If the data type is a 
+controlled vocabulary, the `controlled_vocabulary` references to an entry in the controlled vocabulary model.
 """
 
 
@@ -81,9 +82,7 @@ class VocabularyType (EmbeddedDocument):
             self.controlled_vocabulary = None
 
 
-class Property(Document):
-    label = StringField(required=True)
-    name = StringField(required=True, unique=True)
+class Property(DeprecateDocument):
     synonyms = ListField(field=StringField())
 
     level = StringField(required=True)
@@ -91,10 +90,46 @@ class Property(Document):
 
     vocabulary_type = EmbeddedDocumentField(VocabularyType)
 
-    # Instead of removing, we deprecate
-    deprecate = BooleanField(default=False)
+    def clean(self):
+        map(to_snake_case, self.synonyms)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+""" Form model
+
+A form contains fields. A field can accept an entry.
+"""
+
+
+class FieldMeta(EmbeddedDocument):
+    class_name = StringField(required=True)
+    variable_name = StringField(required=True)
 
     def clean(self):
-        self.name = to_snake_case(self.name)
-        map(to_snake_case, self.synonyms)
+        self.variable_name = to_snake_case(self.variable_name)
+
+
+class Kwarg(EmbeddedDocument):
+    key = StringField(required=True)
+    value = StringField(required=True)
+
+
+class Arg(EmbeddedDocument):
+    value = StringField(required=True)
+
+
+class Field(EmbeddedDocument):
+    label = StringField(required=True)
+    # Reference to the property
+    property = ReferenceField(Property)
+
+    description = StringField()
+    metadata = EmbeddedDocumentField(document_type=FieldMeta)
+    kwargs = EmbeddedDocumentListField(document_type=Kwarg)
+    args = EmbeddedDocumentListField(document_type=Arg)
+
+
+class Form(DeprecateDocument):
+    fields = EmbeddedDocumentListField(Field)
 
