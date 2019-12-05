@@ -104,32 +104,21 @@ A form contains fields. A field can accept an entry.
 
 class FieldMeta(EmbeddedDocument):
     class_name = StringField(required=True)
-    variable_name = StringField(required=True)
 
-    def clean(self):
-        self.variable_name = to_snake_case(self.variable_name)
-
-
-class Kwarg(EmbeddedDocument):
-    key = StringField(required=True)
-    value = StringField(required=True)
-
-
-class Arg(EmbeddedDocument):
-    value = StringField(required=True)
 
 
 class Field(EmbeddedDocument):
-    label = StringField(required=True)
+    label = StringField()
     # Reference to the property
     property = ReferenceField(Property)
 
     description = StringField()
     metadata = EmbeddedDocumentField(document_type=FieldMeta)
-    kwargs = EmbeddedDocumentListField(document_type=Kwarg)
-    args = EmbeddedDocumentListField(document_type=Arg)
+    args = ListField(StringField())
+    kwargs = ListField(DictField())
 
 
 class Form(DeprecateDocument):
     fields = EmbeddedDocumentListField(Field)
+    description = StringField(required=True)
 

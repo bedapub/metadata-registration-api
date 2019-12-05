@@ -27,7 +27,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def test_add_form(self):
 
-        prop_data = {
+        prop_user_data = {
             "label": "Username",
             "name": "username",
             "level": "top",
@@ -35,15 +35,34 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "description": "Recognizable name"
         }
 
-        prop_res = MyTestCase.insert(MyTestCase.app, data=prop_data,entrypoint="/properties")
+        prop_pw_data = {
+            "label": "Password",
+            "name": "password",
+            "level": "top",
+            "vocabulary_type": {"data_type": "text"},
+            "description": "Secret to authenticate user"
+        }
+
+        prop_user_res = MyTestCase.insert(MyTestCase.app, data=prop_user_data,entrypoint="/properties")
+        prop_pw_res = MyTestCase.insert(MyTestCase.app, data=prop_pw_data,entrypoint="/properties")
 
         form_data = {
             "label": "Login",
             "name": "login",
             "description": "Form to login a user",
             "fields": [
-                {"property_id": prop_res.json['id'],
-                 "kwargs": {'validation': {'args': {'object': {'class_name': 'InputRequired'}}}}}
+                {"label": "Username",
+                 "property": prop_user_res.json['id'],
+                 "metadata": {'class_name': 'StringField'},
+                 "kwargs": [{'validators': {'args': {'objects': [{'class_name': 'InputRequired'}]}}}]
+                 },
+                {"label": "Password",
+                 "property": prop_pw_res.json["id"],
+                 "metadata": {'class_name': 'PasswordField'},
+                 "kwargs": [{'validators': {'args': {'objects': [
+                     {'class_name': 'InputRequired'},
+                     {'class_name': 'Length', 'args': {'min': 8, 'max': 64}}]}}}]
+                }
             ],
         }
 

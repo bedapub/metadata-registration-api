@@ -1,4 +1,4 @@
-from flask_restplus import Namespace, Resource, fields
+from flask_restplus import Namespace, Resource, fields, marshal_with
 from flask_restplus import reqparse, inputs
 
 from api_service.model import ControlledVocabulary
@@ -33,7 +33,7 @@ post_response_model = api.model("Post response", {
 
 @api.route('/')
 class ApiControlledVocabulary(Resource):
-    @api.marshal_with(property_model_id)
+    @marshal_with(property_model_id)
     @api.doc(params={'deprecate': "Boolean indicator which determines if deprecated entries should be returned as "
                                   "well  (default False)"})
     def get(self):
@@ -67,7 +67,7 @@ class ApiControlledVocabulary(Resource):
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
 class ApiControlledVocabulary(Resource):
-    @api.marshal_with(property_model_id)
+    @marshal_with(property_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return ControlledVocabulary.objects(id=id).get()

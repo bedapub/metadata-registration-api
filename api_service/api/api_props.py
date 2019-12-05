@@ -1,4 +1,4 @@
-from flask_restplus import Namespace, Resource, fields
+from flask_restplus import Namespace, Resource, fields, marshal_with
 from flask_restplus import reqparse, inputs
 
 from api_service.model import Property
@@ -11,7 +11,7 @@ cv_model = api.model("Vocabulary Type", {
     'controlled_vocabulary': fields.String(description="The unique identifier of the controlled vocabulary")
 })
 
-entry_model = api.model('Property', {
+property_model = api.model('Property', {
     'label': fields.String(description='A human readable description of the entry'),
     'name': fields.String(description='The unique name of the entry (in snake_case)'),
     'level': fields.String(description='The level the property is associated with (e.g. Study, Sample, ...)'),
@@ -21,7 +21,7 @@ entry_model = api.model('Property', {
     'deprecate': fields.Boolean(default=False)
 })
 
-entry_model_id = api.inherit('Property with id', entry_model, {
+property_model_id = api.inherit('Property with id', property_model, {
     'id': fields.String(attribute='pk', description='The unique identifier of the entry'),
 })
 
@@ -35,7 +35,7 @@ post_response_model = api.model("Post response", {
 @api.route('/')
 class ApiProperties(Resource):
 
-    @api.marshal_with(entry_model_id)
+    @marshal_with(property_model_id)
     @api.doc(params={'deprecate': "Boolean indicator which determines if deprecated entries should be returned as "
                                   "well  (default False)"})
     def get(self):
@@ -55,7 +55,7 @@ class ApiProperties(Resource):
             entries = Property.objects().all()
         return list(entries)
 
-    @api.expect(entry_model)
+    @api.expect(property_model)
     @api.response(201, "Success", post_response_model)
     def post(self):
         """ Add a new entry
@@ -88,12 +88,12 @@ class ApiProperties(Resource):
 @api.param('id', 'The property identifier')
 class ApiProperty(Resource):
 
-    @api.marshal_with(entry_model_id)
+    @marshal_with(property_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return Property.objects(id=id).get()
 
-    @api.expect(entry_model)
+    @api.expect(property_model)
     def put(self, id):
         """ Update entry given its unique identifier """
         entry = Property.objects(id=id).first()

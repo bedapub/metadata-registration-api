@@ -1,4 +1,4 @@
-from flask_restplus import Namespace, Resource, fields
+from flask_restplus import Namespace, Resource, fields, marshal_with
 from flask_restplus import reqparse, inputs
 
 from api_service.model import Form
@@ -7,10 +7,17 @@ from api_service.api.api_props import property_model_id
 
 api = Namespace('Form', description='Form related operations')
 
+field_meta_model = api.model("Field Metadata", {
+    "class_name": fields.String(),
+})
+
 field_add_model = api.model("Add Field", {
-    'property_id': fields.String(),
-    'args': fields.String(),
-    'kwargs': fields.String()
+    'label': fields.String(),
+    'property': fields.String(),
+    'description': fields.String(),
+    'metadata': fields.Nested(field_meta_model),
+    'args': fields.List(fields.Raw()),
+    'kwargs': fields.List(fields.Raw())
 })
 
 form_add_model = api.model("Add Form", {
@@ -24,9 +31,12 @@ form_add_model = api.model("Add Form", {
 
 field_model = api.model("Field", {
     # 'name': fields.String(attribute='property_model_id.name'),
+    'label': fields.String(),
     'property': fields.Nested(property_model_id),
-    'args': fields.String(),
-    'kwargs': fields.String(),
+    'description': fields.String(),
+    'metadata': fields.Nested(field_meta_model),
+    'args': fields.List(fields.Raw()),
+    'kwargs': fields.List(fields.Raw()),
 })
 
 
@@ -45,7 +55,7 @@ form_model_id = api.inherit("Form with id", form_model, {
 
 @api.route('/')
 class ApiForm(Resource):
-    @api.marshal_with(form_model_id)
+    @marshal_with(form_model_id)
     @api.doc(params={'deprecate': "Boolean indicator which determines if deprecated entries should be returned as "
                                   "well  (default False)"})
     def get(self):
@@ -75,7 +85,7 @@ class ApiForm(Resource):
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
 class ApiForm(Resource):
-    @api.marshal_with(form_model_id)
+    @marshal_with(form_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return Form.objects(id=id).get()
@@ -109,7 +119,7 @@ class ApiForm(Resource):
 @api.route("/<id>/field")
 class ApiField(Resource):
 
-    @api.marshal_with(field_model)
+    @marshal_with(field_model)
     def get(self, id):
         entries = Form.objects(id=id).fields.objects().all()
         return list(entries)
