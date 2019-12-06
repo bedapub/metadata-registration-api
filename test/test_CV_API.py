@@ -9,11 +9,11 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = create_app(config="TESTING").test_client()
-        AbstractTest.clear_collection(cls.app)
+        cls.clear_collection()
 
     def setUp(self) -> None:
-        MyTestCase.clear_collection(MyTestCase.app)
-        MyTestCase.clear_collection(MyTestCase.app, entrypoint="/ctrl_voc")
+        MyTestCase.clear_collection()
+        MyTestCase.clear_collection(entrypoint="/ctrl_voc")
 
 
     # ------------------------------------------------------------------------------------------------------------------

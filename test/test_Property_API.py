@@ -11,11 +11,11 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = create_app(config="TESTING").test_client()
-        AbstractTest.clear_collection(cls.app)
+        cls.clear_collection()
 
     def setUp(self) -> None:
-        MyTestCase.clear_collection(MyTestCase.app)
-        MyTestCase.clear_collection(MyTestCase.app, entrypoint="/ctrl_voc")
+        MyTestCase.clear_collection()
+        MyTestCase.clear_collection(entrypoint="/ctrl_voc")
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
@@ -188,7 +188,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     # Delete
 
     def test_delete_no_param(self):
-        MyTestCase.clear_collection(MyTestCase.app)
+        MyTestCase.clear_collection()
         MyTestCase.insert_two(self.app)
 
         res = MyTestCase.get_ids(MyTestCase.app)
@@ -204,7 +204,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def test_delete_complete_param(self):
         for complete in [True, False]:
-            MyTestCase.clear_collection(MyTestCase.app)
+            MyTestCase.clear_collection()
             MyTestCase.insert_two(self.app)
 
             # Get all entries (also the deprecated) to delete the completely

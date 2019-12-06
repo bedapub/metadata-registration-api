@@ -9,23 +9,34 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = create_app(config="TESTING").test_client()
-        AbstractTest.clear_collection(cls.app)
+        cls.clear_collection()
 
     def setUp(self) -> None:
-        MyTestCase.clear_collection(MyTestCase.app)
-        MyTestCase.clear_collection(MyTestCase.app, entrypoint="/ctrl_voc")
-        MyTestCase.clear_collection(MyTestCase.app, entrypoint="/form")
+        MyTestCase.clear_collection()
+        MyTestCase.clear_collection(entrypoint="/ctrl_voc")
+        MyTestCase.clear_collection(entrypoint="/form")
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
 
-    def test_form_(self):
-        pass
+    def test_retrieve_login_form(self):
+        self.clear_collection()
+        self.insert_login_form()
+        res = self.app.get("/form", follow_redirects=True)
+        form = res.json
 
     # ------------------------------------------------------------------------------------------------------------------
     # POST
 
-    def test_add_form(self):
+    def test_add_login_form(self):
+
+        res = self.insert_login_form(
+
+        )
+
+        self.assertEqual(res.status_code, 201)
+
+    def insert_login_form(self):
 
         prop_user_data = {
             "label": "Username",
@@ -43,8 +54,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "description": "Secret to authenticate user"
         }
 
-        prop_user_res = MyTestCase.insert(MyTestCase.app, data=prop_user_data,entrypoint="/properties")
-        prop_pw_res = MyTestCase.insert(MyTestCase.app, data=prop_pw_data,entrypoint="/properties")
+        prop_user_res = self.insert(self.app, data=prop_user_data,entrypoint="/properties")
+        prop_pw_res = self.insert(self.app, data=prop_pw_data,entrypoint="/properties")
 
         form_data = {
             "label": "Login",
@@ -53,22 +64,19 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "fields": [
                 {"label": "Username",
                  "property": prop_user_res.json['id'],
-                 "metadata": {'class_name': 'StringField'},
-                 "kwargs": [{'validators': {'args': {'objects': [{'class_name': 'InputRequired'}]}}}]
+                 'class_name': 'StringField',
+                 "kwargs": {'validators': {'kwargs': {'objects': [{'class_name': 'InputRequired'}]}}}
                  },
                 {"label": "Password",
                  "property": prop_pw_res.json["id"],
-                 "metadata": {'class_name': 'PasswordField'},
-                 "kwargs": [{'validators': {'args': {'objects': [
+                 'class_name': 'PasswordField',
+                 "kwargs": {'validators': {'args': {'objects': [
                      {'class_name': 'InputRequired'},
-                     {'class_name': 'Length', 'args': {'min': 8, 'max': 64}}]}}}]
-                }
+                     {'class_name': 'Length', 'kwargs': {'min': 8, 'max': 64}}]}}}
+                 }
             ],
         }
 
-        form_res = MyTestCase.insert(MyTestCase.app, data=form_data, entrypoint="/form")
-
-        self.assertEqual(form_res.status_code, 201)
-
+        return self.insert(self.app, data=form_data, entrypoint="/form")
 
 

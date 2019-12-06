@@ -1,9 +1,9 @@
 class AbstractTest(object):
 
-    @staticmethod
-    def clear_collection(app, entrypoint="/properties", deprecate=True):
+    @classmethod
+    def clear_collection(cls, entrypoint="/properties", deprecate=True):
         """ Remove all entries"""
-        res = AbstractTest.get_ids(app, entrypoint, deprecate)
+        res = cls.get_ids(cls.app, entrypoint, deprecate)
 
         if res.status_code != 200:
             raise Exception(f"Could not access data {res.json}")
@@ -12,7 +12,7 @@ class AbstractTest(object):
             for d in res.json:
                 if not d:
                     continue
-                res = app.delete(f"{entrypoint}/id/{d['id']}?complete=True", follow_redirects=True)
+                res = cls.app.delete(f"{entrypoint}/id/{d['id']}?complete=True", follow_redirects=True)
 
                 if res.status_code != 200:
                     raise Exception(f"Could not delete file (id={d['id']}) in {entrypoint}")

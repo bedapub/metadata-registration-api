@@ -7,17 +7,13 @@ from api_service.api.api_props import property_model_id
 
 api = Namespace('Form', description='Form related operations')
 
-field_meta_model = api.model("Field Metadata", {
-    "class_name": fields.String(),
-})
-
 field_add_model = api.model("Add Field", {
     'label': fields.String(),
     'property': fields.String(),
     'description': fields.String(),
-    'metadata': fields.Nested(field_meta_model),
-    'args': fields.List(fields.Raw()),
-    'kwargs': fields.List(fields.Raw())
+    'class_name': fields.String(),
+    'args': fields.Raw(),
+    'kwargs': fields.Raw(),
 })
 
 form_add_model = api.model("Add Form", {
@@ -34,9 +30,9 @@ field_model = api.model("Field", {
     'label': fields.String(),
     'property': fields.Nested(property_model_id),
     'description': fields.String(),
-    'metadata': fields.Nested(field_meta_model),
-    'args': fields.List(fields.Raw()),
-    'kwargs': fields.List(fields.Raw()),
+    'class_name': fields.String(),
+    'args': fields.Raw(),
+    'kwargs': fields.Raw(),
 })
 
 

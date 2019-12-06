@@ -102,20 +102,15 @@ A form contains fields. A field can accept an entry.
 """
 
 
-class FieldMeta(EmbeddedDocument):
-    class_name = StringField(required=True)
-
-
-
 class Field(EmbeddedDocument):
     label = StringField()
     # Reference to the property
     property = ReferenceField(Property)
 
     description = StringField()
-    metadata = EmbeddedDocumentField(document_type=FieldMeta)
+    class_name = StringField(required=True)
     args = ListField(StringField())
-    kwargs = ListField(DictField())
+    kwargs = DictField()
 
 
 class Form(DeprecateDocument):
