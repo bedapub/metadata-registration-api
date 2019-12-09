@@ -5,13 +5,15 @@ from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
 from api_service.api.api_props import api as ns_1
 from api_service.api.api_ctrl_voc import api as ns_2
 from api_service.api.api_form import api as ns_3
+from api_service.api.api_study import api as ns_4
 
-api = Api(version="0.4.0")
+api = Api(version="0.5.0")
 
 
 api.add_namespace(ns_1, path='/properties')
 api.add_namespace(ns_2, path='/ctrl_voc')
 api.add_namespace(ns_3, path='/form')
+api.add_namespace(ns_4, path='/study')
 
 
 @api.errorhandler(ValidationError)

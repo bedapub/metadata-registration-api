@@ -102,8 +102,11 @@ A form contains fields. A field can accept an entry.
 """
 
 
-class Field(EmbeddedDocument):
+class FormField(EmbeddedDocument):
     label = StringField()
+
+    # Only used for administrative forms (not used for the study registration)
+    name = StringField()
     # Reference to the property
     property = ReferenceField(Property)
 
@@ -112,8 +115,33 @@ class Field(EmbeddedDocument):
     args = ListField(StringField())
     kwargs = DictField()
 
+    def clean(self):
+        if self.property:
+            self.name = ""
+
 
 class Form(DeprecateDocument):
-    fields = EmbeddedDocumentListField(Field)
+    fields = EmbeddedDocumentListField(FormField)
     description = StringField(required=True)
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+""" Study model
+"""
+
+
+class Field(EmbeddedDocument):
+    label = StringField(required=True)
+    property = ReferenceField(Property)
+    # TODO: Check if correct type
+    value = GenericEmbeddedDocumentField()
+
+
+class Status(EmbeddedDocument):
+    name = StringField()
+
+
+class Study(DeprecateDocument):
+    fields = EmbeddedDocumentListField(Field)
+    status = EmbeddedDocumentField(Status)

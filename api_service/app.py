@@ -51,7 +51,7 @@ def create_app(config='DEVELOPMENT'):
 
     from api_service.api import api
     api.init_app(app,
-                 title="Property and Controlled Vocabulary Service",
+                 title="API for properties, controlled vocabulary, forms and studies.",
                  contact="Rafael Müller",
                  contact_email="rafael.mueller@roche.com",
                  description="An API to manage properties and controlled vocabularies."
