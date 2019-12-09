@@ -13,7 +13,7 @@ cv_item_model = api.model("CV item", {
     'synonyms': fields.List(fields.String())
 })
 
-property_model = api.model('Controlled Vocabulary', {
+ctrl_voc_model = api.model('Controlled Vocabulary', {
     'label': fields.String(description='Human readable name of the entry'),
     'name': fields.String(description='Internal representation of the entry (in snake_case)'),
     'description': fields.String(description='Detailed description of the intended use', default=''),
@@ -21,7 +21,7 @@ property_model = api.model('Controlled Vocabulary', {
     'deprecate': fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
 })
 
-property_model_id = api.inherit("Controlled Vocabulary with id", property_model, {
+ctrl_voc_model_id = api.inherit("Controlled Vocabulary with id", ctrl_voc_model, {
     'id': fields.String(attribute='pk', description='Unique identifier of the entry'),
 })
 
@@ -33,7 +33,7 @@ post_response_model = api.model("Post response", {
 
 @api.route('/')
 class ApiControlledVocabulary(Resource):
-    @marshal_with(property_model_id)
+    @marshal_with(ctrl_voc_model_id)
     @api.doc(params={'deprecate': "Boolean indicator which determines if deprecated entries should be returned as "
                                   "well  (default False)"})
     def get(self):
@@ -54,7 +54,7 @@ class ApiControlledVocabulary(Resource):
             res = ControlledVocabulary.objects().all()
         return list(res)
 
-    @api.expect(property_model)
+    @api.expect(ctrl_voc_model)
     @api.response(201, "Success", post_response_model)
     def post(self):
         """ Add a new entry """
@@ -67,12 +67,12 @@ class ApiControlledVocabulary(Resource):
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
 class ApiControlledVocabulary(Resource):
-    @marshal_with(property_model_id)
+    @marshal_with(ctrl_voc_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return ControlledVocabulary.objects(id=id).get()
 
-    @api.expect(property_model)
+    @api.expect(ctrl_voc_model)
     def put(self, id):
         """ Update an entry given its unique identifier """
         entry = ControlledVocabulary.objects(id=id).get()

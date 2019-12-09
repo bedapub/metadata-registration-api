@@ -1,4 +1,5 @@
 from bson import ObjectId
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from mongoengine import Document, EmbeddedDocument
 from mongoengine.fields import *
@@ -145,3 +146,31 @@ class Status(EmbeddedDocument):
 class Study(DeprecateDocument):
     fields = EmbeddedDocumentListField(Field)
     status = EmbeddedDocumentField(Status)
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+""" User model
+"""
+
+
+class User(Document):
+    firstname = StringField(required=True)
+    lastname = StringField(required=True)
+
+    email = EmailField(required=True)
+    password = StringField(required=True)
+    is_active = BooleanField(required=True, default=True)
+
+
+    def clean(self):
+        """ Called before data is inserted into the database """
+
+        # check if password looks like hashed
+        is_hashed = lambda password: len(password) == 93 and password.startswith("pbkdf2:sha256:")
+
+        # Hash password if it is not already hashed.
+        if not is_hashed(self.password_hash):
+            self.password_hash = generate_password_hash(self.password_hash)

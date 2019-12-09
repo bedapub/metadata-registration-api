@@ -1,4 +1,4 @@
-from flask_restplus import Namespace, Resource, fields, marshal_with
+from flask_restplus import Namespace, Resource, fields
 from flask_restplus import reqparse, inputs
 
 from api_service.model import Form
@@ -50,7 +50,7 @@ form_model_id = api.inherit("Form with id", form_model, {
 
 @api.route("/")
 class ApiForm(Resource):
-    @marshal_with(form_model_id)
+    @api.marshal_with(form_model_id)
     @api.doc(params={"deprecate": "Boolean indicator which determines if deprecated entries should be returned as "
                                   "well  (default False)"})
     def get(self):
@@ -80,7 +80,7 @@ class ApiForm(Resource):
 @api.route("/id/<id>")
 @api.param("id", "The property identifier")
 class ApiForm(Resource):
-    @marshal_with(form_model_id)
+    @api.marshal_with(form_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return Form.objects(id=id).get()
@@ -114,7 +114,7 @@ class ApiForm(Resource):
 @api.route("/<id>/field")
 class ApiField(Resource):
 
-    @marshal_with(field_model)
+    @api.marshal_with(field_model)
     def get(self, id):
         entries = Form.objects(id=id).fields.objects().all()
         return list(entries)

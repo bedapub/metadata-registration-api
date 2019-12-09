@@ -2,13 +2,14 @@ from flask_restplus import Namespace, Resource, fields, marshal_with
 from flask_restplus import reqparse, inputs
 
 from api_service.model import Property
+from api_service.api.api_ctrl_voc import ctrl_voc_model_id
 
 
 api = Namespace('Properties', description='Property related operations')
 
 cv_model = api.model("Vocabulary Type", {
     'data_type': fields.String(description="The data type of the entry"),
-    'controlled_vocabulary': fields.String(description="The unique identifier of the controlled vocabulary")
+    'controlled_vocabulary': fields.Nested(ctrl_voc_model_id)
 })
 
 property_model = api.model('Property', {
