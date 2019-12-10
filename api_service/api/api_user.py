@@ -25,14 +25,12 @@ post_response_model = api.model("Post response", {
 
 
 @api.route('/')
-class ApiControlledVocabulary(Resource):
+class ApiUser(Resource):
     @api.marshal_with(user_model_id)
     @api.doc(params={'deactivated': "Boolean indicator which determines if deactivated users should be returned as "
                                     "well  (default False)"})
     def get(self):
         """ Fetch a list with all entries """
-
-        # Convert query parameters
         parser = reqparse.RequestParser()
         parser.add_argument('deactivated', type=inputs.boolean, location="args", default=False)
         args = parser.parse_args()
@@ -59,7 +57,7 @@ class ApiControlledVocabulary(Resource):
 
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
-class ApiControlledVocabulary(Resource):
+class ApiUser(Resource):
     @api.marshal_with(user_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
@@ -70,7 +68,7 @@ class ApiControlledVocabulary(Resource):
         """ Update an entry given its unique identifier """
         entry = User.objects(id=id).get()
         entry.update(**api.payload)
-        return {'message': "Update entry '{}'".format(entry.name)}
+        return {'message': "Update entry '{}'".format(entry.firstname)}
 
     @api.doc(params={'complete': "Boolean indicator to remove an entry instead of inactivating it (cannot be undone) "
                                  "(default False)"})
@@ -86,19 +84,20 @@ class ApiControlledVocabulary(Resource):
         entry = User.objects(id=id).get()
         if not force_delete:
             entry.update(is_active=False)
-            return {'message': "Inactivated entry '{}'".format(entry.name)}
+            return {'message': "Inactivated entry '{}'".format(entry.firstname)}
         else:
             entry.delete()
-            return {'message': "Delete entry {}".format(entry.name)}
+            return {'message': "Delete entry {}".format(entry.firstname)}
 
 @api.route("/email/")
-class ApiUser(Resource):
+class ApiUserEmail(Resource):
 
+    @api.marshal_with(user_model_id)
     @api.expect(api.model("Email", {"email": fields.String()}))
     def post(self):
 
         parser = reqparse.RequestParser()
-        parser.add_argument("email", type=inputs.email)
+        parser.add_argument("email", type=inputs.email())
         args = parser.parse_args()
 
         email = args['email']

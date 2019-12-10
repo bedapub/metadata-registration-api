@@ -15,7 +15,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def setUp(self) -> None:
         MyTestCase.clear_collection()
-        MyTestCase.clear_collection(entrypoint="/ctrl_voc")
+        MyTestCase.clear_collection(entrypoint="/ctrl_voc/")
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
@@ -24,7 +24,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         """ Get list of properties without query parameter"""
         MyTestCase.insert_two(self.app)
 
-        res = self.app.get("/properties", follow_redirects=True)
+        res = self.app.get("/properties/", follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.json), 1)
@@ -46,8 +46,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         """ Get single property by id """
         results = MyTestCase.insert_two(self.app)
 
-        entrypoint = "/properties"
-        res = self.app.get(f"{entrypoint}/id/{results[0].json['id']}", follow_redirects=True)
+        entrypoint = "/properties/"
+        res = self.app.get(f"{entrypoint}id/{results[0].json['id']}", follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
 
@@ -121,9 +121,9 @@ class MyTestCase(unittest.TestCase, AbstractTest):
               ]
               }
 
-        MyTestCase.insert(MyTestCase.app, data=cv, entrypoint="/ctrl_voc")
+        MyTestCase.insert(MyTestCase.app, data=cv, entrypoint="/ctrl_voc/")
 
-        id = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_voc").json[0]['id']
+        id = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_voc/").json[0]['id']
 
         data = {"label": "string",
                 "name": "string",

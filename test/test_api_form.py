@@ -13,8 +13,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def setUp(self) -> None:
         MyTestCase.clear_collection()
-        MyTestCase.clear_collection(entrypoint="/ctrl_voc")
-        MyTestCase.clear_collection(entrypoint="/form")
+        MyTestCase.clear_collection(entrypoint="/ctrl_voc/")
+        MyTestCase.clear_collection(entrypoint="/form/")
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
@@ -22,7 +22,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     def test_retrieve_login_form(self):
         self.clear_collection()
         self.insert_login_form()
-        res = self.app.get("/form", follow_redirects=True)
+        res = self.app.get("/form/", follow_redirects=True)
         form = res.json
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -54,8 +54,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "description": "Secret to authenticate user"
         }
 
-        prop_user_res = self.insert(self.app, data=prop_user_data,entrypoint="/properties")
-        prop_pw_res = self.insert(self.app, data=prop_pw_data,entrypoint="/properties")
+        prop_user_res = self.insert(self.app, data=prop_user_data,entrypoint="/properties/")
+        prop_pw_res = self.insert(self.app, data=prop_pw_data,entrypoint="/properties/")
 
         form_data = {
             "label": "Login",
@@ -77,6 +77,6 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             ],
         }
 
-        return self.insert(self.app, data=form_data, entrypoint="/form")
+        return self.insert(self.app, data=form_data, entrypoint="/form/")
 
 

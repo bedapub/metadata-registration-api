@@ -13,7 +13,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def setUp(self) -> None:
         MyTestCase.clear_collection()
-        MyTestCase.clear_collection(entrypoint="/ctrl_voc")
+        MyTestCase.clear_collection(entrypoint="/ctrl_voc/")
 
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         """ Get list of properties without query parameter"""
         MyTestCase.insert_two(self.app)
 
-        res = self.app.get("/ctrl_voc", follow_redirects=True)
+        res = self.app.get("/ctrl_voc/", follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.json), 1)
@@ -52,7 +52,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 "description": "Test CV",
                 "items": [{"label": "Test item 1", "name": "Test item 1"}]}
 
-        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc")
+        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc/")
 
         self.assertEqual(res.status_code, 201)
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
@@ -70,7 +70,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                            }]
                 }
 
-        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc")
+        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc/")
 
         self.assertEqual(res.status_code, 201)
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
@@ -93,7 +93,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                  "deprecated": True}
 
         for data in [data1, data2]:
-            res = AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_voc")
+            res = AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_voc/")
 
 if __name__ == '__main__':
     unittest.main()

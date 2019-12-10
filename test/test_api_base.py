@@ -1,7 +1,8 @@
+import urllib
 class AbstractTest(object):
 
     @classmethod
-    def clear_collection(cls, entrypoint="/properties", deprecated=True):
+    def clear_collection(cls, entrypoint="/properties/", deprecated=True):
         """ Remove all entries"""
         res = cls.get_ids(cls.app, entrypoint, deprecated)
 
@@ -12,18 +13,28 @@ class AbstractTest(object):
             for d in res.json:
                 if not d:
                     continue
-                res = cls.app.delete(f"{entrypoint}/id/{d['id']}?complete=True", follow_redirects=True)
+                res = cls.app.delete(f"{entrypoint}id/{d['id']}?complete=True", follow_redirects=True)
 
                 if res.status_code != 200:
-                    raise Exception(f"Could not delete file (id={d['id']}) in {entrypoint}")
+                    raise Exception(f"Could not delete file (id={d['id']}) in {entrypoint}. {res.json}")
 
     @staticmethod
-    def get_ids(app, entrypoint='/properties', deprecated=False):
+    def get(app, entrypoint, params=None, headers=None):
+        p = None
+        if params:
+            p = urllib.parse.urlencode(params)
+        return app.get(f"{entrypoint}?{p}", follow_redirects=True, headers=headers)
+
+    @staticmethod
+    def get_ids(app, entrypoint='/properties/', deprecated=False):
         """ Get the id of all properties """
-        return app.get(f"{entrypoint}?deprecated={deprecated}", follow_redirects=True, headers={"X-Fields": "id"})
+        return AbstractTest.get(app,
+                                entrypoint=entrypoint,
+                                params={"deprecated": deprecated},
+                                headers={"X-Fields": "id"})
 
     @staticmethod
-    def insert(app, data, entrypoint="/properties", check_status=True):
+    def insert(app, data, entrypoint="/properties/", check_status=True):
         """ Insert a new entry """
         res = app.post(f"{entrypoint}", follow_redirects=True, json=data)
 
