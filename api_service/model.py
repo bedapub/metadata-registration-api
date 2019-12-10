@@ -28,10 +28,10 @@ the internal representation, respectively. The model ensures that the `name` is 
 Instead of deleting entries, they are deprecated.
 """
 
-class DeprecateDocument(Document):
+class BaseDocument(Document):
     label = StringField(required=True)
     name = StringField(required=True, unique=True)
-    deprecate = BooleanField(default=False)
+    deprecated = BooleanField(default=False)
 
     def clean(self):
         self.name = to_snake_case(self.name)
@@ -54,7 +54,7 @@ class CvItem(EmbeddedDocument):
     synonyms = ListField(field=StringField())
 
 
-class ControlledVocabulary(DeprecateDocument):
+class ControlledVocabulary(BaseDocument):
     description = StringField(required=True)
 
     items = ListField(EmbeddedDocumentField(CvItem), required=True)
@@ -83,7 +83,7 @@ class VocabularyType (EmbeddedDocument):
             self.controlled_vocabulary = None
 
 
-class Property(DeprecateDocument):
+class Property(BaseDocument):
     synonyms = ListField(field=StringField())
 
     level = StringField(required=True)
@@ -121,7 +121,7 @@ class FormField(EmbeddedDocument):
             self.name = ""
 
 
-class Form(DeprecateDocument):
+class Form(BaseDocument):
     fields = EmbeddedDocumentListField(FormField)
     description = StringField(required=True)
 
@@ -143,7 +143,7 @@ class Status(EmbeddedDocument):
     name = StringField()
 
 
-class Study(DeprecateDocument):
+class Study(BaseDocument):
     fields = EmbeddedDocumentListField(Field)
     status = EmbeddedDocumentField(Status)
 
@@ -160,7 +160,7 @@ class User(Document):
     firstname = StringField(required=True)
     lastname = StringField(required=True)
 
-    email = EmailField(required=True)
+    email = EmailField(required=True, unique=True)
     password = StringField(required=True)
     is_active = BooleanField(required=True, default=True)
 
@@ -169,8 +169,9 @@ class User(Document):
         """ Called before data is inserted into the database """
 
         # check if password looks like hashed
-        is_hashed = lambda password: len(password) == 93 and password.startswith("pbkdf2:sha256:")
+        def is_hashed(password):
+            return len(password) == 93 and password.startswith("pbkdf2:sha256:")
 
         # Hash password if it is not already hashed.
-        if not is_hashed(self.password_hash):
-            self.password_hash = generate_password_hash(self.password_hash)
+        if not is_hashed(self.password):
+            self.password = generate_password_hash(self.password)

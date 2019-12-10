@@ -11,7 +11,7 @@ user_model = api.model("User", {
     "lastname": fields.String(),
     "email": fields.String(),
     "password": fields.String(),
-    "is_active": fields.Boolean()
+    "is_active": fields.Boolean(default=True)
 })
 
 user_model_id = api.inherit("User with id", user_model, {
@@ -53,7 +53,7 @@ class ApiControlledVocabulary(Resource):
         """ Add a new entry """
         p = User(**api.payload)
         p = p.save()
-        return {"message": "Add entry '{}'".format(p.name),
+        return {"message": "Add user '{}'".format(p.firstname),
                 "id": str(p.id)}, 201
 
 
@@ -90,3 +90,19 @@ class ApiControlledVocabulary(Resource):
         else:
             entry.delete()
             return {'message': "Delete entry {}".format(entry.name)}
+
+@api.route("/email/")
+class ApiUser(Resource):
+
+    @api.expect(api.model("Email", {"email": fields.String()}))
+    def post(self):
+
+        parser = reqparse.RequestParser()
+        parser.add_argument("email", type=inputs.email)
+        args = parser.parse_args()
+
+        email = args['email']
+
+        user = User.objects(email=email).first()
+
+        return user

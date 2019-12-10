@@ -10,8 +10,8 @@ api = Namespace("Form", description="Form related operations")
 field_add_model = api.model("Add Field", {
     "label": fields.String(),
     "property": fields.String(),
-    "description": fields.String(),
     "class_name": fields.String(),
+    "description": fields.String(),
     "args": fields.Raw(),
     "kwargs": fields.Raw(),
 })
@@ -19,17 +19,17 @@ field_add_model = api.model("Add Field", {
 form_add_model = api.model("Add Form", {
     "label": fields.String(description="Human readable name of the entry"),
     "name": fields.String(description="Internal representation of the entry (in snake_case)"),
-    "description": fields.String(description="Detailed description of the intended use", default=""),
     "fields": fields.List(fields.Nested(field_add_model)),
-    "deprecate": fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
+    "description": fields.String(description="Detailed description of the intended use", default=""),
+    "deprecated": fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
 })
 
 
 field_model = api.model("Field", {
     "label": fields.String(),
     "property": fields.Nested(property_model_id),
-    "description": fields.String(),
     "class_name": fields.String(),
+    "description": fields.String(),
     "args": fields.Raw(),
     "kwargs": fields.Raw(),
 })
@@ -40,7 +40,7 @@ form_model = api.model("Form", {
     "name": fields.String(description="Internal representation of the entry (in snake_case)"),
     "description": fields.String(description="Detailed description of the intended use", default=""),
     "fields": fields.List(fields.Nested(field_model)),
-    "deprecate": fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
+    "deprecated": fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
 })
 
 form_model_id = api.inherit("Form with id", form_model, {
@@ -51,19 +51,19 @@ form_model_id = api.inherit("Form with id", form_model, {
 @api.route("/")
 class ApiForm(Resource):
     @api.marshal_with(form_model_id)
-    @api.doc(params={"deprecate": "Boolean indicator which determines if deprecated entries should be returned as "
-                                  "well  (default False)"})
+    @api.doc(params={"deprecated": "Boolean indicator which determines if deprecated entries should be returned as "
+                                   "well  (default False)"})
     def get(self):
         """ Fetch a list with all entries """
         # Convert query parameters
         parser = reqparse.RequestParser()
-        parser.add_argument("deprecate", type=inputs.boolean, location="args", default=False)
+        parser.add_argument("deprecated", type=inputs.boolean, location="args", default=False)
         args = parser.parse_args()
 
-        include_deprecate = args["deprecate"]
+        include_deprecate = args["deprecated"]
 
         if not include_deprecate:
-            res = Form.objects(deprecate=False).all()
+            res = Form.objects(deprecated=False).all()
         else:
             # Include entries which are deprecated
             res = Form.objects().all()
@@ -105,7 +105,7 @@ class ApiForm(Resource):
 
         entry = Form.objects(id=id).get()
         if not force_delete:
-            entry.update(deprecate=True)
+            entry.update(deprecated=True)
             return {"message": "Deprecate entry '{}'".format(entry.name)}
         else:
             entry.delete()

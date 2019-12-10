@@ -43,19 +43,19 @@ study_add_model = api.model("Add Study", {
 @api.route('/')
 class ApiForm(Resource):
     @api.marshal_with(study_model_id)
-    @api.doc(params={'deprecate': "Boolean indicator which determines if deprecated entries should be returned as "
-                                  "well  (default False)"})
+    @api.doc(params={'deprecated': "Boolean indicator which determines if deprecated entries should be returned as "
+                                   "well  (default False)"})
     def get(self):
         """ Fetch a list with all entries """
         # Convert query parameters
         parser = reqparse.RequestParser()
-        parser.add_argument('deprecate', type=inputs.boolean, location="args", default=False)
+        parser.add_argument('deprecated', type=inputs.boolean, location="args", default=False)
         args = parser.parse_args()
 
-        include_deprecate = args['deprecate']
+        include_deprecate = args['deprecated']
 
         if not include_deprecate:
-            res = Study.objects(deprecate=False).all()
+            res = Study.objects(deprecated=False).all()
         else:
             # Include entries which are deprecated
             res = Study.objects().all()
@@ -97,7 +97,7 @@ class ApiForm(Resource):
 
         entry = Study.objects(id=id).get()
         if not force_delete:
-            entry.update(deprecate=True)
+            entry.update(deprecated=True)
             return {'message': "Deprecate entry '{}'".format(entry.name)}
         else:
             entry.delete()

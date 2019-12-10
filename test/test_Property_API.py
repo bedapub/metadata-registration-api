@@ -33,11 +33,11 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         """ Get list of properties with query parameter deprecate """
         MyTestCase.insert_two(self.app)
 
-        for deprecate in [True, False]:
-            res = self.app.get(f"/properties?deprecate={deprecate}", follow_redirects=True)
+        for deprecated in [True, False]:
+            res = self.app.get(f"/properties?deprecated={deprecated}", follow_redirects=True)
 
             self.assertEqual(res.status_code, 200)
-            if deprecate:
+            if deprecated:
                 self.assertEqual(len(res.json), 2)
             else:
                 self.assertEqual(len(res.json), 1)
@@ -87,7 +87,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 "vocabulary_type": {"data_type": "text"},
                 "synonyms": ["string", ],
                 "description": "string",
-                "deprecate": False
+                "deprecated": False
                 }
 
         res = self.insert(MyTestCase.app, data, check_status=False)
@@ -103,7 +103,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 "vocabulary_type": {"data_type": "text", "controlled_vocabulary": "String"},
                 "synonyms": ["string", ],
                 "description": "string",
-                "deprecate": False
+                "deprecated": False
                 }
 
         res = self.insert(MyTestCase.app, data, check_status=False)
@@ -131,7 +131,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": id},
                 "synonyms": ["string", ],
                 "description": "string",
-                "deprecate": False
+                "deprecated": False
                 }
 
         res = self.insert(MyTestCase.app, data)
@@ -159,7 +159,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": "abc"},
                 "synonyms": ["string", ],
                 "description": "string",
-                "deprecate": False
+                "deprecated": False
                 }
 
         res = self.insert(MyTestCase.app, data, check_status=False)
@@ -176,7 +176,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": "5b6bf449acf15441d0f87b4f"},
                 "synonyms": ["string", ],
                 "description": "string",
-                "deprecate": False
+                "deprecated": False
                 }
 
         res = self.insert(MyTestCase.app, data, check_status=False)
@@ -196,8 +196,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         for entry in res.json:
             res = self.app.delete(f"/properties/id/{entry['id']}", follow_redirects=True)
 
-        res_deprecate = self.app.get("/properties?deprecate=True", follow_redirects=True)
-        res = self.app.get("/properties?deprecate=False", follow_redirects=True)
+        res_deprecate = self.app.get("/properties?deprecated=True", follow_redirects=True)
+        res = self.app.get("/properties?deprecated=False", follow_redirects=True)
 
         self.assertEqual(len(res_deprecate.json), 2)
         self.assertEqual(len(res.json), 0)
@@ -208,18 +208,18 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             MyTestCase.insert_two(self.app)
 
             # Get all entries (also the deprecated) to delete the completely
-            res = MyTestCase.get_ids(MyTestCase.app, deprecate=complete)
+            res = MyTestCase.get_ids(MyTestCase.app, deprecated=complete)
 
             for entry in res.json:
                 self.app.delete(f"/properties/id/{entry['id']}?complete={complete}", follow_redirects=True)
 
-            res_deprecate = self.app.get("/properties?deprecate=True", follow_redirects=True)
+            res_deprecate = self.app.get("/properties?deprecated=True", follow_redirects=True)
             if complete:
                 self.assertEqual(len(res_deprecate.json), 0)
             else:
                 self.assertEqual(len(res_deprecate.json), 2)
 
-            res = self.app.get("/properties?deprecate=False", follow_redirects=True)
+            res = self.app.get("/properties?deprecated=False", follow_redirects=True)
             self.assertEqual(len(res.json), 0)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -235,13 +235,13 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                  "name": "name1",
                  "level": "level_1",
                  "description": "description 1",
-                 "deprecate": False}
+                 "deprecated": False}
 
         data2 = {"label": "label2",
                  "name": "name2",
                  "level": "level_2",
                  "description": "description 2",
-                 "deprecate": True}
+                 "deprecated": True}
 
         res = []
         for data in [data1, data2]:

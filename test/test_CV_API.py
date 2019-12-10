@@ -32,11 +32,11 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         """ Get list of properties with query parameter deprecate """
         MyTestCase.insert_two(self.app)
 
-        for deprecate in [True, False]:
-            res = self.app.get(f"/ctrl_voc?deprecate={deprecate}", follow_redirects=True)
+        for deprecated in [True, False]:
+            res = self.app.get(f"/ctrl_voc?deprecated={deprecated}", follow_redirects=True)
 
             self.assertEqual(res.status_code, 200)
-            if deprecate:
+            if deprecated:
                 self.assertEqual(len(res.json), 2)
             else:
                 self.assertEqual(len(res.json), 1)
@@ -84,13 +84,13 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                  "name": "Test CV 1",
                  "description": "Test CV 1",
                  "items": [{"label": "Test item 1", "name": "Test item 1"}],
-                 "deprecate": False}
+                 "deprecated": False}
 
         data2 = {"label": "Test CV 2",
                  "name": "Test CV 2",
                  "description": "Test CV 2",
                  "items": [{"label": "Test item 1", "name": "Test item 1"}],
-                 "deprecate": True}
+                 "deprecated": True}
 
         for data in [data1, data2]:
             res = AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_voc")
