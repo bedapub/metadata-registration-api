@@ -76,6 +76,27 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
     # ------------------------------------------------------------------------------------------------------------------
+    # DELETE
+
+    def test_deprecate(self):
+        self.test_insert_cv_minimal()
+
+        results = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_voc/")
+
+        for entry in results.json:
+            MyTestCase.app.delete(f"/ctrl_voc/id/{entry['id']}")
+
+        results = MyTestCase.get(MyTestCase.app, entrypoint="/ctrl_voc", params={"deprecated": True})
+
+        for entry in results.json:
+            self.assertTrue(entry['deprecated'])
+
+
+
+
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
 
     @staticmethod

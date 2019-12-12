@@ -3,10 +3,12 @@ from flask_restplus import reqparse, inputs
 
 from api_service.model import Property
 from api_service.api.api_ctrl_voc import ctrl_voc_model_id
+from api_service.api.decorators import token_required
 
 
 api = Namespace('Properties', description='Property related operations')
 
+# ----------------------------------------------------------------------------------------------------------------------
 
 property_add_model = api.model("Add Property", {
     'label': fields.String(description='A human readable description of the entry'),
@@ -43,21 +45,26 @@ post_response_model = api.model("Post response", {
     'id': fields.String(description="Id of inserted entry")
 })
 
+# ----------------------------------------------------------------------------------------------------------------------
 
 @api.route('/')
 class ApiProperties(Resource):
 
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument('deprecated',
+                            type=inputs.boolean,
+                            location="args",
+                            default=False,
+                            help="Boolean indicator which determines if deprecated entries should be returned as well",
+                            )
+
     @api.marshal_with(property_model_id)
-    @api.doc(params={"deprecated": "Boolean indicator which determines if deprecated entries should be returned as "
-                                   "well  (default False)"})
+    @api.expect(parser=get_parser)
     def get(self):
         """ Fetch a list with all entries """
 
         # Convert query parameters
-        parser = reqparse.RequestParser()
-        parser.add_argument('deprecated', type=inputs.boolean, location="args", default=False)
-        args = parser.parse_args()
-
+        args = self.get_parser.parse_args()
         include_deprecate = args['deprecated']
 
         if not include_deprecate:
@@ -67,9 +74,10 @@ class ApiProperties(Resource):
             entries = Property.objects().all()
         return list(entries)
 
+    @token_required
     @api.expect(property_add_model)
     @api.response(201, "Success", post_response_model)
-    def post(self):
+    def post(self, user):
         """ Add a new entry
 
             The name has to be unique and is internally used as a variable name. The passed string is
@@ -100,21 +108,29 @@ class ApiProperties(Resource):
 @api.param('id', 'The property identifier')
 class ApiProperty(Resource):
 
+    delete_parser = reqparse.RequestParser()
+    delete_parser.add_argument('complete',
+                               type=inputs.boolean,
+                               default=False,
+                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
+                               )
+
     @api.marshal_with(property_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return Property.objects(id=id).get()
 
+    @token_required
     @api.expect(property_model)
-    def put(self, id):
+    def put(self, user, id):
         """ Update entry given its unique identifier """
         entry = Property.objects(id=id).first()
         entry.update(**api.payload)
         return {'message': "Update entry '{}'".format(entry.name)}
 
-    @api.doc(params={'complete': "Boolean indicator to remove an entry instead of deprecating it (cannot be undone) "
-                                 "(default False)"})
-    def delete(self, id):
+    @token_required
+    @api.expect(parser=delete_parser)
+    def delete(self, user, id):
         """ Deprecates an entry given its unique identifier """
 
         parser = reqparse.RequestParser()

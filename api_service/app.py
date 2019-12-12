@@ -13,6 +13,9 @@ def config_app(app, credentials):
     # Load app secret and convert to byte string
     app.secret_key = credentials['app_secret'].encode()
 
+    # Disable checking access token
+    app.config['CHECK_ACCESS_TOKEN'] = credentials.get('check_access_token', True)
+
     # Load mongo database credentials
     app.config['MONGODB_DB'] = credentials['database']['mongodb']['database']
     app.config['MONGODB_HOST'] = credentials['database']['mongodb']['hostname']
@@ -59,7 +62,8 @@ def create_app(config='DEVELOPMENT'):
                  description="An API to manage properties and controlled vocabularies."
                              "\n\n"
                              "The code is available here: https://github.roche.com/rafaelsm/ApiService. Any issue "
-                             "reports or feature requests are appreciated.")
+                             "reports or feature requests are appreciated.",
+                 )
 
     return app
 
@@ -71,7 +75,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Start property microservice")
     parser.add_argument('--config', type=str,
                         default="DEVELOPMENT",
-                        help="Mode in which the application should start")
+                        help="Mode in which the application should start",
+                        )
 
     args = parser.parse_args()
 
