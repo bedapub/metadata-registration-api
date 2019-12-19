@@ -1,14 +1,47 @@
-from flask_restplus import Namespace, Resource, fields
-from flask_restplus import reqparse, inputs
+from bson import ObjectId
 
-from api_service.model import Form
+from flask_restplus import Namespace, Resource, fields
+from flask_restplus import reqparse, inputs, marshal
+
+from api_service.model import Form, DataObjects
 from api_service.api.api_props import property_model_id
 from api_service.api.decorators import token_required
 
 
 api = Namespace("Form", description="Form related operations")
 
-#
+
+class ArgsField(fields.Raw):
+    """ A special field which marshals itself dependent on the given value type """
+
+    def format(self, value):
+        if isinstance(value, DataObjects):
+            return marshal(value, objects_model)
+
+        return value
+
+
+object_model = api.model("Object", {
+    "class_name": fields.String(),
+    "property": fields.Nested(property_model_id),
+    "args": ArgsField(),
+    "kwargs": fields.String()
+})
+
+objects_model = api.model("Objects", {
+    "objects": fields.List(fields.Nested(object_model))
+})
+
+object_model = api.model("Object", {
+    "class_name": fields.String(),
+    "property": fields.Nested(property_model_id),
+    "args": fields.String(),
+    "kwargs": fields.String()
+})
+
+mapping = {
+    'objects': fields.Nested(object_model)
+}
 
 field_add_model = api.model("Add Field", {
     "label": fields.String(),
@@ -31,9 +64,9 @@ form_add_model = api.model("Add Form", {
 field_model = api.model("Field", {
     "label": fields.String(),
     "property": fields.Nested(property_model_id),
-    "class_name": fields.String(),
+    "class_name": fields.String(optional=True),
     "description": fields.String(),
-    "args": fields.Raw(),
+    "args": ArgsField(),
     "kwargs": fields.Raw(),
 })
 
@@ -62,7 +95,7 @@ class ApiForm(Resource):
                             help="Boolean indicator which determines if deprecated entries should be returned as well",
                             )
 
-    @api.marshal_with(form_model_id)
+    @api.marshal_list_with(form_model_id)
     @api.expect(parser=get_parser)
     def get(self):
         """ Fetch a list with all entries """
@@ -100,7 +133,8 @@ class ApiForm(Resource):
     @api.marshal_with(form_model_id)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
-        return Form.objects(id=id).get()
+        res = Form.objects(id=id).get()
+        return res
 
     @token_required
     @api.expect(form_model)

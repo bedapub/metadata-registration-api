@@ -103,6 +103,17 @@ A form contains fields. A field can accept an entry.
 """
 
 
+class DataObject(EmbeddedDocument):
+    class_name = StringField()
+    property = ReferenceField(Property)
+    args = DictField()
+    kwargs = DictField()
+
+
+class DataObjects(EmbeddedDocument):
+    objects = EmbeddedDocumentListField(DataObject)
+
+
 class FormField(EmbeddedDocument):
     label = StringField()
 
@@ -113,7 +124,7 @@ class FormField(EmbeddedDocument):
 
     description = StringField()
     class_name = StringField(required=True)
-    args = ListField(StringField())
+    args = GenericEmbeddedDocumentField(choices=[DataObjects])
     kwargs = DictField()
 
     def clean(self):
