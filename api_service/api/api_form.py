@@ -1,12 +1,9 @@
-from bson import ObjectId
-
 from flask_restplus import Namespace, Resource, fields
 from flask_restplus import reqparse, inputs, marshal
 
 from api_service.model import Form, DataObjects
 from api_service.api.api_props import property_model_id
 from api_service.api.decorators import token_required
-
 
 api = Namespace("Form", description="Form related operations")
 
@@ -21,35 +18,33 @@ class ArgsField(fields.Raw):
         return value
 
 
+class SubformField(fields.Raw):
+
+    def format(self, value):
+        return marshal(value, field_add_model)
+
+
 object_model = api.model("Object", {
-    "class_name": fields.String(),
+    "class_name": fields.String(description="The class in which the object is represented"),
     "property": fields.Nested(property_model_id),
     "args": ArgsField(),
-    "kwargs": fields.String()
+    "kwargs": fields.Raw(),
 })
 
 objects_model = api.model("Objects", {
     "objects": fields.List(fields.Nested(object_model))
 })
 
-object_model = api.model("Object", {
-    "class_name": fields.String(),
-    "property": fields.Nested(property_model_id),
-    "args": fields.String(),
-    "kwargs": fields.String()
-})
-
-mapping = {
-    'objects': fields.Nested(object_model)
-}
-
 field_add_model = api.model("Add Field", {
-    "label": fields.String(),
-    "property": fields.String(),
-    "class_name": fields.String(),
-    "description": fields.String(),
+    "label": fields.String(description="Human readable name of the field. If set, it will overwrite the label of the "
+                                       "property"),
+    "property": fields.String("Unique identifier of a property"),
+    "class_name": fields.String(description="The class by which the field is represented"),
+    "description": fields.String(description="Detailed description of the purpose of the field"),
     "args": fields.Raw(),
     "kwargs": fields.Raw(),
+
+    "fields": fields.List(SubformField),
 })
 
 form_add_model = api.model("Add Form", {
@@ -60,16 +55,16 @@ form_add_model = api.model("Add Form", {
     "deprecated": fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
 })
 
-
 field_model = api.model("Field", {
-    "label": fields.String(),
+    "label": fields.String(description="Human readable name of the field. If set, it will overwrite the label of the "
+                                       "property"),
     "property": fields.Nested(property_model_id),
-    "class_name": fields.String(optional=True),
-    "description": fields.String(),
+    # TODO: Why is class_name optional?
+    "class_name": fields.String(description="The class by which the field is represented", optional=True),
+    "description": fields.String(description="Detailed description of the purpose of the field"),
     "args": ArgsField(),
     "kwargs": fields.Raw(),
 })
-
 
 form_model = api.model("Form", {
     "label": fields.String(description="Human readable name of the entry"),
@@ -86,14 +81,20 @@ form_model_id = api.inherit("Form with id", form_model, {
 
 @api.route("/")
 class ApiForm(Resource):
-
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('deprecated',
+    get_parser.add_argument("deprecated",
                             type=inputs.boolean,
                             location="args",
                             default=False,
                             help="Boolean indicator which determines if deprecated entries should be returned as well",
                             )
+
+    delete_parser = reqparse.RequestParser()
+    delete_parser.add_argument("complete",
+                               type=inputs.boolean,
+                               default=False,
+                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
+                               )
 
     @api.marshal_list_with(form_model_id)
     @api.expect(parser=get_parser)
@@ -114,17 +115,32 @@ class ApiForm(Resource):
     @api.expect(form_add_model)
     def post(self, user):
         """ Add a new entry """
-        p = Form(**api.payload)
-        p.save()
-        return {"message": "Add entry '{}'".format(p.name)}, 201
+        entry = Form(**api.payload)
+        entry.save()
+        return {"message": f"Add entry '{entry.name}'",
+                "id": str(entry.id)}, 201
+
+    @token_required
+    @api.expect(parser=delete_parser)
+    def delete(self, user):
+        """ Delete all entries """
+        args = self.delete_parser.parse_args()
+        force_delete = args["complete"]
+
+        entry = Form.objects().all()
+        if not force_delete:
+            entry.update(deprecated=True)
+            return {"message": f"Deprecate all entries"}
+        else:
+            entry.delete()
+            return {"message": f"Delete all entries"}
 
 
 @api.route("/id/<id>")
 @api.param("id", "The property identifier")
 class ApiForm(Resource):
-
     delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument('complete',
+    delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -142,7 +158,7 @@ class ApiForm(Resource):
         """ Update an entry given its unique identifier """
         entry = Form.objects(id=id).get()
         entry.update(**api.payload)
-        return {"message": "Update entry '{}'".format(entry.name)}
+        return {"message": f"Update entry '{entry.name}'"}
 
     @token_required
     @api.expect(parser=delete_parser)
@@ -154,7 +170,7 @@ class ApiForm(Resource):
         entry = Form.objects(id=id).get()
         if not force_delete:
             entry.update(deprecated=True)
-            return {"message": "Deprecate entry '{}'".format(entry.name)}
+            return {"message": f"Deprecate entry '{entry.name}'"}
         else:
             entry.delete()
-            return {"message": "Delete entry {}".format(entry.name)}
+            return {"message": f"Delete entry {entry.name}"}

@@ -48,6 +48,7 @@ def create_app(config='DEVELOPMENT'):
             password=app.config['MONGODB_PASSWORD'],
             )
 
+    # TODO: Find a better way to set the collection names
     from api_service.model import Property, ControlledVocabulary, Form, User
     Property._meta['collection'] = app.config['MONGODB_COL_PROPERTY']
     ControlledVocabulary._meta['collection'] = app.config['MONGODB_COL_CTRL_VOC']

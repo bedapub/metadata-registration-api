@@ -7,7 +7,7 @@ from api_service.app import create_app
 
 
 class MyTestCase(unittest.TestCase, AbstractTest):
-    
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = create_app(config="TESTING").test_client()
@@ -50,6 +50,63 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = self.app.get(f"{entrypoint}id/{results[0].json['id']}", follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # PUT
+
+    def test_append_to_synonyms_entire_dataset(self):
+        """ Update by passing the entire dataset to the API"""
+
+        data = {"label": "First Name",
+                "name": "firstname",
+                "level": "administrative",
+                "vocabulary_type": {"data_type": "text"},
+                "synonyms": ["forename"],
+                "description": "The first name of a person",
+                "deprecated": False
+                }
+
+        res = self.insert(MyTestCase.app, data, check_status=False)
+        self.assertEqual(res.status_code, 201)
+
+        entry_id = res.json["id"]
+        data.update({"synonyms": ["forename", "given name"]})
+
+        res = MyTestCase.app.put(f"/properties/id/{entry_id}", json=data, follow_redirects=True)
+
+        self.assertEqual(res.status_code, 200)
+
+        res = MyTestCase.get(MyTestCase.app, entrypoint=f"/properties/id/{entry_id}")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json["synonyms"], ["forename", "given name"])
+
+    def test_append_to_synonyms_partial(self):
+        """ Updating by just passing the key-value pair which changed"""
+
+        data = {"label": "First Name",
+                "name": "firstname",
+                "level": "administrative",
+                "vocabulary_type": {"data_type": "text"},
+                "synonyms": ["forename"],
+                "description": "The first name of a person",
+                "deprecated": False
+                }
+
+        res = self.insert(MyTestCase.app, data, check_status=False)
+        self.assertEqual(res.status_code, 201)
+
+        entry_id = res.json["id"]
+        update = {"synonyms": ["forename", "given name"]}
+
+        res = MyTestCase.app.put(f"/properties/id/{entry_id}", json=update, follow_redirects=True)
+
+        self.assertEqual(res.status_code, 200)
+
+        res = MyTestCase.get(MyTestCase.app, entrypoint=f"/properties/id/{entry_id}")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json["synonyms"], ["forename", "given name"])
 
     # ------------------------------------------------------------------------------------------------------------------
     # POST
@@ -117,7 +174,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
               "name": "Test CV",
               "description": "Test CV",
               "items": [
-                  {"label": "test 1", "name": "test 1"}, { "label": "test 2", "name": "test 2" }
+                  {"label": "test 1", "name": "test 1"}, {"label": "test 2", "name": "test 2"}
               ]
               }
 
@@ -187,7 +244,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     # ------------------------------------------------------------------------------------------------------------------
     # Delete
 
-    def test_delete_no_param(self):
+    def test_delete_individual_no_param(self):
         MyTestCase.clear_collection()
         MyTestCase.insert_two(self.app)
 
@@ -202,7 +259,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         self.assertEqual(len(res_deprecate.json), 2)
         self.assertEqual(len(res.json), 0)
 
-    def test_delete_complete_param(self):
+    def test_delete_individual_complete_param(self):
         for complete in [True, False]:
             MyTestCase.clear_collection()
             MyTestCase.insert_two(self.app)
@@ -222,10 +279,24 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             res = self.app.get("/properties?deprecated=False", follow_redirects=True)
             self.assertEqual(len(res.json), 0)
 
+    def test_delete(self):
+        for complete in [True, False]:
+            MyTestCase.clear_collection()
+            MyTestCase.insert_two(self.app)
+
+            res = self.app.delete(f"/properties?complete={complete}", follow_redirects=True)
+
+            res_delete = self.app.get("/properties?deprecated=True", follow_redirects=True)
+            if complete:
+                self.assertEqual(len(res_delete.json), 0)
+            else:
+                self.assertEqual(len(res_delete.json), 2)
+
+        res = self.app.get("/properties?deprecated=False", follow_redirects=True)
+        self.assertEqual(len(res.json), 0)
+
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
-
-
 
     @staticmethod
     def insert_two(app, check_status=True):

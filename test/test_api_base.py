@@ -1,4 +1,6 @@
 import urllib
+
+
 class AbstractTest(object):
 
     @classmethod

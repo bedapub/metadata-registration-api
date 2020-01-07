@@ -15,6 +15,7 @@ def to_snake_case(name):
     if name:
         return name.lower().strip().replace(" ", "_")
 
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -27,6 +28,7 @@ the internal representation, respectively. The model ensures that the `name` is 
 
 Instead of deleting entries, they are deprecated.
 """
+
 
 class BaseDocument(Document):
     label = StringField(required=True)
@@ -73,7 +75,7 @@ controlled vocabulary, the `controlled_vocabulary` references to an entry in the
 """
 
 
-class VocabularyType (EmbeddedDocument):
+class VocabularyType(EmbeddedDocument):
     """ Defines which type of vocabulary (e.g. text, numeric, controlled vocabulary) is allowed. """
     data_type = StringField(required=True)
     controlled_vocabulary = ReferenceField(ControlledVocabulary)
@@ -93,6 +95,7 @@ class Property(BaseDocument):
 
     def clean(self):
         map(to_snake_case, self.synonyms)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -116,16 +119,16 @@ class DataObjects(EmbeddedDocument):
 
 class FormField(EmbeddedDocument):
     label = StringField()
-
-    # Only used for administrative forms (not used for the study registration)
-    name = StringField()
     # Reference to the property
     property = ReferenceField(Property)
-
     description = StringField()
     class_name = StringField(required=True)
-    args = GenericEmbeddedDocumentField(choices=[DataObjects])
+    args = GenericEmbeddedDocumentField(choices=[DataObjects, DictField])
     kwargs = DictField()
+
+    # Used for nested forms
+    name = StringField()
+    fields = ListField(EmbeddedDocumentField("FormField"), required=False)
 
     def clean(self):
         if self.property:
@@ -135,6 +138,7 @@ class FormField(EmbeddedDocument):
 class Form(BaseDocument):
     fields = EmbeddedDocumentListField(FormField)
     description = StringField(required=True)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -159,7 +163,6 @@ class Study(BaseDocument):
     status = EmbeddedDocumentField(Status)
 
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -174,7 +177,6 @@ class User(Document):
     email = EmailField(required=True, unique=True)
     password = StringField(required=True)
     is_active = BooleanField(required=True, default=True)
-
 
     def clean(self):
         """ Called before data is inserted into the database """

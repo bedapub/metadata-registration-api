@@ -15,7 +15,6 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         MyTestCase.clear_collection()
         MyTestCase.clear_collection(entrypoint="/ctrl_voc/")
 
-
     # ------------------------------------------------------------------------------------------------------------------
     # GET
 
@@ -76,6 +75,57 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
     # ------------------------------------------------------------------------------------------------------------------
+    # PUT
+
+    def test_add_second_item_to_cv(self):
+        """"""
+
+        data = {"label": "Test CV",
+                "name": "Test CV",
+                "description": "Test CV",
+                "items": [{"label": "Test item 1",
+                           "name": "Test item 1",
+                           "description": "Simple description",
+                           "synonyms": ["A test", "This is a test label"]
+                           }]
+                }
+
+        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc/")
+
+        self.assertEqual(res.status_code, 201)
+        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
+
+        entry_id = res.json["id"]
+
+        data = {"label": "Test CV",
+                "name": "Test CV",
+                "description": "Test CV",
+                "items": [
+                    {
+                        "label": "Test item 1",
+                        "name": "Test item 1",
+                        "description": "Simple description",
+                        "synonyms": ["A test", "This is a test label"]
+                    },
+                    {
+                        "label": "Test item 2",
+                        "name": "Test item 2",
+                        "description": "Simple description",
+                        "synonyms": ["A test", "This is a test label"]
+                    }
+                ]
+                }
+
+        res = MyTestCase.app.put(f"/ctrl_voc/id/{entry_id}", json=data, follow_redirects=True)
+
+        self.assertEqual(res.status_code, 200)
+
+        res = MyTestCase.get(MyTestCase.app, entrypoint=f"/ctrl_voc/id/{entry_id}")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.json['items']), 2)
+
+    # ------------------------------------------------------------------------------------------------------------------
     # DELETE
 
     def test_deprecate(self):
@@ -91,10 +141,24 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         for entry in results.json:
             self.assertTrue(entry['deprecated'])
 
+    def test_delete_all(self):
+
+        for complete in [True, False]:
+            self.clear_collection(entrypoint="/ctrl_voc/")
+            self.insert_two(self.app)
+
+            res = self.app.delete(f"/ctrl_voc?complete={complete}", follow_redirects=True)
+
+            res_delete = self.app.get("/ctrl_voc?deprecated=True", follow_redirects=True)
+            if complete:
+                self.assertEqual(len(res_delete.json), 0)
+            else:
+                self.assertEqual(len(res_delete.json), 2)
 
 
+            res = self.app.get("/ctrl_voc?deprecated=False", follow_redirects=True)
+            self.assertEqual(len(res.json), 0)
 
-        pass
 
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
@@ -115,6 +179,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
         for data in [data1, data2]:
             res = AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_voc/")
+
 
 if __name__ == '__main__':
     unittest.main()

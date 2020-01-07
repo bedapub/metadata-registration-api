@@ -39,11 +39,11 @@ study_add_model = api.model("Add Study", {
     "status": fields.Nested(status_model)
 })
 
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 @api.route('/')
 class ApiStudy(Resource):
-
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('deprecated',
                             type=inputs.boolean,
@@ -80,7 +80,6 @@ class ApiStudy(Resource):
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
 class ApiStudy(Resource):
-
     delete_parser = reqparse.RequestParser()
     delete_parser.add_argument('complete',
                                type=inputs.boolean,

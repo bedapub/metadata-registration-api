@@ -28,7 +28,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         self.assertEqual(res.json['lastname'], lastname)
         self.assertEqual(res.json['email'], email)
         self.assertEqual(res.json['is_active'], True)
-        self.assertNotEqual(res.json['password'], password) # Password is hashed
+        self.assertNotEqual(res.json['password'], password)  # Password is hashed
 
     # ------------------------------------------------------------------------------------------------------------------
     # PUT
@@ -66,7 +66,6 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     # Access control
 
     def test_post_without_token(self):
-
         check_access_token = MyTestCase.app.application.config['CHECK_ACCESS_TOKEN']
         MyTestCase.app.application.config['CHECK_ACCESS_TOKEN'] = True
 
@@ -78,11 +77,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
         MyTestCase.app.application.config['CHECK_ACCESS_TOKEN'] = check_access_token
 
-
-
     @staticmethod
     def insert_one(firstname, lastname, email, password):
-
         data = {
             "firstname": firstname,
             "lastname": lastname,

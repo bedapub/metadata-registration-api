@@ -5,53 +5,58 @@ from api_service.model import Property
 from api_service.api.api_ctrl_voc import ctrl_voc_model_id
 from api_service.api.decorators import token_required
 
-
-api = Namespace('Properties', description='Property related operations')
+api = Namespace("Properties", description="Property related operations")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 property_add_model = api.model("Add Property", {
-    'label': fields.String(description='A human readable description of the entry'),
-    'name': fields.String(description='The unique name of the entry (in snake_case)'),
-    'level': fields.String(description='The level the property is associated with (e.g. Study, Sample, ...)'),
-    'vocabulary_type': fields.String(),
-    'synonyms': fields.List(fields.String(description='Alternatives to the primary name')),
-    'description': fields.String(description='A detailed description of the intended use', default=''),
-    'deprecated': fields.Boolean(default=False)
+    "label": fields.String(description="A human readable description of the entry"),
+    "name": fields.String(description="The unique name of the entry (in snake_case)"),
+    "level": fields.String(description="The level the property is associated with (e.g. Study, Sample, ...)"),
+    "vocabulary_type": fields.String(),
+    "synonyms": fields.List(fields.String(description="Alternatives to the primary name")),
+    "description": fields.String(description="A detailed description of the intended use", default=""),
+    "deprecated": fields.Boolean(default=False)
 })
 
 cv_model = api.model("Vocabulary Type", {
-    'data_type': fields.String(description="The data type of the entry"),
-    'controlled_vocabulary': fields.Nested(ctrl_voc_model_id)
+    "data_type": fields.String(description="The data type of the entry"),
+    "controlled_vocabulary": fields.Nested(ctrl_voc_model_id)
 })
 
-property_model = api.model('Property', {
-    'label': fields.String(description='A human readable description of the entry'),
-    'name': fields.String(description='The unique name of the entry (in snake_case)'),
-    'level': fields.String(description='The level the property is associated with (e.g. Study, Sample, ...)'),
-    'vocabulary_type': fields.Nested(cv_model),
-    'synonyms': fields.List(fields.String(description='Alternatives to the primary name')),
-    'description': fields.String(description='A detailed description of the intended use', default=''),
-    'deprecated': fields.Boolean(default=False)
+property_model = api.model("Property", {
+    "label": fields.String(description="A human readable description of the entry"),
+    "name": fields.String(description="The unique name of the entry (in snake_case)"),
+    "level": fields.String(description="The level the property is associated with (e.g. Study, Sample, ...)"),
+    "vocabulary_type": fields.Nested(cv_model),
+    "synonyms": fields.List(fields.String(description="Alternatives to the primary name")),
+    "description": fields.String(description="A detailed description of the intended use", default=""),
+    "deprecated": fields.Boolean(default=False)
 })
 
-property_model_id = api.inherit('Property with id', property_model, {
-    'id': fields.String(attribute='pk', description='The unique identifier of the entry'),
+property_model_id = api.inherit("Property with id", property_model, {
+    "id": fields.String(attribute="pk", description="The unique identifier of the entry"),
 })
-
 
 post_response_model = api.model("Post response", {
-    'message': fields.String(),
-    'id': fields.String(description="Id of inserted entry")
+    "message": fields.String(),
+    "id": fields.String(description="Id of inserted entry")
 })
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-@api.route('/')
+@api.route("/")
 class ApiProperties(Resource):
+    delete_parser = reqparse.RequestParser()
+    delete_parser.add_argument("complete",
+                               type=inputs.boolean,
+                               default=False,
+                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
+                               )
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('deprecated',
+    get_parser.add_argument("deprecated",
                             type=inputs.boolean,
                             location="args",
                             default=False,
@@ -65,7 +70,7 @@ class ApiProperties(Resource):
 
         # Convert query parameters
         args = self.get_parser.parse_args()
-        include_deprecate = args['deprecated']
+        include_deprecate = args["deprecated"]
 
         if not include_deprecate:
             entries = Property.objects(deprecated=False).all()
@@ -100,16 +105,34 @@ class ApiProperties(Resource):
         validate_controlled_vocabulary(entry)
 
         entry = entry.save()
-        return {"message": "Add entry '{}'".format(entry.name),
+        return {"message": f"Add entry '{entry.name}'",
                 "id": str(entry.id)}, 201
 
+    @token_required
+    @api.expect(parser=delete_parser)
+    def delete(self, user):
+        """ Deprecates all entries """
 
-@api.route('/id/<id>')
-@api.param('id', 'The property identifier')
+        parser = reqparse.RequestParser()
+        parser.add_argument("complete", type=inputs.boolean, default=False)
+        args = parser.parse_args()
+
+        force_delete = args["complete"]
+
+        entry = Property.objects().all()
+        if not force_delete:
+            entry.update(deprecated=True)
+            return {"message": "Deprecate all entries"}
+        else:
+            entry.delete()
+            return {"message": "Delete all entries"}
+
+
+@api.route("/id/<id>")
+@api.param("id", "The property identifier")
 class ApiProperty(Resource):
-
     delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument('complete',
+    delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -126,7 +149,7 @@ class ApiProperty(Resource):
         """ Update entry given its unique identifier """
         entry = Property.objects(id=id).first()
         entry.update(**api.payload)
-        return {'message': "Update entry '{}'".format(entry.name)}
+        return {"message": f"Update entry '{entry.name}'"}
 
     @token_required
     @api.expect(parser=delete_parser)
@@ -134,21 +157,20 @@ class ApiProperty(Resource):
         """ Deprecates an entry given its unique identifier """
 
         parser = reqparse.RequestParser()
-        parser.add_argument('complete', type=inputs.boolean, default=False)
+        parser.add_argument("complete", type=inputs.boolean, default=False)
         args = parser.parse_args()
 
-        force_delete = args['complete']
+        force_delete = args["complete"]
 
         entry = Property.objects(id=id).get()
         if not force_delete:
             entry.update(deprecated=True)
-            return {'message': "Deprecate entry '{}'".format(entry.name)}
+            return {"message": f"Deprecate entry '{entry.name}'"}
         else:
             entry.delete()
-            return {'message': "Delete entry '{}'".format(entry.name)}
+            return {"message": f"Delete entry '{entry.name}'"}
 
 
 def validate_controlled_vocabulary(entry):
     if entry.vocabulary_type and entry.vocabulary_type.data_type != "cv":
         entry.vocabulary_type.controlled_vocabulary = None
-

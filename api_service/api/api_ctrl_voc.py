@@ -4,42 +4,48 @@ from flask_restplus import reqparse, inputs
 from api_service.model import ControlledVocabulary
 from api_service.api.decorators import token_required
 
-
-api = Namespace('Controlled Vocabulary', description='Controlled vocabulary related operations')
+api = Namespace("Controlled Vocabulary", description="Controlled vocabulary related operations")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 cv_item_model = api.model("CV item", {
-    'label': fields.String(description='Human readable name of the entry'),
-    'name': fields.String(description='Internal representation of the entry (in snake_case)'),
-    'description': fields.String(description="Detailed explanation of the intended use"),
-    'synonyms': fields.List(fields.String())
+    "label": fields.String(description="Human readable name of the entry"),
+    "name": fields.String(description="Internal representation of the entry (in snake_case)"),
+    "description": fields.String(description="Detailed explanation of the intended use"),
+    "synonyms": fields.List(fields.String())
 })
 
-ctrl_voc_model = api.model('Controlled Vocabulary', {
-    'label': fields.String(description='Human readable name of the entry'),
-    'name': fields.String(description='Internal representation of the entry (in snake_case)'),
-    'description': fields.String(description='Detailed description of the intended use', default=''),
-    'items': fields.List(fields.Nested(cv_item_model)),
-    'deprecated': fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
+ctrl_voc_model = api.model("Controlled Vocabulary", {
+    "label": fields.String(description="Human readable name of the entry"),
+    "name": fields.String(description="Internal representation of the entry (in snake_case)"),
+    "description": fields.String(description="Detailed description of the intended use", default=""),
+    "items": fields.List(fields.Nested(cv_item_model)),
+    "deprecated": fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
 })
 
 ctrl_voc_model_id = api.inherit("Controlled Vocabulary with id", ctrl_voc_model, {
-    'id': fields.String(attribute='pk', description='Unique identifier of the entry'),
+    "id": fields.String(attribute="pk", description="Unique identifier of the entry"),
 })
 
 post_response_model = api.model("Post response", {
-    'message': fields.String(),
-    'id': fields.String(description="Id of inserted entry")
+    "message": fields.String(),
+    "id": fields.String(description="Id of inserted entry")
 })
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-@api.route('/')
+@api.route("/")
 class ApiControlledVocabulary(Resource):
+    delete_parser = reqparse.RequestParser()
+    delete_parser.add_argument("complete",
+                               type=inputs.boolean,
+                               default=False,
+                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
+                               )
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument('deprecated',
+    get_parser.add_argument("deprecated",
                             type=inputs.boolean,
                             location="args",
                             default=False,
@@ -53,7 +59,7 @@ class ApiControlledVocabulary(Resource):
 
         # Convert query parameters
         args = self.get_parser.parse_args()
-        include_deprecate = args['deprecated']
+        include_deprecate = args["deprecated"]
 
         if not include_deprecate:
             # Select only active entries
@@ -68,18 +74,34 @@ class ApiControlledVocabulary(Resource):
     @api.response(201, "Success", post_response_model)
     def post(self, user):
         """ Add a new entry """
-        p = ControlledVocabulary(**api.payload)
-        p = p.save()
-        return {"message": "Add entry '{}'".format(p.name),
-                "id": str(p.id)}, 201
+        entry = ControlledVocabulary(**api.payload)
+        entry = entry.save()
+        return {"message": "Add entry '{}'".format(entry.name),
+                "id": str(entry.id)}, 201
+
+    @token_required
+    @api.expect(parser=delete_parser)
+    def delete(self, user):
+        """ Delete all entries"""
+
+        args = self.delete_parser.parse_args()
+
+        force_delete = args["complete"]
+
+        entry = ControlledVocabulary.objects().all()
+        if not force_delete:
+            entry.update(deprecated=True)
+            return {"message": "Deprecate all entries"}
+        else:
+            entry.delete()
+            return {"message": "Delete all entries"}
 
 
-@api.route('/id/<id>')
-@api.param('id', 'The property identifier')
+@api.route("/id/<id>")
+@api.param("id", "The property identifier")
 class ApiControlledVocabulary(Resource):
-
     delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument('complete',
+    delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -96,7 +118,7 @@ class ApiControlledVocabulary(Resource):
         """ Update an entry given its unique identifier """
         entry = ControlledVocabulary.objects(id=id).get()
         entry.update(**api.payload)
-        return {'message': "Update entry '{}'".format(entry.name)}
+        return {"message": f"Update entry '{entry.name}'"}
 
     @token_required
     @api.expect(parser=delete_parser)
@@ -105,12 +127,12 @@ class ApiControlledVocabulary(Resource):
 
         args = self.delete_parser.parse_args()
 
-        force_delete = args['complete']
+        force_delete = args["complete"]
 
         entry = ControlledVocabulary.objects(id=id).get()
         if not force_delete:
             entry.update(deprecated=True)
-            return {'message': "Deprecate entry '{}'".format(entry.name)}
+            return {"message": f"Deprecate entry '{entry.name}'"}
         else:
             entry.delete()
-            return {'message': "Delete entry {}".format(entry.name)}
+            return {"message": f"Delete entry '{entry.name}'"}

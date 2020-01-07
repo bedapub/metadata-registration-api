@@ -10,7 +10,6 @@ from flask_restplus import reqparse, inputs
 from api_service.api.decorators import token_required, TokenException
 from api_service.model import User
 
-
 api = Namespace('User', description='User related operations')
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -32,11 +31,12 @@ post_response_model = api.model("Post response", {
     'id': fields.String(description="Id of inserted entry")
 })
 
-
 login_model = api.model("Login", {
     "email": fields.String(required=True),
     "password": fields.String(required=True)
 })
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 @api.route("/login")
@@ -70,7 +70,6 @@ class Login(Resource):
 
 @api.route('/')
 class ApiUser(Resource):
-
     parser = reqparse.RequestParser()
     parser.add_argument('deactivated',
                         type=inputs.boolean,
@@ -110,7 +109,6 @@ class ApiUser(Resource):
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
 class ApiUser(Resource):
-
     delete_parser = reqparse.RequestParser()
     delete_parser.add_argument('complete',
                                type=inputs.boolean,
