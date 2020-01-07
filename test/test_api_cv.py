@@ -13,7 +13,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def setUp(self) -> None:
         MyTestCase.clear_collection()
-        MyTestCase.clear_collection(entrypoint="/ctrl_voc/")
+        MyTestCase.clear_collection(entrypoint="/ctrl_vocs/")
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
@@ -22,7 +22,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         """ Get list of properties without query parameter"""
         MyTestCase.insert_two(self.app)
 
-        res = self.app.get("/ctrl_voc/", follow_redirects=True)
+        res = self.app.get("/ctrl_vocs/", follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.json), 1)
@@ -32,7 +32,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         MyTestCase.insert_two(self.app)
 
         for deprecated in [True, False]:
-            res = self.app.get(f"/ctrl_voc?deprecated={deprecated}", follow_redirects=True)
+            res = self.app.get(f"/ctrl_vocs?deprecated={deprecated}", follow_redirects=True)
 
             self.assertEqual(res.status_code, 200)
             if deprecated:
@@ -51,7 +51,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 "description": "Test CV",
                 "items": [{"label": "Test item 1", "name": "Test item 1"}]}
 
-        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc/")
+        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
 
         self.assertEqual(res.status_code, 201)
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
@@ -69,7 +69,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                            }]
                 }
 
-        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc/")
+        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
 
         self.assertEqual(res.status_code, 201)
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
@@ -90,7 +90,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                            }]
                 }
 
-        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_voc/")
+        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
 
         self.assertEqual(res.status_code, 201)
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
@@ -116,11 +116,11 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 ]
                 }
 
-        res = MyTestCase.app.put(f"/ctrl_voc/id/{entry_id}", json=data, follow_redirects=True)
+        res = MyTestCase.app.put(f"/ctrl_vocs/id/{entry_id}", json=data, follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
 
-        res = MyTestCase.get(MyTestCase.app, entrypoint=f"/ctrl_voc/id/{entry_id}")
+        res = MyTestCase.get(MyTestCase.app, entrypoint=f"/ctrl_vocs/id/{entry_id}")
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.json['items']), 2)
@@ -131,12 +131,12 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     def test_deprecate(self):
         self.test_insert_cv_minimal()
 
-        results = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_voc/")
+        results = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_vocs/")
 
         for entry in results.json:
-            MyTestCase.app.delete(f"/ctrl_voc/id/{entry['id']}")
+            MyTestCase.app.delete(f"/ctrl_vocs/id/{entry['id']}")
 
-        results = MyTestCase.get(MyTestCase.app, entrypoint="/ctrl_voc", params={"deprecated": True})
+        results = MyTestCase.get(MyTestCase.app, entrypoint="/ctrl_vocs", params={"deprecated": True})
 
         for entry in results.json:
             self.assertTrue(entry['deprecated'])
@@ -144,19 +144,19 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     def test_delete_all(self):
 
         for complete in [True, False]:
-            self.clear_collection(entrypoint="/ctrl_voc/")
+            self.clear_collection(entrypoint="/ctrl_vocs/")
             self.insert_two(self.app)
 
-            res = self.app.delete(f"/ctrl_voc?complete={complete}", follow_redirects=True)
+            res = self.app.delete(f"/ctrl_vocs?complete={complete}", follow_redirects=True)
 
-            res_delete = self.app.get("/ctrl_voc?deprecated=True", follow_redirects=True)
+            res_delete = self.app.get("/ctrl_vocs?deprecated=True", follow_redirects=True)
             if complete:
                 self.assertEqual(len(res_delete.json), 0)
             else:
                 self.assertEqual(len(res_delete.json), 2)
 
 
-            res = self.app.get("/ctrl_voc?deprecated=False", follow_redirects=True)
+            res = self.app.get("/ctrl_vocs?deprecated=False", follow_redirects=True)
             self.assertEqual(len(res.json), 0)
 
 
@@ -178,7 +178,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                  "deprecated": True}
 
         for data in [data1, data2]:
-            res = AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_voc/")
+            res = AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_vocs/")
 
 
 if __name__ == '__main__':

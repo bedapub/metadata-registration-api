@@ -15,7 +15,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def setUp(self) -> None:
         MyTestCase.clear_collection()
-        MyTestCase.clear_collection(entrypoint="/ctrl_voc/")
+        MyTestCase.clear_collection(entrypoint="/ctrl_vocs/")
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
@@ -178,9 +178,9 @@ class MyTestCase(unittest.TestCase, AbstractTest):
               ]
               }
 
-        MyTestCase.insert(MyTestCase.app, data=cv, entrypoint="/ctrl_voc/")
+        MyTestCase.insert(MyTestCase.app, data=cv, entrypoint="/ctrl_vocs/")
 
-        id = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_voc/").json[0]['id']
+        id = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_vocs/").json[0]['id']
 
         data = {"label": "string",
                 "name": "string",

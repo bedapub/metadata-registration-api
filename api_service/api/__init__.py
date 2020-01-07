@@ -19,10 +19,10 @@ from api_service.api.api_study import api as ns_4
 from api_service.api.api_user import api as ns_5
 
 api.add_namespace(ns_1, path='/properties')
-api.add_namespace(ns_2, path='/ctrl_voc')
-api.add_namespace(ns_3, path='/form')
-api.add_namespace(ns_4, path='/study')
-api.add_namespace(ns_5, path='/user')
+api.add_namespace(ns_2, path='/ctrl_vocs')
+api.add_namespace(ns_3, path='/forms')
+api.add_namespace(ns_4, path='/studies')
+api.add_namespace(ns_5, path='/users')
 
 
 @api.errorhandler(ValidationError)

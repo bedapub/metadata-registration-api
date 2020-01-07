@@ -13,22 +13,22 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def setUp(self) -> None:
         MyTestCase.clear_collection()
-        MyTestCase.clear_collection(entrypoint="/ctrl_voc/")
-        MyTestCase.clear_collection(entrypoint="/form/")
+        MyTestCase.clear_collection(entrypoint="/ctrl_vocs/")
+        MyTestCase.clear_collection(entrypoint="/forms/")
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
 
     def test_retrieve_login_form(self):
         self.clear_collection()
-        self.clear_collection(entrypoint="form")
+        self.clear_collection(entrypoint="forms")
         self.insert_login_form()
-        res = self.app.get("/form/", follow_redirects=True)
+        res = self.app.get("/forms/", follow_redirects=True)
         form = res.json
 
     def test_get_property_form(self):
         self.clear_collection(entrypoint="properties")
-        self.clear_collection(entrypoint="form")
+        self.clear_collection(entrypoint="forms")
         res = self.insert_property_form()
 
         self.assertEqual(res.status_code, 201)
@@ -83,7 +83,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             ],
         }
 
-        return self.insert(self.app, data=form_data, entrypoint="/form/")
+        return self.insert(self.app, data=form_data, entrypoint="/forms/")
 
     def insert_property_form(self):
         prop_label = {
@@ -215,4 +215,4 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             ],
         }
 
-        return self.insert(self.app, data=form_data, entrypoint="/form/")
+        return self.insert(self.app, data=form_data, entrypoint="/forms/")

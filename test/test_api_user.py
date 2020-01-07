@@ -13,7 +13,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def setUp(self) -> None:
         MyTestCase.clear_collection()
-        MyTestCase.clear_collection(entrypoint="/user/")
+        MyTestCase.clear_collection(entrypoint="/users/")
 
     # ------------------------------------------------------------------------------------------------------------------
     # POST & GET
@@ -22,7 +22,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         firstname, lastname, email, password = "Jane", "Doe", "jane.doe@email.com", "unhashed"
 
         res = MyTestCase.insert_one(firstname, lastname, email, password)
-        res = MyTestCase.get(MyTestCase.app, entrypoint=f"user/id/{res.json['id']}")
+        res = MyTestCase.get(MyTestCase.app, entrypoint=f"users/id/{res.json['id']}")
 
         self.assertEqual(res.json['firstname'], firstname)
         self.assertEqual(res.json['lastname'], lastname)
@@ -43,7 +43,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "password": new_password
         }
 
-        res = MyTestCase.app.put(f"/user/id/{res.json['id']}", json=data)
+        res = MyTestCase.app.put(f"/users/id/{res.json['id']}", json=data)
 
         self.assertEqual(res.status_code, 200)
 
@@ -57,7 +57,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "password": password
         }
 
-        res = MyTestCase.app.post("/user/login", json=data)
+        res = MyTestCase.app.post("/users/login", json=data)
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue("x-access-token" in res.json.keys())
@@ -69,7 +69,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         check_access_token = MyTestCase.app.application.config['CHECK_ACCESS_TOKEN']
         MyTestCase.app.application.config['CHECK_ACCESS_TOKEN'] = True
 
-        for entrypoint in ["/ctrl_voc/", "/properties/", "/form/", "/study/", "/user/"]:
+        for entrypoint in ["/ctrl_vocs/", "/properties/", "/forms/", "/studies/", "/users/"]:
             res = MyTestCase.app.post(entrypoint, follow_redirects=True)
 
             self.assertTrue("error type" in res.json)
@@ -86,4 +86,4 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "password": password,
         }
 
-        return MyTestCase.insert(MyTestCase.app, entrypoint="/user/", data=data)
+        return MyTestCase.insert(MyTestCase.app, entrypoint="/users/", data=data)
