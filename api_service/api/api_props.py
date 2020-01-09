@@ -172,5 +172,5 @@ class ApiProperty(Resource):
 
 
 def validate_controlled_vocabulary(entry):
-    if entry.vocabulary_type and entry.vocabulary_type.data_type != "cv":
+    if entry.vocabulary_type and entry.vocabulary_type.data_type != "ctrl_voc":
         entry.vocabulary_type.controlled_vocabulary = None

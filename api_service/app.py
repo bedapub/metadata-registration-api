@@ -50,9 +50,13 @@ def create_app(config='DEVELOPMENT'):
 
     # TODO: Find a better way to set the collection names
     from api_service.model import Property, ControlledVocabulary, Form, User
+    # noinspection PyProtectedMember
     Property._meta['collection'] = app.config['MONGODB_COL_PROPERTY']
+    # noinspection PyProtectedMember
     ControlledVocabulary._meta['collection'] = app.config['MONGODB_COL_CTRL_VOC']
+    # noinspection PyProtectedMember
     Form._meta['collection'] = app.config['MONGODB_COL_FORM']
+    # noinspection PyProtectedMember
     User._meta['collection'] = app.config['MONGODB_COL_USER']
 
     from api_service.api import api

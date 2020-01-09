@@ -8,8 +8,11 @@ from api_service.api.decorators import token_required
 api = Namespace("Form", description="Form related operations")
 
 
+# Custom fields
+# ----------------------------------------------------------------------------------------------------------------------
+
 class ArgsField(fields.Raw):
-    """ A special field which marshals itself dependent on the given value type """
+    """ Custom field for args field. If the value contains a DataObject, it is modeled with the objects model """
 
     def format(self, value):
         if isinstance(value, DataObjects):
@@ -18,10 +21,22 @@ class ArgsField(fields.Raw):
         return value
 
 
-class SubformField(fields.Raw):
+class SubformAddField(fields.Raw):
+    """ Custom field for subforms """
 
     def format(self, value):
         return marshal(value, field_add_model)
+
+
+class SubformField(fields.Raw):
+    """ Custom field for subforms """
+
+    def format(self, value):
+        return marshal(value, field_model)
+
+
+# Model definitions
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 object_model = api.model("Object", {
@@ -44,7 +59,7 @@ field_add_model = api.model("Add Field", {
     "args": fields.Raw(),
     "kwargs": fields.Raw(),
 
-    "fields": fields.List(SubformField),
+    "fields": fields.List(SubformAddField),
 })
 
 form_add_model = api.model("Add Form", {
@@ -64,6 +79,8 @@ field_model = api.model("Field", {
     "description": fields.String(description="Detailed description of the purpose of the field"),
     "args": ArgsField(),
     "kwargs": fields.Raw(),
+
+    "fields": fields.List(fields.Nested(SubformField))
 })
 
 form_model = api.model("Form", {

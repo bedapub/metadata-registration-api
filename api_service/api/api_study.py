@@ -7,6 +7,7 @@ from api_service.api.decorators import token_required
 
 api = Namespace('Study', description='Study related operations')
 
+# Model definition
 # ----------------------------------------------------------------------------------------------------------------------
 
 field_model = api.model("Field", {
@@ -40,6 +41,7 @@ study_add_model = api.model("Add Study", {
 })
 
 
+# Routes
 # ----------------------------------------------------------------------------------------------------------------------
 
 @api.route('/')

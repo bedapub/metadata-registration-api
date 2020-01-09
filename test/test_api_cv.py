@@ -155,10 +155,8 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             else:
                 self.assertEqual(len(res_delete.json), 2)
 
-
             res = self.app.get("/ctrl_vocs?deprecated=False", follow_redirects=True)
             self.assertEqual(len(res.json), 0)
-
 
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods

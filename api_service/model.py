@@ -59,7 +59,7 @@ class CvItem(EmbeddedDocument):
 class ControlledVocabulary(BaseDocument):
     description = StringField(required=True)
 
-    items = ListField(EmbeddedDocumentField(CvItem), required=True)
+    items = ListField(EmbeddedDocumentField(CvItem))
 
 
 """ Property model
@@ -80,9 +80,9 @@ class VocabularyType(EmbeddedDocument):
     data_type = StringField(required=True)
     controlled_vocabulary = ReferenceField(ControlledVocabulary)
 
-    def clean(self):
-        if not ObjectId.is_valid(self.controlled_vocabulary):
-            self.controlled_vocabulary = None
+    # def clean(self):
+    #     if not ObjectId.is_valid(self.controlled_vocabulary):
+    #         self.controlled_vocabulary = None
 
 
 class Property(BaseDocument):

@@ -1,3 +1,4 @@
+bson
 coverage==5.0.2
 PyJWT==1.7.1
 Werkzeug==0.16.0

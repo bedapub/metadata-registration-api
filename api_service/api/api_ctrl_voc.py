@@ -6,6 +6,7 @@ from api_service.api.decorators import token_required
 
 api = Namespace("Controlled Vocabulary", description="Controlled vocabulary related operations")
 
+# Model definition
 # ----------------------------------------------------------------------------------------------------------------------
 
 cv_item_model = api.model("CV item", {
@@ -19,7 +20,7 @@ ctrl_voc_model = api.model("Controlled Vocabulary", {
     "label": fields.String(description="Human readable name of the entry"),
     "name": fields.String(description="Internal representation of the entry (in snake_case)"),
     "description": fields.String(description="Detailed description of the intended use", default=""),
-    "items": fields.List(fields.Nested(cv_item_model)),
+    "items": fields.List(fields.Nested(cv_item_model, skip_none=True)),
     "deprecated": fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
 })
 
@@ -33,6 +34,7 @@ post_response_model = api.model("Post response", {
 })
 
 
+# Routes
 # ----------------------------------------------------------------------------------------------------------------------
 
 @api.route("/")

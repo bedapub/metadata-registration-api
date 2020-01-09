@@ -1,3 +1,4 @@
 from api_service.app import create_app
 
-app = create_app("PRODUCTION")
+if __name__ == '__main__':
+    app = create_app("PRODUCTION")
