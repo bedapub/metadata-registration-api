@@ -48,8 +48,8 @@ post_response_model = api.model("Post response", {
 
 @api.route("/")
 class ApiProperties(Resource):
-    delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument("complete",
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -109,7 +109,7 @@ class ApiProperties(Resource):
                 "id": str(entry.id)}, 201
 
     @token_required
-    @api.expect(parser=delete_parser)
+    @api.expect(parser=_delete_parser)
     def delete(self, user):
         """ Deprecates all entries """
 
@@ -131,8 +131,8 @@ class ApiProperties(Resource):
 @api.route("/id/<id>")
 @api.param("id", "The property identifier")
 class ApiProperty(Resource):
-    delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument("complete",
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -152,7 +152,7 @@ class ApiProperty(Resource):
         return {"message": f"Update entry '{entry.name}'"}
 
     @token_required
-    @api.expect(parser=delete_parser)
+    @api.expect(parser=_delete_parser)
     def delete(self, user, id):
         """ Deprecates an entry given its unique identifier """
 

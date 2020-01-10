@@ -1,15 +1,22 @@
-from bson import ObjectId
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import generate_password_hash
 
 from mongoengine import Document, EmbeddedDocument
 from mongoengine.fields import *
+
+
+"""
+This module defines document object mapping (DOM) of a set of administrative resources. 
+
+The description of a model clarifies its purpose. The `synonyms` are a list of alternative labels. These alternative 
+labels can be used to customize the external representation.
+"""
 
 
 def to_snake_case(name):
     """ Convert a string into an internal representation (no leading and trailing whitespace, and intermediate
     whitespace replaced with underscore)
 
-    :param name:
+    :param name: a given name
     :return: name in snake_case or None
     """
     if name:
@@ -18,19 +25,14 @@ def to_snake_case(name):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+class TopLevelDocument(Document):
+    """Base class for all top level documents
 
-""" Abstract model
-
-A Base class for all top-level documents. 
-
-A model contains a `label` and a `name` which is displayed to the end user (external representation) and  is used for 
-the internal representation, respectively. The model ensures that the `name` is converted to snake case.
-
-Instead of deleting entries, they are deprecated.
-"""
-
-
-class BaseDocument(Document):
+    All top level documents have a `label`, a `name` and a `deprecated` flag. The `label` is for displaying to the
+    end user (external representation) and the `name` is used by the machine (internal representation). The name is
+    expected to be unique for the model. To ensures that the `name` is converted to snake case before it is inserted
+    into the database. The `deprecated` flag indicates if a document is no longer needed (alternative to delete it)
+    """
     label = StringField(required=True)
     name = StringField(required=True, unique=True)
     deprecated = BooleanField(default=False)
@@ -40,52 +42,43 @@ class BaseDocument(Document):
 
     meta = {'allow_inheritance': True, 'abstract': True}
 
-
-""" Controlled vocabulary model
-
-The description of the controlled vocabulary describes its purpose.
-The items contains a list of embedded items. An item stores an allowed vocabularies.
-"""
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class CvItem(EmbeddedDocument):
-    """ An item in the list of controlled vocabularies """
+    """An item in the list of controlled vocabularies"""
     label = StringField(required=True)
     name = StringField(required=True)
     description = StringField()
     synonyms = ListField(field=StringField())
 
 
-class ControlledVocabulary(BaseDocument):
+class ControlledVocabulary(TopLevelDocument):
+    """Model for a controlled vocabulary.
+
+    A controlled vocabulary contains a list of possible items. See :class:`Property`.
+    """
     description = StringField(required=True)
+    items = ListField(EmbeddedDocumentField(CvItem), required=True)
 
-    items = ListField(EmbeddedDocumentField(CvItem))
-
-
-""" Property model
-    
-The synonym is a list of alternative labels.
-    
-A property is assigned to a level in the property hierarchy (e.g. Study, Sample).
-    
-The description of the property clarifies its purpose.
-    
-The `vocabulary_type` is nested into the property and defines the data type of the input. If the data type is a 
-controlled vocabulary, the `controlled_vocabulary` references to an entry in the controlled vocabulary model.
-"""
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class VocabularyType(EmbeddedDocument):
-    """ Defines which type of vocabulary (e.g. text, numeric, controlled vocabulary) is allowed. """
+    """ Model which defines the allowed vocabulary.
+
+    It is used to validate user input. If the data type is `ctrl_voc`, only the items of :class:`ControlledVocabulary`
+    are allowed.
+    """
     data_type = StringField(required=True)
     controlled_vocabulary = ReferenceField(ControlledVocabulary)
 
-    # def clean(self):
-    #     if not ObjectId.is_valid(self.controlled_vocabulary):
-    #         self.controlled_vocabulary = None
 
+class Property(TopLevelDocument):
+    """ Model for a property
 
-class Property(BaseDocument):
+    A property is assigned to a level.
+    """
     synonyms = ListField(field=StringField())
 
     level = StringField(required=True)
@@ -98,12 +91,6 @@ class Property(BaseDocument):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-
-""" Form model
-
-A form contains fields. A field can accept an entry.
-"""
 
 
 class DataObject(EmbeddedDocument):
@@ -128,23 +115,24 @@ class FormField(EmbeddedDocument):
 
     # Used for nested forms
     name = StringField()
-    fields = ListField(EmbeddedDocumentField("FormField"), required=False)
+    fields = ListField(EmbeddedDocumentField("FormField"))
 
     def clean(self):
         if self.property:
+            # TODO Empty string or None?
             self.name = ""
 
 
-class Form(BaseDocument):
+class Form(TopLevelDocument):
+    """MongoDB representation of a FlaskForm
+
+    The form contains multiple fields.
+    """
     fields = EmbeddedDocumentListField(FormField)
     description = StringField(required=True)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-
-""" Study model
-"""
 
 
 class Field(EmbeddedDocument):
@@ -158,16 +146,12 @@ class Status(EmbeddedDocument):
     name = StringField()
 
 
-class Study(BaseDocument):
+class Study(TopLevelDocument):
     fields = EmbeddedDocumentListField(Field)
     status = EmbeddedDocumentField(Status)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-
-""" User model
-"""
 
 
 class User(Document):

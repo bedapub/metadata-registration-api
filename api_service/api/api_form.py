@@ -5,7 +5,7 @@ from api_service.model import Form, DataObjects
 from api_service.api.api_props import property_model_id
 from api_service.api.decorators import token_required
 
-api = Namespace("Form", description="Form related operations")
+api = Namespace("Forms", description="Form related operations")
 
 
 # Custom fields
@@ -59,6 +59,7 @@ field_add_model = api.model("Add Field", {
     "args": fields.Raw(),
     "kwargs": fields.Raw(),
 
+    "name": fields.String(),
     "fields": fields.List(SubformAddField),
 })
 
@@ -80,10 +81,11 @@ field_model = api.model("Field", {
     "args": ArgsField(),
     "kwargs": fields.Raw(),
 
-    "fields": fields.List(fields.Nested(SubformField))
+    "name": fields.String(),
+    "fields": fields.List(SubformField)
 })
 
-form_model = api.model("Form", {
+form_model = api.model("Forms", {
     "label": fields.String(description="Human readable name of the entry"),
     "name": fields.String(description="Internal representation of the entry (in snake_case)"),
     "description": fields.String(description="Detailed description of the intended use", default=""),
@@ -106,8 +108,8 @@ class ApiForm(Resource):
                             help="Boolean indicator which determines if deprecated entries should be returned as well",
                             )
 
-    delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument("complete",
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -138,10 +140,10 @@ class ApiForm(Resource):
                 "id": str(entry.id)}, 201
 
     @token_required
-    @api.expect(parser=delete_parser)
+    @api.expect(parser=_delete_parser)
     def delete(self, user):
         """ Delete all entries """
-        args = self.delete_parser.parse_args()
+        args = self._delete_parser.parse_args()
         force_delete = args["complete"]
 
         entry = Form.objects().all()
@@ -156,8 +158,8 @@ class ApiForm(Resource):
 @api.route("/id/<id>")
 @api.param("id", "The property identifier")
 class ApiForm(Resource):
-    delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument("complete",
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -178,10 +180,10 @@ class ApiForm(Resource):
         return {"message": f"Update entry '{entry.name}'"}
 
     @token_required
-    @api.expect(parser=delete_parser)
+    @api.expect(parser=_delete_parser)
     def delete(self, user, id):
         """ Delete an entry given its unique identifier """
-        args = self.delete_parser.parse_args()
+        args = self._delete_parser.parse_args()
         force_delete = args["complete"]
 
         entry = Form.objects(id=id).get()

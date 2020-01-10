@@ -4,7 +4,7 @@ from flask_restplus import reqparse, inputs
 from api_service.model import ControlledVocabulary
 from api_service.api.decorators import token_required
 
-api = Namespace("Controlled Vocabulary", description="Controlled vocabulary related operations")
+api = Namespace("Controlled Vocabularies", description="Controlled vocabulary related operations")
 
 # Model definition
 # ----------------------------------------------------------------------------------------------------------------------
@@ -39,8 +39,8 @@ post_response_model = api.model("Post response", {
 
 @api.route("/")
 class ApiControlledVocabulary(Resource):
-    delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument("complete",
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -78,15 +78,15 @@ class ApiControlledVocabulary(Resource):
         """ Add a new entry """
         entry = ControlledVocabulary(**api.payload)
         entry = entry.save()
-        return {"message": "Add entry '{}'".format(entry.name),
+        return {"message": f"Add entry '{entry.name}'",
                 "id": str(entry.id)}, 201
 
     @token_required
-    @api.expect(parser=delete_parser)
+    @api.expect(parser=_delete_parser)
     def delete(self, user):
         """ Delete all entries"""
 
-        args = self.delete_parser.parse_args()
+        args = self._delete_parser.parse_args()
 
         force_delete = args["complete"]
 
@@ -102,8 +102,8 @@ class ApiControlledVocabulary(Resource):
 @api.route("/id/<id>")
 @api.param("id", "The property identifier")
 class ApiControlledVocabulary(Resource):
-    delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument("complete",
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -123,11 +123,11 @@ class ApiControlledVocabulary(Resource):
         return {"message": f"Update entry '{entry.name}'"}
 
     @token_required
-    @api.expect(parser=delete_parser)
+    @api.expect(parser=_delete_parser)
     def delete(self, user, id):
         """ Delete an entry given its unique identifier """
 
-        args = self.delete_parser.parse_args()
+        args = self._delete_parser.parse_args()
 
         force_delete = args["complete"]
 

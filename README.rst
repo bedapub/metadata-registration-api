@@ -5,7 +5,8 @@ A flask microservice which provides an API to access all objects for the Study R
 
 Documentation
 -------------
-Sphinx documentation is available in `/doc`. Change into `/doc` and call `make html` to create the documentation. The
+Sphinx documentation is available in `/docs`. Change into `/docs` and call :bash:`make html` to create the
+documentation. The
 documentation includes a getting started section.
 
 Purpose

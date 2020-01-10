@@ -10,7 +10,7 @@ from flask_restplus import reqparse, inputs
 from api_service.api.decorators import token_required, TokenException
 from api_service.model import User
 
-api = Namespace('User', description='User related operations')
+api = Namespace("Users", description="User related operations")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -23,12 +23,12 @@ user_model = api.model("User", {
 })
 
 user_model_id = api.inherit("User with id", user_model, {
-    'id': fields.String(attribute='pk', description='Unique identifier of the entry'),
+    "id": fields.String(attribute="pk", description="Unique identifier of the entry"),
 })
 
 post_response_model = api.model("Post response", {
-    'message': fields.String(),
-    'id': fields.String(description="Id of inserted entry")
+    "message": fields.String(),
+    "id": fields.String(description="Id of inserted entry")
 })
 
 login_model = api.model("Login", {
@@ -51,8 +51,8 @@ class Login(Resource):
         interval.
         """
 
-        email = api.payload['email']
-        password = api.payload['password']
+        email = api.payload["email"]
+        password = api.payload["password"]
 
         user = User.objects(email=email).first()
 
@@ -60,18 +60,18 @@ class Login(Resource):
             raise Exception("The email does not exists or the email password combination is wrong")
 
         # Create token
-        token = jwt.encode({'user_id': str(user.id),
-                            'iat': datetime.datetime.utcnow(),
-                            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)},
+        token = jwt.encode({"user_id": str(user.id),
+                            "iat": datetime.datetime.utcnow(),
+                            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)},
                            app.secret_key)
 
-        return {'x-access-token': token.decode("UTF-8")}
+        return {"x-access-token": token.decode("UTF-8")}
 
 
-@api.route('/')
+@api.route("/")
 class ApiUser(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('deactivated',
+    parser.add_argument("deactivated",
                         type=inputs.boolean,
                         location="args",
                         default=False,
@@ -85,7 +85,7 @@ class ApiUser(Resource):
         """ Fetch a list with all entries """
         args = self.parser.parse_args()
 
-        include_deactivated = args['deactivated']
+        include_deactivated = args["deactivated"]
 
         if not include_deactivated:
             # Select only active entries
@@ -100,17 +100,17 @@ class ApiUser(Resource):
     @api.response(201, "Success", post_response_model)
     def post(self, user):
         """ Add a new entry """
-        p = User(**api.payload)
-        p = p.save()
-        return {"message": "Add user '{}'".format(p.firstname),
-                "id": str(p.id)}, 201
+        entry = User(**api.payload)
+        entry = entry.save()
+        return {"message": f"Add user '{entry.firstname}'",
+                "id": str(entry.id)}, 201
 
 
-@api.route('/id/<id>')
-@api.param('id', 'The property identifier')
+@api.route("/id/<id>")
+@api.param("id", "The property identifier")
 class ApiUser(Resource):
-    delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument('complete',
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument("complete",
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of inactivating it (cannot be "
@@ -129,20 +129,20 @@ class ApiUser(Resource):
         """ Update an entry given its unique identifier """
         entry = User.objects(id=id).get()
         entry.update(**api.payload)
-        return {'message': "Update entry '{}'".format(entry.firstname)}
+        return {"message": f"Update entry '{entry.firstname}'"}
 
     @token_required
-    @api.expect(parser=delete_parser)
+    @api.expect(parser=_delete_parser)
     def delete(self, user, id):
         """ Delete an entry given its unique identifier """
 
-        args = self.delete_parser.parse_args()
-        force_delete = args['complete']
+        args = self._delete_parser.parse_args()
+        force_delete = args["complete"]
 
         entry = User.objects(id=id).get()
         if not force_delete:
             entry.update(is_active=False)
-            return {'message': "Inactivated entry '{}'".format(entry.firstname)}
+            return {"message": f"Inactivated entry '{entry.firstname}'"}
         else:
             entry.delete()
-            return {'message': "Delete entry {}".format(entry.firstname)}
+            return {"message": f"Delete entry {entry.firstname}"}

@@ -1,15 +1,18 @@
+# Project specific
+start_up.sh
+
 # Credentials
 .credentials.yaml
 
 .coverage
 
-start_up.sh
 
 # Compiled / optimized files
 __pycharch__
 *.py[cod]
 *$py.class
 
+# IDE
 .idea
 
 # Flask
@@ -18,3 +21,6 @@ instance/
 
 # snippets
 Flask-App/snippets/
+
+# Sphinx documentation
+docs/build/

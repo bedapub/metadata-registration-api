@@ -5,7 +5,7 @@ from api_service.model import Study
 from api_service.api.api_props import property_model_id
 from api_service.api.decorators import token_required
 
-api = Namespace('Study', description='Study related operations')
+api = Namespace('Studies', description='Study related operations')
 
 # Model definition
 # ----------------------------------------------------------------------------------------------------------------------
@@ -74,16 +74,16 @@ class ApiStudy(Resource):
     @api.expect(study_add_model)
     def post(self):
         """ Add a new entry """
-        p = Study(**api.payload)
-        p.save()
-        return {"message": "Add entry '{}'".format(p.name)}, 201
+        entry = Study(**api.payload)
+        entry.save()
+        return {"message": f"Add entry '{entry.name}'"}, 201
 
 
 @api.route('/id/<id>')
 @api.param('id', 'The property identifier')
 class ApiStudy(Resource):
-    delete_parser = reqparse.RequestParser()
-    delete_parser.add_argument('complete',
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument('complete',
                                type=inputs.boolean,
                                default=False,
                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
@@ -101,19 +101,19 @@ class ApiStudy(Resource):
         """ Update an entry given its unique identifier """
         entry = Study.objects(id=id).get()
         entry.update(**api.payload)
-        return {'message': "Update entry '{}'".format(entry.name)}
+        return {'message': f"Update entry '{entry.name}'"}
 
     @token_required
-    @api.expect(parser=delete_parser)
+    @api.expect(parser=_delete_parser)
     def delete(self, user, id):
         """ Delete an entry given its unique identifier """
-        args = self.delete_parser.parse_args()
+        args = self._delete_parser.parse_args()
         force_delete = args['complete']
 
         entry = Study.objects(id=id).get()
         if not force_delete:
             entry.update(deprecated=True)
-            return {'message': "Deprecate entry '{}'".format(entry.name)}
+            return {'message': f"Deprecate entry '{entry.name}'"}
         else:
             entry.delete()
-            return {'message': "Delete entry {}".format(entry.name)}
+            return {'message': f"Delete entry {entry.name}"}

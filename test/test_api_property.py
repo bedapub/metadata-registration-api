@@ -213,7 +213,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
-                "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": "abc"},
+                "vocabulary_type": {"data_type": "ctrl_voc", "controlled_vocabulary": "abc"},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecated": False
@@ -230,7 +230,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
-                "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": "5b6bf449acf15441d0f87b4f"},
+                "vocabulary_type": {"data_type": "ctrl_voc", "controlled_vocabulary": "5b6bf449acf15441d0f87b4f"},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecated": False
