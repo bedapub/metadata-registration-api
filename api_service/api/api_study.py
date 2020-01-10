@@ -80,6 +80,7 @@ class ApiStudy(Resource):
 
 
 @api.route('/id/<id>')
+@api.route('/id/<id>/')
 @api.param('id', 'The property identifier')
 class ApiStudy(Resource):
     _delete_parser = reqparse.RequestParser()

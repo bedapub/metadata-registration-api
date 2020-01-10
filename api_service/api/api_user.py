@@ -107,6 +107,7 @@ class ApiUser(Resource):
 
 
 @api.route("/id/<id>")
+@api.route("/id/<id>/")
 @api.param("id", "The property identifier")
 class ApiUser(Resource):
     _delete_parser = reqparse.RequestParser()

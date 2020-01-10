@@ -156,6 +156,7 @@ class ApiForm(Resource):
 
 
 @api.route("/id/<id>")
+@api.route("/id/<id>/")
 @api.param("id", "The property identifier")
 class ApiForm(Resource):
     _delete_parser = reqparse.RequestParser()
