@@ -13,15 +13,15 @@ authorizations = {
 api = Api(version="0.5.0", authorizations=authorizations)
 
 # noinspection PyPep8
-from api_service.api.api_props import api as ns_1
+from .api_props import api as ns_1
 # noinspection PyPep8
-from api_service.api.api_ctrl_voc import api as ns_2
+from .api_ctrl_voc import api as ns_2
 # noinspection PyPep8
-from api_service.api.api_form import api as ns_3
+from .api_form import api as ns_3
 # noinspection PyPep8
-from api_service.api.api_study import api as ns_4
+from .api_study import api as ns_4
 # noinspection PyPep8
-from api_service.api.api_user import api as ns_5
+from .api_user import api as ns_5
 
 api.add_namespace(ns_1, path='/properties')
 api.add_namespace(ns_2, path='/ctrl_vocs')

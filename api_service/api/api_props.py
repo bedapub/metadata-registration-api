@@ -35,7 +35,7 @@ property_model = api.model("Property", {
 })
 
 property_model_id = api.inherit("Property with id", property_model, {
-    "id": fields.String(attribute="pk", description="The unique identifier of the entry"),
+    "id": fields.String(attribute="id", description="The unique identifier of the entry"),
 })
 
 post_response_model = api.model("Post response", {
