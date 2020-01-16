@@ -44,6 +44,8 @@ object_model = api.model("Object", {
     "property": fields.Nested(property_model_id),
     "args": ArgsField(),
     "kwargs": fields.Raw(),
+
+    "fields": fields.List(SubformField)
 })
 
 objects_model = api.model("Objects", {

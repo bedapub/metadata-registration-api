@@ -98,6 +98,7 @@ class DataObject(EmbeddedDocument):
     property = ReferenceField(Property)
     args = DictField()
     kwargs = DictField()
+    fields = ListField(EmbeddedDocumentField("FormField"))
 
 
 class DataObjects(EmbeddedDocument):
