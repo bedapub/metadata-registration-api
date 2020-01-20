@@ -13,6 +13,8 @@ def config_app(app, credentials):
     # Load app secret and convert to byte string
     app.secret_key = credentials['app_secret'].encode()
 
+    app.config["PORT"] = credentials["api"]["port"]
+
     # Disable checking access token
     app.config['CHECK_ACCESS_TOKEN'] = credentials.get('check_access_token', True)
 
@@ -34,8 +36,7 @@ def config_app(app, credentials):
 def create_app(config='DEVELOPMENT'):
     app = Flask(__name__)
 
-    cert_path = os.path.join(os.path.dirname(__file__), '..', '.credentials.yaml')
-    credentials = load_credentials(path=cert_path)
+    credentials = load_credentials()
     config_app(app, credentials[config])
 
     # Restplus API
@@ -86,4 +87,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     app = create_app(**vars(args))
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host="0.0.0.0", port=app.config["PORT"])
