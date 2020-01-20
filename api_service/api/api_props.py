@@ -8,12 +8,16 @@ from api_service.api.decorators import token_required
 api = Namespace("Properties", description="Property related operations")
 
 # ----------------------------------------------------------------------------------------------------------------------
+cv_model_add = api.model("Add Vocabulary Type", {
+    "data_type": fields.String(description="The data type of the entry"),
+    "controlled_vocabulary": fields.String(example='Controlled Vocabulary ObjectId')
+})
 
 property_add_model = api.model("Add Property", {
     "label": fields.String(description="A human readable description of the entry"),
     "name": fields.String(description="The unique name of the entry (in snake_case)"),
     "level": fields.String(description="The level the property is associated with (e.g. Study, Sample, ...)"),
-    "vocabulary_type": fields.String(),
+    "value_type": fields.Nested(cv_model_add),
     "synonyms": fields.List(fields.String(description="Alternatives to the primary name")),
     "description": fields.String(description="A detailed description of the intended use", default=""),
     "deprecated": fields.Boolean(default=False)
@@ -28,7 +32,7 @@ property_model = api.model("Property", {
     "label": fields.String(description="A human readable description of the entry"),
     "name": fields.String(description="The unique name of the entry (in snake_case)"),
     "level": fields.String(description="The level the property is associated with (e.g. Study, Sample, ...)"),
-    "vocabulary_type": fields.Nested(cv_model),
+    "value_type": fields.Nested(cv_model),
     "synonyms": fields.List(fields.String(description="Alternatives to the primary name")),
     "description": fields.String(description="A detailed description of the intended use", default=""),
     "deprecated": fields.Boolean(default=False)
@@ -173,5 +177,5 @@ class ApiProperty(Resource):
 
 
 def validate_controlled_vocabulary(entry):
-    if entry.vocabulary_type and entry.vocabulary_type.data_type != "ctrl_voc":
-        entry.vocabulary_type.controlled_vocabulary = None
+    if entry.value_type and entry.value_type.data_type != "ctrl_voc":
+        entry.value_type.controlled_vocabulary = None

@@ -48,7 +48,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Username",
             "name": "username",
             "level": "top",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "Recognizable name"
         }
 
@@ -56,7 +56,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Password",
             "name": "password",
             "level": "top",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "Secret to authenticate user"
         }
 
@@ -90,7 +90,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Label",
             "name": "label",
             "level": "administrative",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "Human readable name"
         }
 
@@ -98,7 +98,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Name",
             "name": "name",
             "level": "administrative",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "Machine readable name"
         }
 
@@ -106,7 +106,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Level",
             "name": "level",
             "level": "administrative",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "Level of a property"
         }
 
@@ -114,7 +114,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Synonyms",
             "name": "synonyms",
             "level": "administrative",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "The synonyms"
         }
 
@@ -122,7 +122,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Description",
             "name": "description",
             "level": "administrative",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "Description of a property"
         }
 
@@ -130,7 +130,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Deprecated",
             "name": "deprecated",
             "level": "administrative",
-            "vocabulary_type": {"data_type": "boolean"},
+            "value_type": {"data_type": "boolean"},
             "description": "Status of a property"
         }
 
@@ -138,7 +138,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Data Type",
             "name": "data_type",
             "level": "administrative",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "The data type of a property"
         }
 
@@ -146,7 +146,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "label": "Controlled Vocabulary",
             "name": "controlled_vocabulary",
             "level": "administrative",
-            "vocabulary_type": {"data_type": "text"},
+            "value_type": {"data_type": "text"},
             "description": "Reference to a controlled vocabulary"
         }
 

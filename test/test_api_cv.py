@@ -20,7 +20,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def test_get_property_no_param(self):
         """ Get list of properties without query parameter"""
-        MyTestCase.insert_two(self.app)
+        MyTestCase.insert_two()
 
         res = self.app.get("/ctrl_vocs/", follow_redirects=True)
 
@@ -29,7 +29,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
     def test_get_cv_deprecate_param(self):
         """ Get list of properties with query parameter deprecate """
-        MyTestCase.insert_two(self.app)
+        MyTestCase.insert_two()
 
         for deprecated in [True, False]:
             res = self.app.get(f"/ctrl_vocs?deprecated={deprecated}", follow_redirects=True)
@@ -46,30 +46,17 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     def test_insert_cv_minimal(self):
         """ Add minimal controlled vocabulary """
 
-        data = {"label": "Test CV",
-                "name": "Test CV",
-                "description": "Test CV",
-                "items": [{"label": "Test item 1", "name": "Test item 1"}]}
-
-        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
+        res = self.insert_minimal_cv()
 
         self.assertEqual(res.status_code, 201)
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
 
+
     def test_insert_cv_full(self):
         """ Add a controlled vocabulary containing a description and a synonyms """
 
-        data = {"label": "Test CV",
-                "name": "Test CV",
-                "description": "Test CV",
-                "items": [{"label": "Test item 1",
-                           "name": "Test item 1",
-                           "description": "Simple description",
-                           "synonyms": ["A test", "This is a test label"]
-                           }]
-                }
+        res = self.insert_full_cv()
 
-        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
 
         self.assertEqual(res.status_code, 201)
         self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
@@ -128,13 +115,10 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     # ------------------------------------------------------------------------------------------------------------------
     # DELETE
 
-    def test_deprecate(self):
-        self.test_insert_cv_minimal()
+    def test_deprecate_single_entry(self):
+        res = self.insert_minimal_cv()
 
-        results = MyTestCase.get_ids(MyTestCase.app, entrypoint="/ctrl_vocs/")
-
-        for entry in results.json:
-            MyTestCase.app.delete(f"/ctrl_vocs/id/{entry['id']}")
+        MyTestCase.app.delete(f"/ctrl_vocs/id/{res.json['id']}", follow_redirects=True)
 
         results = MyTestCase.get(MyTestCase.app, entrypoint="/ctrl_vocs", params={"deprecated": True})
 
@@ -145,7 +129,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
 
         for complete in [True, False]:
             self.clear_collection(entrypoint="/ctrl_vocs/")
-            self.insert_two(self.app)
+            self.insert_two()
 
             res = self.app.delete(f"/ctrl_vocs?complete={complete}", follow_redirects=True)
 
@@ -162,7 +146,30 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     # Helper methods
 
     @staticmethod
-    def insert_two(app):
+    def insert_minimal_cv():
+        data = {"label": "Test CV",
+                "name": "Test CV",
+                "description": "Test CV",
+                "items": [{"label": "Test item 1", "name": "Test item 1"}]}
+
+        return AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
+
+    @staticmethod
+    def insert_full_cv():
+        data = {"label": "Test CV",
+                "name": "Test CV",
+                "description": "Test CV",
+                "items": [{"label": "Test item 1",
+                           "name": "Test item 1",
+                           "description": "Simple description",
+                           "synonyms": ["A test", "This is a test label"]
+                           }]
+                }
+
+        return AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
+
+    @staticmethod
+    def insert_two():
         data1 = {"label": "Test CV 1",
                  "name": "Test CV 1",
                  "description": "Test CV 1",

@@ -1,7 +1,7 @@
 import datetime
 import jwt
 
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash
 from flask import current_app as app
 
 from flask_restplus import Namespace, Resource, fields

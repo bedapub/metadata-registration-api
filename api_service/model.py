@@ -84,7 +84,7 @@ class Property(TopLevelDocument):
     level = StringField(required=True)
     description = StringField(required=True)
 
-    vocabulary_type = EmbeddedDocumentField(VocabularyType)
+    value_type = EmbeddedDocumentField(VocabularyType)
 
     def clean(self):
         map(to_snake_case, self.synonyms)
