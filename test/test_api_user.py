@@ -43,7 +43,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
             "password": new_password
         }
 
-        res = MyTestCase.app.put(f"/users/id/{res.json['id']}", json=data)
+        res = MyTestCase.app.put(f"/users/id/{res.json['id']}", json=data, follow_redirects=True)
 
         self.assertEqual(res.status_code, 200)
 

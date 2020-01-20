@@ -60,7 +60,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "First Name",
                 "name": "firstname",
                 "level": "administrative",
-                "vocabulary_type": {"data_type": "text"},
+                "value_type": {"data_type": "text"},
                 "synonyms": ["forename"],
                 "description": "The first name of a person",
                 "deprecated": False
@@ -87,7 +87,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "First Name",
                 "name": "firstname",
                 "level": "administrative",
-                "vocabulary_type": {"data_type": "text"},
+                "value_type": {"data_type": "text"},
                 "synonyms": ["forename"],
                 "description": "The first name of a person",
                 "deprecated": False
@@ -141,7 +141,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
-                "vocabulary_type": {"data_type": "text"},
+                "value_type": {"data_type": "text"},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecated": False
@@ -157,7 +157,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
-                "vocabulary_type": {"data_type": "text", "controlled_vocabulary": "String"},
+                "value_type": {"data_type": "text", "controlled_vocabulary": "String"},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecated": False
@@ -185,7 +185,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
-                "vocabulary_type": {"data_type": "cv", "controlled_vocabulary": id},
+                "value_type": {"data_type": "cv", "controlled_vocabulary": id},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecated": False
@@ -213,7 +213,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
-                "vocabulary_type": {"data_type": "ctrl_voc", "controlled_vocabulary": "abc"},
+                "value_type": {"data_type": "ctrl_voc", "controlled_vocabulary": "abc"},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecated": False
@@ -230,7 +230,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         data = {"label": "string",
                 "name": "string",
                 "level": "string",
-                "vocabulary_type": {"data_type": "ctrl_voc", "controlled_vocabulary": "5b6bf449acf15441d0f87b4f"},
+                "value_type": {"data_type": "ctrl_voc", "controlled_vocabulary": "5b6bf449acf15441d0f87b4f"},
                 "synonyms": ["string", ],
                 "description": "string",
                 "deprecated": False
