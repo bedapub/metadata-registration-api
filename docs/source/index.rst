@@ -12,6 +12,7 @@ A microservice which provides an API to access all objects for the Study Registr
    :maxdepth: 2
    :caption: Contents:
 
+   setup
    introduction
    modules
 

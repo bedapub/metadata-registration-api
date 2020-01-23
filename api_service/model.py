@@ -136,11 +136,10 @@ class Form(TopLevelDocument):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class Field(EmbeddedDocument):
-    label = StringField(required=True)
+class StudyEntry(EmbeddedDocument):
     property = ReferenceField(Property)
     # TODO: Check if correct type
-    value = GenericEmbeddedDocumentField()
+    value = StringField()
 
 
 class Status(EmbeddedDocument):
@@ -148,7 +147,7 @@ class Status(EmbeddedDocument):
 
 
 class Study(TopLevelDocument):
-    fields = EmbeddedDocumentListField(Field)
+    entries = EmbeddedDocumentListField(StudyEntry)
     status = EmbeddedDocumentField(Status)
 
 

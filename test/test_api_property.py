@@ -1,7 +1,5 @@
 import unittest
 
-from mongoengine.errors import NotUniqueError
-
 from test.test_api_base import AbstractTest
 from api_service.app import create_app
 

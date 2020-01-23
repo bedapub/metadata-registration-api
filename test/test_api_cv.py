@@ -9,7 +9,6 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = create_app(config="TESTING").test_client()
-        cls.clear_collection()
 
     def setUp(self) -> None:
         MyTestCase.clear_collection()
