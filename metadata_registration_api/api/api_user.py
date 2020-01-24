@@ -4,11 +4,11 @@ import jwt
 from werkzeug.security import check_password_hash
 from flask import current_app as app
 
-from flask_restplus import Namespace, Resource, fields
-from flask_restplus import reqparse, inputs
+from flask_restx import Namespace, Resource, fields
+from flask_restx import reqparse, inputs
 
-from api_service.api.decorators import token_required, TokenException
-from api_service.model import User
+from .decorators import token_required, TokenException
+from ..model import User
 
 api = Namespace("Users", description="User related operations")
 

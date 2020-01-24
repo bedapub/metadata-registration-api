@@ -4,8 +4,8 @@ from jwt.exceptions import InvalidSignatureError
 
 from flask import current_app as app, request
 
-from api_service.api import api
-from api_service.model import User
+from . import api
+from ..model import User
 
 
 class TokenException(Exception):

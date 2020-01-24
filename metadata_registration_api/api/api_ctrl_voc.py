@@ -1,8 +1,8 @@
-from flask_restplus import Namespace, Resource, fields
-from flask_restplus import reqparse, inputs
+from flask_restx import Namespace, Resource, fields
+from flask_restx import reqparse, inputs
 
-from api_service.model import ControlledVocabulary
-from api_service.api.decorators import token_required
+from ..model import ControlledVocabulary
+from .decorators import token_required
 
 api = Namespace("Controlled Vocabularies", description="Controlled vocabulary related operations")
 

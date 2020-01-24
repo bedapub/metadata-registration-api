@@ -3,7 +3,7 @@ import os
 from flask import Flask
 from mongoengine import connect
 
-from api_service.my_utils import load_credentials
+from metadata_registration_api.my_utils import load_credentials
 from dynamic_form import FormManager, ApiDataStore
 
 
@@ -53,7 +53,7 @@ def create_app(config="DEVELOPMENT"):
             )
 
     # TODO: Find a better way to set the collection names
-    from api_service.model import Property, ControlledVocabulary, Form, User, Study
+    from metadata_registration_api.model import Property, ControlledVocabulary, Form, User, Study
     # noinspection PyProtectedMember
     Property._meta["collection"] = app.config["MONGODB_COL_PROPERTY"]
     # noinspection PyProtectedMember
@@ -65,7 +65,7 @@ def create_app(config="DEVELOPMENT"):
     # noinspection PyProtectedMember
     Study._meta["collection"] = app.config["MONGODB_COL_STUDY"]
 
-    from api_service.api import api
+    from metadata_registration_api.api import api
     api.init_app(app,
                  title="API for properties, controlled vocabulary, forms and studies.",
                  contact="Rafael Müller",
@@ -77,8 +77,9 @@ def create_app(config="DEVELOPMENT"):
                  )
 
     # Initialize FormManager
-    ds = ApiDataStore(url=app.config["API_HOST"])
-    app.form_manager = FormManager(ds_adapter=ds)
+    url = "http://127.0.0.1:5001"
+    ds = ApiDataStore(url=url)
+    app.form_manager = FormManager(ds_adapter=ds, initial_load=False)
 
     return app
 

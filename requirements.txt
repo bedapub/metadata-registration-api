@@ -2,7 +2,8 @@ coverage==5.0.2
 PyJWT==1.7.1
 Werkzeug==0.16.0
 Flask==1.1.1
-flask-restplus==0.13.0
+flask-restx==0.1.0
 requests==2.22.0
 PyYAML==5.1.2
 mongoengine==0.18.2
+wtforms=2.2.1

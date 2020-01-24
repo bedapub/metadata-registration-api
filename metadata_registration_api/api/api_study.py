@@ -1,12 +1,12 @@
 from flask import current_app
-from flask_restplus import Namespace, Resource, fields
-from flask_restplus import reqparse, inputs
+from flask_restx import Namespace, Resource, fields
+from flask_restx import reqparse, inputs
 
 from ..model import Study
 from .api_props import property_model_id
 from .decorators import token_required
 
-from wtforms.validators import ValidationError
+from wtforms import ValidationError
 
 api = Namespace("Studies", description="Study related operations")
 
@@ -35,16 +35,17 @@ study_model_id = api.inherit("Study with id", study_model, {
 })
 
 field_add_model = api.model("Add Field", {
-    "property": fields.String(example="Property Id"),
+    "property": fields.String(example="Property Object Id"),
     "value": fields.Raw()
 })
 
 study_add_model = api.model("Add Study", {
-    "label": fields.String(description="A human readable description of the entry"),
-    "name": fields.String(description="The unique name of the entry (in snake_case)"),
+    # "label": fields.String(description="A human readable description of the entry"),
+    # "name": fields.String(description="The unique name of the entry (in snake_case)"),
+    "form_name": fields.String(example="Form Object Id"),
     "entries": fields.List(fields.Nested(field_add_model)),
-    "status": fields.Nested(status_model),
-    "deprecated": fields.Boolean(default=False)
+    # "metadata": fields.Nested(status_model),
+    # "deprecated": fields.Boolean(default=False)
 })
 
 
@@ -82,20 +83,24 @@ class ApiStudy(Resource):
     @api.expect(study_add_model)
     def post(self, user):
         """ Add a new entry """
-
-        # 1. Extract form id from payload
         payload = api.payload
 
-        # 2. Get form from FormManager by id
-        form_name = payload.form_name
+        # 1. Extract form name from payload
+        form_name = payload["form_name"]
 
+        # 2. Get form from FormManager by name
         form_cls = current_app.form_manager.get_form(form_name=form_name)
 
-
         # 3. Convert submitted data into form compatible format
-        form_data = {}
-        for entry in payload.data:
-            pass
+        entries = payload["entries"]
+
+        import requests
+        props = requests.get("http://127.0.0.1:5001/properties/")
+        prop_map = {prop["id"]: prop["name"] for prop in props.json()}
+
+        form_data = []
+        for entry in entries:
+            form_data[prop_map[entry["property"]]] = entry["value"]
 
         # 4. Validate data against form
         form_instance = form_cls(**form_data)
@@ -103,24 +108,33 @@ class ApiStudy(Resource):
         if not form_instance.validate():
             raise ValidationError(form_instance.errors)
 
-        # 4. evaluate new state of study
+        # 5. evaluate new state of study pass all information
         state = ""
 
-        # 4. Convert submitted data into document compatible format
-        db_data = {}
+        # 6. Convert submitted data into document compatible format
+        import requests
+        props = requests.get(url= "", heards={"x-Fields": ["name", "id"]})
+        prop_map = {entry["name"]: entry["id"] for entry in props.items()}
 
-        # 5. Append metadata
+        entries = []
+        for prop_name, value in form_data.items():
+            entries.append({
+                "entry": prop_map[prop_name],
+                "value": value
+            })
+
+        # 7. Append metadata
         from datetime import datetime
         metadata = {
             "created": datetime.now(),
             "last_change": datetime.now(),
             "user": user.id,
-            "state": "",
+            "state": state,
             "history": []
         }
 
-        db_data["metadata"] = metadata
-        # 6. Insert data into database
+        db_data = {"entries": entries, "metadata": metadata}
+        # 8. Insert data into database
         entry = Study(**db_data)
         entry.save()
         return {"message": f"Study added"}, 201

@@ -1,7 +1,7 @@
 import unittest
 
 from test.test_api_base import AbstractTest
-from api_service.app import create_app
+from metadata_registration_api.app import create_app
 
 
 class MyTestCase(unittest.TestCase, AbstractTest):

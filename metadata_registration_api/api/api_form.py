@@ -1,9 +1,9 @@
-from flask_restplus import Namespace, Resource, fields
-from flask_restplus import reqparse, inputs, marshal
+from flask_restx import Namespace, Resource, fields
+from flask_restx import reqparse, inputs, marshal
 
-from api_service.model import Form, DataObjects
-from api_service.api.api_props import property_model_id
-from api_service.api.decorators import token_required
+from ..model import Form, DataObjects
+from .api_props import property_model_id
+from .decorators import token_required
 
 api = Namespace("Forms", description="Form related operations")
 
