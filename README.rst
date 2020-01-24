@@ -1,6 +1,5 @@
-API Service
-===========
-
+Metadata Registration API
+=========================
 A flask microservice which provides an API to access all objects for the Study Registration Tool prototype.
 
 Documentation
@@ -12,7 +11,6 @@ Purpose
 -------
 This package was written during a six month internship and was developed as part of the Study Registration Tool
 prototype.
-
 
 
 Authors
