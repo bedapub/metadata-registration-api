@@ -1,4 +1,7 @@
+import os
+
 from flask_restx import Api
+from flask import current_app as app
 
 from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
 
@@ -23,11 +26,11 @@ from .api_study import api as ns_4
 # noinspection PyPep8
 from .api_user import api as ns_5
 
-api.add_namespace(ns_1, path='/properties')
-api.add_namespace(ns_2, path='/ctrl_vocs')
-api.add_namespace(ns_3, path='/forms')
-api.add_namespace(ns_4, path='/studies')
-api.add_namespace(ns_5, path='/users')
+api.add_namespace(ns_1, path=os.environ.get("API_EP_PROPERTY", "/properties"))
+api.add_namespace(ns_2, path=os.environ.get("API_EP_CTRL_VOC", "/ctrl_vocs"))
+api.add_namespace(ns_3, path=os.environ.get("API_EP_FORM", "/forms"))
+api.add_namespace(ns_4, path=os.environ.get("API_EP_STUDY", "/studies"))
+api.add_namespace(ns_5, path=os.environ.get("API_EP_USER", '/users'))
 
 
 @api.errorhandler(ValidationError)

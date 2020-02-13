@@ -5,7 +5,7 @@ from jwt.exceptions import InvalidSignatureError
 from flask import current_app as app, request
 
 from . import api
-from ..model import User
+from database_model.model import User
 
 
 class TokenException(Exception):
@@ -23,7 +23,8 @@ def token_required(f):
         """ Get token and try to decode it"""
 
         if not app.config['CHECK_ACCESS_TOKEN']:
-            return f(self, None, *args, **kwargs)
+            user = type("DummyUser", (), {"id": "dummy_id"})()
+            return f(self, user, *args, **kwargs)
 
         token = request.headers.get("x-access-token")
 

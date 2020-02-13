@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
-from ..model import ControlledVocabulary
+from database_model.model import ControlledVocabulary
 from .decorators import token_required
 
 api = Namespace("Controlled Vocabularies", description="Controlled vocabulary related operations")
@@ -37,7 +37,7 @@ post_response_model = api.model("Post response", {
 # Routes
 # ----------------------------------------------------------------------------------------------------------------------
 
-@api.route("/")
+@api.route("")
 class ApiControlledVocabulary(Resource):
     _delete_parser = reqparse.RequestParser()
     _delete_parser.add_argument("complete",

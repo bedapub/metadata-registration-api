@@ -1,6 +1,6 @@
 FROM python:3.7
 
-ADD ./ /app
+ADD ./metadata_registration_api /app
 WORKDIR /app
 
 RUN pip install -r requirements.txt

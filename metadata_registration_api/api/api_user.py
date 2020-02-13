@@ -8,7 +8,7 @@ from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
 from .decorators import token_required, TokenException
-from ..model import User
+from database_model.model import User
 
 api = Namespace("Users", description="User related operations")
 
@@ -68,8 +68,15 @@ class Login(Resource):
         return {"x-access-token": token.decode("UTF-8")}
 
 
-@api.route("/")
+@api.route("")
 class ApiUser(Resource):
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument("complete",
+                                type=inputs.boolean,
+                                default=False,
+                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
+                                )
+
     parser = reqparse.RequestParser()
     parser.add_argument("deactivated",
                         type=inputs.boolean,
@@ -104,6 +111,23 @@ class ApiUser(Resource):
         entry = entry.save()
         return {"message": f"Add user '{entry.firstname}'",
                 "id": str(entry.id)}, 201
+
+    @token_required
+    @api.expect(parser=_delete_parser)
+    def delete(self, user):
+        """ Delete all entries"""
+
+        args = self._delete_parser.parse_args()
+
+        force_delete = args["complete"]
+
+        entry = User.objects().all()
+        if not force_delete:
+            entry.update(deprecated=True)
+            return {"message": "Deprecate all entries"}
+        else:
+            entry.delete()
+            return {"message": "Delete all entries"}
 
 
 @api.route("/id/<id>")

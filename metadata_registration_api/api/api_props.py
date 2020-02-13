@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
-from ..model import Property
+from database_model.model import Property
 from .api_ctrl_voc import ctrl_voc_model_id
 from .decorators import token_required
 
@@ -50,7 +50,7 @@ post_response_model = api.model("Post response", {
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-@api.route("/")
+@api.route("")
 class ApiProperties(Resource):
     _delete_parser = reqparse.RequestParser()
     _delete_parser.add_argument("complete",

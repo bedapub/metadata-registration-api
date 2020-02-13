@@ -132,25 +132,6 @@ class Form(TopLevelDocument):
     fields = EmbeddedDocumentListField(FormField)
     description = StringField(required=True)
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-class StudyEntry(EmbeddedDocument):
-    property = ReferenceField(Property)
-    # TODO: Check if correct type
-    value = StringField()
-
-
-class Status(EmbeddedDocument):
-    name = StringField()
-
-
-class Study(TopLevelDocument):
-    entries = EmbeddedDocumentListField(StudyEntry)
-    status = EmbeddedDocumentField(Status)
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -172,3 +153,33 @@ class User(Document):
         # Hash password if it is not already hashed.
         if not is_hashed(self.password):
             self.password = generate_password_hash(self.password)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+class StudyEntry(EmbeddedDocument):
+    property = ReferenceField(Property)
+    # TODO: Check if correct type
+    value = StringField()
+
+
+class History(EmbeddedDocumentField):
+    user_id = ReferenceField(User)
+    action = StringField()
+    timestamp = DateTimeField()
+
+
+class MetaInformation(EmbeddedDocument):
+    state = StringField()
+    change_log = EmbeddedDocumentListField(History)
+
+
+class Study(Document):
+    entries = EmbeddedDocumentListField(StudyEntry)
+    meta_information = EmbeddedDocumentField(MetaInformation)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+

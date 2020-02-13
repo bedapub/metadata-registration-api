@@ -1,46 +1,29 @@
-import urllib
+from threading import Thread
+import time
+import os
+
+import unittest
+
+from metadata_registration_api.app import create_app
 
 
-class AbstractTest(object):
+class BaseTestCase(unittest.TestCase):
 
     @classmethod
-    def clear_collection(cls, entrypoint="/properties/", deprecated=True):
-        """ Remove all entries"""
-        res = cls.get_ids(cls.app, entrypoint, deprecated)
+    def setUpClass(cls) -> None:
+        app = create_app(config="TESTING")
+        cls.config = app.config
+        cls.host = "http://" + ":".join([os.environ["API_HOST"], os.environ["PORT"]])
 
-        if res.status_code != 200:
-            raise Exception(f"Could not access data {res.json}")
+        def run_api(app):
+            app.run(threaded=True, port=int(os.environ["PORT"]))
 
-        if res.json:
-            for d in res.json:
-                if not d:
-                    continue
-                res = cls.app.delete(f"{entrypoint}id/{d['id']}?complete=True", follow_redirects=True)
+        cls.thread = Thread(target=run_api, args=(app, ))
+        cls.thread.setDaemon(True)
+        cls.thread.start()
+        time.sleep(0.5)
 
-                if res.status_code != 200:
-                    raise Exception(f"Could not delete file (id={d['id']}) in {entrypoint}. {res.json}")
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.thread.join(timeout=0.1)
 
-    @staticmethod
-    def get(app, entrypoint, params=None, headers=None):
-        p = None
-        if params:
-            p = urllib.parse.urlencode(params)
-        return app.get(f"{entrypoint}?{p}", follow_redirects=True, headers=headers)
-
-    @staticmethod
-    def get_ids(app, entrypoint='/properties/', deprecated=False):
-        """ Get the id of all properties """
-        return AbstractTest.get(app,
-                                entrypoint=entrypoint,
-                                params={"deprecated": deprecated},
-                                headers={"X-Fields": "id"})
-
-    @staticmethod
-    def insert(app, data, entrypoint="/properties/", check_status=True):
-        """ Insert a new entry """
-        res = app.post(f"{entrypoint}", follow_redirects=True, json=data)
-
-        if check_status and res.status_code != 201:
-            raise Exception(f"Could not insert property. {res.json}")
-
-        return res

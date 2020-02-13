@@ -1,4 +1,5 @@
 import os
+import atexit
 
 from flask import Flask
 from mongoengine import connect
@@ -13,9 +14,16 @@ def config_app(app, credentials):
 
     # Load app secret and convert to byte string
     app.secret_key = credentials["app_secret"].encode()
+    app.config['WTF_CSRF_ENABLED'] = False
 
-    app.config["PORT"] = credentials["api"]["port"]
-    app.config["API_HOST"] = credentials["api"]["host"]
+    # API related configuration
+    os.environ["PORT"] = str(credentials["api"]["port"])
+    os.environ["API_HOST"] = credentials["api"]["host"]
+    os.environ["API_EP_CTRL_VOC"] = credentials["api"]["endpoint"]["ctrl_vocs"]
+    os.environ["API_EP_PROPERTY"] = credentials["api"]["endpoint"]["properties"]
+    os.environ["API_EP_FORM"] = credentials["api"]["endpoint"]["forms"]
+    os.environ["API_EP_STUDY"] = credentials["api"]["endpoint"]["studies"]
+    os.environ["API_EP_USER"] = credentials["api"]["endpoint"]["users"]
 
     # Disable checking access token
     app.config["CHECK_ACCESS_TOKEN"] = credentials.get("check_access_token", True)
@@ -36,7 +44,17 @@ def config_app(app, credentials):
     app.config["MONGODB_COL_STUDY"] = credentials["database"]["mongodb"]["collection"]["study"]
 
 
+def clear_envirnomental_variables():
+
+    for key in ["PORT", "API_HOST"]:
+        if key in os.environ:
+            del os.environ[key]
+
+
 def create_app(config="DEVELOPMENT"):
+
+    atexit.register(clear_envirnomental_variables)
+
     app = Flask(__name__)
 
     credentials = load_credentials()
@@ -53,7 +71,7 @@ def create_app(config="DEVELOPMENT"):
             )
 
     # TODO: Find a better way to set the collection names
-    from metadata_registration_api.model import Property, ControlledVocabulary, Form, User, Study
+    from database_model.model import Property, ControlledVocabulary, Form, User, Study
     # noinspection PyProtectedMember
     Property._meta["collection"] = app.config["MONGODB_COL_PROPERTY"]
     # noinspection PyProtectedMember
@@ -79,7 +97,11 @@ def create_app(config="DEVELOPMENT"):
     # Initialize FormManager
     url = "http://127.0.0.1:5001"
     ds = ApiDataStore(url=url)
+    # ds = MongoDsAdapter(con.get_database(app.config["MONGODB_DB"]),  app.config["MONGODB_COL_FORM"])
     app.form_manager = FormManager(ds_adapter=ds, initial_load=False)
+
+    from state_machine import study_state
+    app.study_state_machine = study_state.StudyStateMachine()
 
     return app
 

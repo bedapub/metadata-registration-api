@@ -1,43 +1,48 @@
 import unittest
+from urllib.parse import urljoin
+import requests
 
-from metadata_registration_api.app import create_app
-from test.test_api_base import AbstractTest
+from test.test_api_base import BaseTestCase
+from test import test_utils
 
 
-class MyTestCase(unittest.TestCase, AbstractTest):
+# @unittest.skip
+class MyTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.app = create_app(config="TESTING").test_client()
+        super(MyTestCase, cls).setUpClass()
+        cls.route = "ctrl_vocs"
+        cls.url = urljoin(cls.host, cls.route)
 
     def setUp(self) -> None:
-        MyTestCase.clear_collection()
-        MyTestCase.clear_collection(entrypoint="/ctrl_vocs/")
+        test_utils.clear_collections(entry_point=self.host, routes=[self.route, "properties"])
+
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
 
     def test_get_property_no_param(self):
         """ Get list of properties without query parameter"""
-        MyTestCase.insert_two()
+        self.insert_two()
 
-        res = self.app.get("/ctrl_vocs/", follow_redirects=True)
+        res = requests.get(url=self.url)
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.json), 1)
+        self.assertEqual(len(res.json()), 1)
 
     def test_get_cv_deprecate_param(self):
         """ Get list of properties with query parameter deprecate """
-        MyTestCase.insert_two()
+        self.insert_two()
 
         for deprecated in [True, False]:
-            res = self.app.get(f"/ctrl_vocs?deprecated={deprecated}", follow_redirects=True)
+            res = requests.get(url=f"{self.url}?deprecated={deprecated}")
 
             self.assertEqual(res.status_code, 200)
             if deprecated:
-                self.assertEqual(len(res.json), 2)
+                self.assertEqual(len(res.json()), 2)
             else:
-                self.assertEqual(len(res.json), 1)
+                self.assertEqual(len(res.json()), 1)
 
     # ------------------------------------------------------------------------------------------------------------------
     # POST
@@ -48,17 +53,15 @@ class MyTestCase(unittest.TestCase, AbstractTest):
         res = self.insert_minimal_cv()
 
         self.assertEqual(res.status_code, 201)
-        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
-
+        self.assertTrue(all([key in res.json().keys() for key in ["message", "id"]]))
 
     def test_insert_cv_full(self):
         """ Add a controlled vocabulary containing a description and a synonyms """
 
         res = self.insert_full_cv()
 
-
         self.assertEqual(res.status_code, 201)
-        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
+        self.assertTrue(all([key in res.json().keys() for key in ["message", "id"]]))
 
     # ------------------------------------------------------------------------------------------------------------------
     # PUT
@@ -76,12 +79,12 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                            }]
                 }
 
-        res = AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
+        res = requests.post(url=self.url, json=data)
 
         self.assertEqual(res.status_code, 201)
-        self.assertTrue(all([key in res.json.keys() for key in ["message", "id"]]))
+        self.assertTrue(all([key in res.json().keys() for key in ["message", "id"]]))
 
-        entry_id = res.json["id"]
+        entry_id = res.json()["id"]
 
         data = {"label": "Test CV",
                 "name": "Test CV",
@@ -102,14 +105,16 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                 ]
                 }
 
-        res = MyTestCase.app.put(f"/ctrl_vocs/id/{entry_id}", json=data, follow_redirects=True)
+        url = urljoin(self.host, self.route + f"/id/{entry_id}")
+
+        res = requests.put(url=url, json=data)
 
         self.assertEqual(res.status_code, 200)
 
-        res = MyTestCase.get(MyTestCase.app, entrypoint=f"/ctrl_vocs/id/{entry_id}")
+        res = requests.get(url=url)
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.json['items']), 2)
+        self.assertEqual(len(res.json()['items']), 2)
 
     # ------------------------------------------------------------------------------------------------------------------
     # DELETE
@@ -117,44 +122,44 @@ class MyTestCase(unittest.TestCase, AbstractTest):
     def test_deprecate_single_entry(self):
         res = self.insert_minimal_cv()
 
-        MyTestCase.app.delete(f"/ctrl_vocs/id/{res.json['id']}", follow_redirects=True)
+        url = urljoin(self.host, self.route + f"/id/{res.json()['id']}")
 
-        results = MyTestCase.get(MyTestCase.app, entrypoint="/ctrl_vocs", params={"deprecated": True})
+        res = requests.delete(url=url)
 
-        for entry in results.json:
-            self.assertTrue(entry['deprecated'])
+        res = requests.get(url=url, params={"deprecated": True})
+
+        self.assertTrue(res.json()["deprecated"])
 
     def test_delete_all(self):
 
         for complete in [True, False]:
-            self.clear_collection(entrypoint="/ctrl_vocs/")
+            test_utils.clear_collections(entry_point=self.host, routes=[self.route])
             self.insert_two()
 
-            res = self.app.delete(f"/ctrl_vocs?complete={complete}", follow_redirects=True)
+            res = requests.delete(url=self.url, params={"complete": complete})
 
-            res_delete = self.app.get("/ctrl_vocs?deprecated=True", follow_redirects=True)
+            res_delete = requests.get(url=self.url, params={"deprecated": True})
+
             if complete:
-                self.assertEqual(len(res_delete.json), 0)
+                self.assertEqual(len(res_delete.json()), 0)
             else:
-                self.assertEqual(len(res_delete.json), 2)
+                self.assertEqual(len(res_delete.json()), 2)
 
-            res = self.app.get("/ctrl_vocs?deprecated=False", follow_redirects=True)
-            self.assertEqual(len(res.json), 0)
+            res = requests.get(url=self.url, params={"deprecated": False})
+            self.assertEqual(len(res.json()), 0)
 
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
 
-    @staticmethod
-    def insert_minimal_cv():
+    def insert_minimal_cv(self):
         data = {"label": "Test CV",
                 "name": "Test CV",
                 "description": "Test CV",
                 "items": [{"label": "Test item 1", "name": "Test item 1"}]}
 
-        return AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
+        return requests.post(url=self.url, json=data)
 
-    @staticmethod
-    def insert_full_cv():
+    def insert_full_cv(self):
         data = {"label": "Test CV",
                 "name": "Test CV",
                 "description": "Test CV",
@@ -165,10 +170,9 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                            }]
                 }
 
-        return AbstractTest.insert(MyTestCase.app, data, entrypoint="/ctrl_vocs/")
+        return requests.post(url=self.url, json=data)
 
-    @staticmethod
-    def insert_two():
+    def insert_two(self):
         data1 = {"label": "Test CV 1",
                  "name": "Test CV 1",
                  "description": "Test CV 1",
@@ -182,8 +186,7 @@ class MyTestCase(unittest.TestCase, AbstractTest):
                  "deprecated": True}
 
         for data in [data1, data2]:
-            res = AbstractTest.insert(MyTestCase.app, data=data, entrypoint="/ctrl_vocs/")
-
+            requests.post(url=self.url, json=data)
 
 if __name__ == '__main__':
     unittest.main()
