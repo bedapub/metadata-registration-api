@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs, marshal
 
-from database_model.model import Form, DataObjects
+from metadata_registration_api.model import Form, DataObjects
 from .api_props import property_model_id
 from .decorators import token_required
 

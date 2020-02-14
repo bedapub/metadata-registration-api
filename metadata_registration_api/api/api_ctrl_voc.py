@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
-from database_model.model import ControlledVocabulary
+from metadata_registration_api.model import ControlledVocabulary
 from .decorators import token_required
 
 api = Namespace("Controlled Vocabularies", description="Controlled vocabulary related operations")

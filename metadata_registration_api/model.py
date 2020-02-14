@@ -162,8 +162,7 @@ class StudyEntry(EmbeddedDocument):
     # TODO: Check if correct type
     value = StringField()
 
-
-class History(EmbeddedDocumentField):
+class History(EmbeddedDocument):
     user_id = ReferenceField(User)
     action = StringField()
     timestamp = DateTimeField()
@@ -177,9 +176,5 @@ class MetaInformation(EmbeddedDocument):
 class Study(Document):
     entries = EmbeddedDocumentListField(StudyEntry)
     meta_information = EmbeddedDocumentField(MetaInformation)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 
 

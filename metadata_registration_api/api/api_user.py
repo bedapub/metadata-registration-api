@@ -8,7 +8,7 @@ from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
 from .decorators import token_required, TokenException
-from database_model.model import User
+from metadata_registration_api.model import User
 
 api = Namespace("Users", description="User related operations")
 

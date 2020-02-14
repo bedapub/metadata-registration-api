@@ -3,8 +3,10 @@ start_up.sh
 
 # Credentials
 .credentials.yaml
+.id_rsa_docker
 
 .coverage
+.coveragerc
 
 
 # Compiled / optimized files

@@ -71,7 +71,7 @@ def create_app(config="DEVELOPMENT"):
             )
 
     # TODO: Find a better way to set the collection names
-    from database_model.model import Property, ControlledVocabulary, Form, User, Study
+    from metadata_registration_api.model import Property, ControlledVocabulary, Form, User, Study
     # noinspection PyProtectedMember
     Property._meta["collection"] = app.config["MONGODB_COL_PROPERTY"]
     # noinspection PyProtectedMember
@@ -85,13 +85,13 @@ def create_app(config="DEVELOPMENT"):
 
     from metadata_registration_api.api import api
     api.init_app(app,
-                 title="API for properties, controlled vocabulary, forms and studies.",
+                 title="Metadata Registration API",
                  contact="Rafael Müller",
                  contact_email="rafael.mueller@roche.com",
-                 description="An API to manage properties and controlled vocabularies."
+                 description="An API to register and manage study related metadata."
                              "\n\n"
-                             "The code is available here: https://github.roche.com/rafaelsm/ApiService. Any issue "
-                             "reports or feature requests are appreciated.",
+                             "The code is available here: https://github.roche.com/rafaelsm/metadata_registration_API. "
+                             "Any issue reports or feature requests are appreciated.",
                  )
 
     # Initialize FormManager
@@ -119,4 +119,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     app = create_app(**vars(args))
-    app.run(host="0.0.0.0", port=app.config["PORT"])
+    app.run(host="0.0.0.0", port=os.environ["PORT"])

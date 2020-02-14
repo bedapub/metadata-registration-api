@@ -5,7 +5,7 @@ from jwt.exceptions import InvalidSignatureError
 from flask import current_app as app, request
 
 from . import api
-from database_model.model import User
+from metadata_registration_api.model import User
 
 
 class TokenException(Exception):

@@ -6,7 +6,7 @@ from flask_restx import reqparse, inputs
 from wtforms import ValidationError
 
 from .api_props import property_model_id
-from database_model.model import Study
+from metadata_registration_api.model import Study
 from .decorators import token_required
 from metadata_registration_api import my_utils
 

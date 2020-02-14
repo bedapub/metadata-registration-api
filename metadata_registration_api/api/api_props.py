@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
-from database_model.model import Property
+from metadata_registration_api.model import Property
 from .api_ctrl_voc import ctrl_voc_model_id
 from .decorators import token_required
 
