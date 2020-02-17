@@ -10,7 +10,6 @@ Click==7.0
 colorama==0.4.3
 coverage==5.0
 cryptography==2.8
--e git+git@github.roche.com:rafaelsm/DatabaseModel.git@4971274363013d33786d7628e4ba7906e51a5193#egg=DatabaseModel
 docutils==0.16
 -e git+git@github.roche.com:rafaelsm/DynamicForm.git@980ac4f6aa006c0bda4813c80eec635edad3624d#egg=DynamicForm
 Flask==1.1.1
