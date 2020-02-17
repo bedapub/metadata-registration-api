@@ -11,7 +11,7 @@ colorama==0.4.3
 coverage==5.0
 cryptography==2.8
 docutils==0.16
--e git+git@github.roche.com:rafaelsm/DynamicForm.git@980ac4f6aa006c0bda4813c80eec635edad3624d#egg=DynamicForm
+-e git+git@github.roche.com:rafaelsm/DynamicForm.git@072b25befac437687c82ebe1c98b1bae93f10527#egg=DynamicForm
 Flask==1.1.1
 flask-restx==0.1.0
 Flask-WTF==0.14.2
