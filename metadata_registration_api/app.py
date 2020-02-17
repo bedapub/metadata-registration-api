@@ -5,7 +5,7 @@ from flask import Flask
 from mongoengine import connect
 
 from metadata_registration_api.my_utils import load_credentials
-from dynamic_form import FormManager, MongoDsAdapter
+from dynamic_form import FormManager, ApiDataStore
 
 
 def config_app(app, credentials):
@@ -95,9 +95,9 @@ def create_app(config="DEVELOPMENT"):
                  )
 
     # Initialize FormManager
-    # url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
-    # ds = ApiDataStore(url=url)
-    ds = MongoDsAdapter(con.get_database(app.config["MONGODB_DB"]),  app.config["MONGODB_COL_FORM"])
+    url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
+    ds = ApiDataStore(url=url)
+    # ds = MongoDsAdapter(con.get_database(app.config["MONGODB_DB"]),  app.config["MONGODB_COL_FORM"])
     app.form_manager = FormManager(ds_adapter=ds, initial_load=False)
 
     from state_machine import study_state

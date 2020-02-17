@@ -10,8 +10,9 @@ Click==7.0
 colorama==0.4.3
 coverage==5.0
 cryptography==2.8
+-e git+git@github.roche.com:rafaelsm/DatabaseModel.git@4971274363013d33786d7628e4ba7906e51a5193#egg=DatabaseModel
 docutils==0.16
--e git+git@github.roche.com:rafaelsm/DynamicForm.git@9312e020db5b552243ac54f27bb2e6822aa40fbe#egg=DynamicForm
+-e git+git@github.roche.com:rafaelsm/DynamicForm.git@980ac4f6aa006c0bda4813c80eec635edad3624d#egg=DynamicForm
 Flask==1.1.1
 flask-restx==0.1.0
 Flask-WTF==0.14.2
@@ -48,7 +49,7 @@ sphinxcontrib-htmlhelp==1.0.2
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==1.0.2
 sphinxcontrib-serializinghtml==1.1.3
--e git+git@github.roche.com:rafaelsm/StateMachine.git@a573ea7d9107fe041215ef5893b562724ff7c6ca#egg=StateMachine
+-e git+git@github.roche.com:rafaelsm/StateMachine.git@5d2169fcfcb4b2eabb7e67123b20d9e43f9671c5#egg=StateMachine
 urllib3==1.25.7
 Werkzeug==0.16.0
 win-inet-pton==1.1.0
