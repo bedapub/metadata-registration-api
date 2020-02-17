@@ -97,6 +97,9 @@ def create_app(config="DEVELOPMENT"):
     # Initialize FormManager
     url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
     ds = ApiDataStore(url=url)
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"DataStore url: {url}")
     # ds = MongoDsAdapter(con.get_database(app.config["MONGODB_DB"]),  app.config["MONGODB_COL_FORM"])
     app.form_manager = FormManager(ds_adapter=ds, initial_load=False)
 
