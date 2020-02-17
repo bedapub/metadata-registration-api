@@ -128,7 +128,7 @@ class ApiStudy(Resource):
         if len(entries) != len({prop["property"] for prop in entries}):
             raise AttributeError("The entries cannot have several identical property values.")
 
-        prop_map = my_utils.map_key_value(url="http://127.0.0.1:5001/properties", key="id", value="name")
+        prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
         form_data = {prop_map[entry["property"]]: entry["value"] for entry in entries}
 
 
