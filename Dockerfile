@@ -12,6 +12,8 @@ RUN echo "StrictHostKeyChecking no " > /root/.ssh/config
 ADD ./requirements.txt .
 RUN pip install -r requirements.txt
 
+ADD ./logging.conf .
+
 # Copy credentials into container
 ADD .credentials.yaml .
 
@@ -21,5 +23,9 @@ WORKDIR /
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--workers", "4", "--bind", "0.0.0.0", "metadata_registration_api.app:create_app (config='PRODUCTION')"]
+CMD ["gunicorn", \
+        "--workers", "4", \
+        "--bind", "0.0.0.0", \
+        "--log-config", "/logging.conf", \
+        "metadata_registration_api.app:create_app(config='PRODUCTION')"]
 
