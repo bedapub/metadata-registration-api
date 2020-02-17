@@ -5,7 +5,7 @@ from flask import Flask
 from mongoengine import connect
 
 from metadata_registration_api.my_utils import load_credentials
-from dynamic_form import FormManager, ApiDataStore
+from dynamic_form import FormManager, MongoDsAdapter
 
 
 def config_app(app, credentials):
@@ -63,12 +63,12 @@ def create_app(config="DEVELOPMENT"):
     # Restplus API
     app.config["ERROR_404_HELP"] = False
 
-    connect(app.config["MONGODB_DB"],
-            host=app.config["MONGODB_HOST"],
-            port=app.config["MONGODB_PORT"],
-            username=app.config["MONGODB_USERNAME"],
-            password=app.config["MONGODB_PASSWORD"],
-            )
+    con = connect(app.config["MONGODB_DB"],
+                  host=app.config["MONGODB_HOST"],
+                  port=app.config["MONGODB_PORT"],
+                  username=app.config["MONGODB_USERNAME"],
+                  password=app.config["MONGODB_PASSWORD"],
+                  )
 
     # TODO: Find a better way to set the collection names
     from metadata_registration_api.model import Property, ControlledVocabulary, Form, User, Study
@@ -95,9 +95,9 @@ def create_app(config="DEVELOPMENT"):
                  )
 
     # Initialize FormManager
-    url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
-    ds = ApiDataStore(url=url)
-    # ds = MongoDsAdapter(con.get_database(app.config["MONGODB_DB"]),  app.config["MONGODB_COL_FORM"])
+    # url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
+    # ds = ApiDataStore(url=url)
+    ds = MongoDsAdapter(con.get_database(app.config["MONGODB_DB"]),  app.config["MONGODB_COL_FORM"])
     app.form_manager = FormManager(ds_adapter=ds, initial_load=False)
 
     from state_machine import study_state
