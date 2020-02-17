@@ -65,7 +65,7 @@ class Login(Resource):
                             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)},
                            app.secret_key)
 
-        return {"x-access-token": token.decode("UTF-8")}
+        return {"X-Access-Token": token.decode("UTF-8")}
 
 
 @api.route("")

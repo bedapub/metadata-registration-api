@@ -26,7 +26,7 @@ def token_required(f):
             user = type("DummyUser", (), {"id": "dummy_id"})()
             return f(self, user, *args, **kwargs)
 
-        token = request.headers.get("x-access-token")
+        token = request.headers.get("X-Access-Token")
 
         if not token:
             raise TokenException(f"Your '{f.__name__}' request on '{request.path}' requires an access token. "
