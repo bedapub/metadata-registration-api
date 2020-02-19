@@ -6,7 +6,7 @@ from test.test_api_base import BaseTestCase
 from test import test_utils
 
 
-# @unittest.skip
+@unittest.skip
 class MyTestCase(BaseTestCase):
 
     @classmethod

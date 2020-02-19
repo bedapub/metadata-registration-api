@@ -13,15 +13,15 @@ class BaseTestCase(unittest.TestCase):
     def setUpClass(cls) -> None:
         app = create_app(config="TESTING")
         cls.config = app.config
-        cls.host = "http://" + ":".join([os.environ["API_HOST"], os.environ["PORT"]])
+        cls.host = "http://" + ":".join(("127.0.0.1", "5001"))
 
         def run_api(app):
-            app.run(threaded=True, port=int(os.environ["PORT"]))
+            app.run(threaded=True, port=5001)
 
         cls.thread = Thread(target=run_api, args=(app, ))
         cls.thread.setDaemon(True)
         cls.thread.start()
-        time.sleep(0.5)
+        time.sleep(2)
 
     @classmethod
     def tearDownClass(cls) -> None:

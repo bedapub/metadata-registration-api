@@ -8,7 +8,7 @@ from test import test_utils
 from dynamic_form.template_builder import UserTemplate
 
 
-# @unittest.skip
+@unittest.skip
 class MyTestCase(BaseTestCase):
 
     @classmethod
@@ -71,7 +71,7 @@ class MyTestCase(BaseTestCase):
         check_access_token = self.config['CHECK_ACCESS_TOKEN']
         self.config['CHECK_ACCESS_TOKEN'] = True
 
-        for entrypoint in ["/ctrl_vocs/", "/properties/", "/forms/", "/studies/", self.route]:
+        for entrypoint in ["/ctrl_vocs/", "/properties/", "/forms", "/studies/", self.route]:
             # TODO: Only works if get request needs access token
             res = requests.get(urljoin(self.host, entrypoint))
 

@@ -117,10 +117,16 @@ class ApiStudy(Resource):
 
         # 1. Extract form name from payload and get the corresponding form from the FormManager
         form_name = payload["form_name"]
-        form_cls = current_app.form_manager.get_form(form_name=form_name)
+        try:
+            form_cls = current_app.form_manager.get_form(form_name=form_name)
+        except Exception as e:
+            raise Exception("Could not load form")
 
         initial_state = payload["initial_state"]
-        current_app.study_state_machine.load_initial_state(name=initial_state)
+        try:
+            current_app.study_state_machine.load_initial_state(name=initial_state)
+        except Exception as e:
+            raise Exception("Could not initialize state machine")
 
         # 2. Convert submitted data into form compatible format
         entries = payload["entries"]
@@ -128,9 +134,12 @@ class ApiStudy(Resource):
         if len(entries) != len({prop["property"] for prop in entries}):
             raise AttributeError("The entries cannot have several identical property values.")
 
-        prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
-        form_data = {prop_map[entry["property"]]: entry["value"] for entry in entries}
+        try:
+            prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
+        except Exception as e:
+            raise Exception("Could not load property map")
 
+        form_data = {prop_map[entry["property"]]: entry["value"] for entry in entries}
 
         # 3. Validate data against form
         form_instance = form_cls(**form_data)
