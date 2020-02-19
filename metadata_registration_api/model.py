@@ -159,8 +159,8 @@ class User(Document):
 
 class StudyEntry(EmbeddedDocument):
     property = ReferenceField(Property)
-    # TODO: Check if correct type
-    value = StringField()
+    # Accept any type (mainly string or dict)
+    value = DynamicField()
 
 class History(EmbeddedDocument):
     user_id = ReferenceField(User)

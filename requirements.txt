@@ -48,7 +48,7 @@ sphinxcontrib-htmlhelp==1.0.2
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==1.0.2
 sphinxcontrib-serializinghtml==1.1.3
--e git+git@github.roche.com:rafaelsm/StateMachine.git@5d2169fcfcb4b2eabb7e67123b20d9e43f9671c5#egg=StateMachine
+-e git+git@github.roche.com:rafaelsm/StateMachine.git@b25dbcc7db953b7d797495a26789a91e47baa006#egg=StateMachine
 urllib3==1.25.7
 Werkzeug==0.16.0
 win-inet-pton==1.1.0

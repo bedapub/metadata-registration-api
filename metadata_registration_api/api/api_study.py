@@ -49,6 +49,7 @@ study_add_model = api.model("Add Study", {
     "form_name": fields.String(example="Form Object Id"),
     "initial_state": fields.String(default="generic_state", description="The initial state name"),
     "entries": fields.List(fields.Nested(field_add_model)),
+    "manual_meta_information": fields.Raw()
 })
 
 study_modify_model = api.inherit("Modify study model", study_add_model, {
@@ -136,6 +137,8 @@ class ApiStudy(Resource):
 
         try:
             prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
+            # prop_map = my_utils.map_key_value(url="http://127.0.0.1:5001/properties", key="id", value="name")
+
         except Exception as e:
             raise Exception("Could not load property map")
 
