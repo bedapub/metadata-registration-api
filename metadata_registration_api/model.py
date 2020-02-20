@@ -162,8 +162,10 @@ class StudyEntry(EmbeddedDocument):
     # Accept any type (mainly string or dict)
     value = DynamicField()
 
+
 class History(EmbeddedDocument):
     user_id = ReferenceField(User)
+    manual_user = StringField()
     action = StringField()
     timestamp = DateTimeField()
 

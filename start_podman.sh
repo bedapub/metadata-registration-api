@@ -28,6 +28,6 @@ if [ ! "$(sudo podman ps -q -f name='$CONT_NAME')" ]; then
 fi
 
 echo "Build container"
-sudo podman build -t "$CONT_NAME" .
+sudo podman build -t "$IMG_NAME" .
 echo "Run container"
 sudo podman run -d -p "$PORT":8000 --name "$CONT_NAME" "$IMG_NAME"

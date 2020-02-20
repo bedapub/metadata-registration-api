@@ -8,7 +8,7 @@ from test import test_utils
 from dynamic_form.template_builder import UserTemplate
 
 
-@unittest.skip
+# @unittest.skip
 class MyTestCase(BaseTestCase):
 
     @classmethod
@@ -61,7 +61,7 @@ class MyTestCase(BaseTestCase):
         res = requests.post(url=urljoin(self.url, "users/login"), json=data)
 
         self.assertEqual(res.status_code, 200)
-        self.assertTrue("x-access-token" in res.json().keys())
+        self.assertTrue("X-Access-Token" in res.json().keys())
 
     # ------------------------------------------------------------------------------------------------------------------
     # Access control

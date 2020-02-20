@@ -26,6 +26,9 @@ class MyTestCase(BaseTestCase):
     def test_retrieve_login_form(self):
         self.insert_login_form()
         res = requests.get(self.url)
+
+        self.assertEqual(res.status_code, 200)
+
         form = res.json()
 
     def test_get_property_form(self):

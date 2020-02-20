@@ -21,9 +21,9 @@ class BaseTestCase(unittest.TestCase):
         cls.thread = Thread(target=run_api, args=(app, ))
         cls.thread.setDaemon(True)
         cls.thread.start()
-        time.sleep(2)
+        time.sleep(0.8)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        cls.thread.join(timeout=0.1)
+    # @classmethod
+    # def tearDownClass(cls) -> None:
+    #     cls.thread.join(timeout=0.1)
 

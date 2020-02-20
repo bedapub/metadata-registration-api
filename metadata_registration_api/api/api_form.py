@@ -134,7 +134,7 @@ class ApiForm(Resource):
 
     @token_required
     @api.expect(form_add_model)
-    def post(self, user):
+    def post(self, user=None):
         """ Add a new entry """
         entry = Form(**api.payload)
         entry.save()
@@ -143,7 +143,7 @@ class ApiForm(Resource):
 
     @token_required
     @api.expect(parser=_delete_parser)
-    def delete(self, user):
+    def delete(self, user=None):
         """ Delete all entries """
         args = self._delete_parser.parse_args()
         force_delete = args["complete"]
@@ -176,7 +176,7 @@ class ApiForm(Resource):
 
     @token_required
     @api.expect(form_model)
-    def put(self, user, id):
+    def put(self, id, user=None):
         """ Update an entry given its unique identifier """
         entry = Form.objects(id=id).get()
         entry.update(**api.payload)
@@ -184,7 +184,7 @@ class ApiForm(Resource):
 
     @token_required
     @api.expect(parser=_delete_parser)
-    def delete(self, user, id):
+    def delete(self, id, user=None):
         """ Delete an entry given its unique identifier """
         args = self._delete_parser.parse_args()
         force_delete = args["complete"]

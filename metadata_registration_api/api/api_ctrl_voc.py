@@ -74,7 +74,7 @@ class ApiControlledVocabulary(Resource):
     @token_required
     @api.expect(ctrl_voc_model)
     @api.response(201, "Success", post_response_model)
-    def post(self, user):
+    def post(self, user=None):
         """ Add a new entry """
         entry = ControlledVocabulary(**api.payload)
         entry = entry.save()
@@ -83,7 +83,7 @@ class ApiControlledVocabulary(Resource):
 
     @token_required
     @api.expect(parser=_delete_parser)
-    def delete(self, user):
+    def delete(self, user=None):
         """ Delete all entries"""
 
         args = self._delete_parser.parse_args()
@@ -117,7 +117,7 @@ class ApiControlledVocabulary(Resource):
 
     @token_required
     @api.expect(ctrl_voc_model)
-    def put(self, user, id):
+    def put(self, id, user=None):
         """ Update an entry given its unique identifier """
         entry = ControlledVocabulary.objects(id=id).get()
         entry.update(**api.payload)
@@ -125,7 +125,7 @@ class ApiControlledVocabulary(Resource):
 
     @token_required
     @api.expect(parser=_delete_parser)
-    def delete(self, user, id):
+    def delete(self, id, user=None):
         """ Delete an entry given its unique identifier """
 
         args = self._delete_parser.parse_args()

@@ -86,7 +86,7 @@ class ApiProperties(Resource):
     @token_required
     @api.expect(property_add_model)
     @api.response(201, "Success", post_response_model)
-    def post(self, user):
+    def post(self, user=None):
         """ Add a new entry
 
             The name has to be unique and is internally used as a variable name. The passed string is
@@ -114,7 +114,7 @@ class ApiProperties(Resource):
 
     @token_required
     @api.expect(parser=_delete_parser)
-    def delete(self, user):
+    def delete(self, user=None):
         """ Deprecates all entries """
 
         parser = reqparse.RequestParser()
@@ -150,7 +150,7 @@ class ApiProperty(Resource):
 
     @token_required
     @api.expect(property_model)
-    def put(self, user, id):
+    def put(self, id, user=None):
         """ Update entry given its unique identifier """
         entry = Property.objects(id=id).first()
         entry.update(**api.payload)
@@ -158,7 +158,7 @@ class ApiProperty(Resource):
 
     @token_required
     @api.expect(parser=_delete_parser)
-    def delete(self, user, id):
+    def delete(self, id, user=None):
         """ Deprecates an entry given its unique identifier """
 
         parser = reqparse.RequestParser()

@@ -26,8 +26,7 @@ def token_required(f):
         """ Get token and try to decode it"""
 
         if not app.config['CHECK_ACCESS_TOKEN']:
-            user = type("DummyUser", (), {"id": "dummy_id"})()
-            return f(self, user, *args, **kwargs)
+            return f(self, *args, **kwargs)
 
         token = request.headers.get("X-Access-Token")
 
@@ -44,5 +43,5 @@ def token_required(f):
         # Get the user and pass it to the request
         user = User.objects(id=payload['user_id']).first()
 
-        return f(self, user, *args, **kwargs)
+        return f(self, user=user, *args, **kwargs)
     return decorated

@@ -6,6 +6,7 @@ from flask_restx import reqparse, inputs
 from wtforms import ValidationError
 
 from .api_props import property_model_id
+from . import api_utils
 from metadata_registration_api.model import Study
 from .decorators import token_required
 from metadata_registration_api import my_utils
@@ -22,6 +23,7 @@ entry_model = api.model("Entry", {
 
 change_log = api.model("Change Log", {
     "user_id": fields.String(),
+    "manual_user": fields.String(),
     "action": fields.String(),
     "timestamp": fields.DateTime()
 })
@@ -111,7 +113,7 @@ class ApiStudy(Resource):
 
     @token_required
     @api.expect(study_add_model)
-    def post(self, user):
+    def post(self, user=None):
         """ Add a new entry """
 
         payload = api.payload
@@ -136,27 +138,36 @@ class ApiStudy(Resource):
             raise AttributeError("The entries cannot have several identical property values.")
 
         try:
-            prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
-            # prop_map = my_utils.map_key_value(url="http://127.0.0.1:5001/properties", key="id", value="name")
+            # prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
+            prop_map = my_utils.map_key_value(url="http://127.0.0.1:5001/properties", key="id", value="name")
 
         except Exception as e:
             raise Exception("Could not load property map")
 
-        form_data = {prop_map[entry["property"]]: entry["value"] for entry in entries}
+        form_data_obj = api_utils.json_entries_to_objs(entries, prop_map)
+
+        form_data_json = {entry.name: entry.form_format() for entry in form_data_obj}
 
         # 3. Validate data against form
-        form_instance = form_cls(**form_data)
+        form_instance = form_cls(**form_data_json)
 
         if not form_instance.validate():
             raise ValidationError(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
 
         # 4. Evaluate new state of study by passing form data
-        state = current_app.study_state_machine.eval_next_state(**form_data)
+        state = current_app.study_state_machine.eval_next_state(**form_data_json)
 
         # 5. Create and append meta information to the entry
+
+        manual_user = payload.get("manual_meta_information", {}).get("user", None)
+
         metadata = {
             "state": state,
-            "change_log": [{"user_id": user.id, "action": "Create new study", "timestamp": datetime.now()}]
+            "change_log": [{"user_id": user.id if user else None,
+                            "manual_user": manual_user,
+                            "action": "Create new study",
+                            "timestamp": datetime.now()}
+                           ]
         }
         entry_data = {"entries": entries, "meta_information": metadata}
 
@@ -169,7 +180,7 @@ class ApiStudy(Resource):
 
     @token_required
     @api.expect(parser=_delete_parser)
-    def delete(self, user):
+    def delete(self, user=None):
         """ Deprecates all entries """
 
         parser = reqparse.RequestParser()
@@ -206,7 +217,7 @@ class ApiStudy(Resource):
 
     @token_required
     @api.expect(study_modify_model)
-    def put(self, user, id):
+    def put(self, id, user=None):
         """ Update an entry given its unique identifier """
 
         payload = api.payload
@@ -251,7 +262,7 @@ class ApiStudy(Resource):
 
     @token_required
     @api.expect(parser=_delete_parser)
-    def delete(self, user, id):
+    def delete(self, id, user=None):
         """ Delete an entry given its unique identifier """
         args = self._delete_parser.parse_args()
         force_delete = args["complete"]

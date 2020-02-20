@@ -3,7 +3,7 @@ start_up.sh
 
 # Credentials
 .credentials.yaml
-.id_rsa_docker
+id_rsa_git_rafaelsm_for_docker
 
 .coverage
 .coveragerc
