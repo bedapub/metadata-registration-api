@@ -138,8 +138,8 @@ class ApiStudy(Resource):
             raise AttributeError("The entries cannot have several identical property values.")
 
         try:
-            # prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
-            prop_map = my_utils.map_key_value(url="http://127.0.0.1:5001/properties", key="id", value="name")
+            prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
+            # prop_map = my_utils.map_key_value(url="http://127.0.0.1:5001/properties", key="id", value="name")
 
         except Exception as e:
             raise Exception("Could not load property map")
