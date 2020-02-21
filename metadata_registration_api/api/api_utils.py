@@ -1,3 +1,7 @@
+from datetime import datetime
+from dataclasses import dataclass
+from typing import Optional
+
 
 class StudyEntry:
     """Helper class to convert between the input and form format
@@ -82,13 +86,56 @@ def json_entry_to_obj(entry_data, key_name, value_name):
         return StudyEntry(identifier=entry_data[key_name], value=entry_data[value_name])
 
 
-def json_entries_to_objs(data_json, map, key_name="property", value_name="value"):
-    entries = []
-    for data in data_json:
-        entry = json_entry_to_obj(data, key_name=key_name, value_name=value_name)
-        entry.set_name_by_id(map)
+def json_input_to_form_format(json_data, mapper, key_name="property", value_name="value"):
+    """Convert json input format into form format.
 
+    The conversation is achieved through an object.
+
+    :param json_data:
+    :param mapper: dict with id as key and name as value
+    :param key_name:
+    :param value_name:
+    :return: dict with name as key and value in value
+    """
+    entries = []
+
+    for data in json_data:
+        entry = json_entry_to_obj(data, key_name=key_name, value_name=value_name)
+        entry.set_name_by_id(mapper)
         entries.append(entry)
-    return entries
+
+    return {entry.name: entry.form_format() for entry in entries}
+
+
+@dataclass()
+class ChangeLog:
+    action: str
+    user_id: str
+    timestamp: datetime
+    manual_user: Optional[str] = None
+
+    def to_dict(self):
+        return {key: value for key, value in self.__dict__.items() if value}
+
+
+class MetaInformation:
+
+    def __init__(self, state: str, change_log=None):
+
+        if change_log and not isinstance(change_log, list):
+            raise AttributeError("Change log has to be an instance of list")
+
+        self.state = state
+        self.change_log = change_log if change_log else list()
+
+    def add_log(self, log: ChangeLog):
+        self.change_log.append(log.to_dict())
+
+    def to_json(self):
+        return {
+            "state": self.state,
+            "change_log": self.change_log
+        }
+
 
 

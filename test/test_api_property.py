@@ -21,7 +21,7 @@ class MyTestCase(BaseTestCase):
         cls.url = urljoin(cls.host, cls.route)
 
     def setUp(self) -> None:
-        test_utils.clear_collections(entry_point=self.host, routes=["ctrl_vocs", self.route])
+        test_utils.clear_collections(entry_point=self.host, routes=["ctrl_voc", self.route])
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
@@ -205,7 +205,7 @@ class MyTestCase(BaseTestCase):
 
     def test_delete_individual_complete_param(self):
         for complete in [True, False]:
-            test_utils.clear_collections(entry_point=self.host, routes=["ctrl_vocs", self.route])
+            test_utils.clear_collections(entry_point=self.host, routes=["ctrl_voc", self.route])
             results = self.insert_two()
 
             for i, res in enumerate(results):
@@ -226,7 +226,7 @@ class MyTestCase(BaseTestCase):
 
     def test_delete(self):
         for complete in [True, False]:
-            test_utils.clear_collections(entry_point=self.host, routes=["ctrl_vocs", self.route])
+            test_utils.clear_collections(entry_point=self.host, routes=["ctrl_voc", self.route])
             self.insert_two()
 
             res = requests.delete(url=self.url, params={"complete": complete})

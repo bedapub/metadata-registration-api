@@ -1,11 +1,11 @@
 Metadata Registration API
 =========================
-A flask microservice which provides an API to access all objects for the Study Registration Tool prototype.
+A flask microservice to register and manage Study metadata via an API.
 
 Documentation
 -------------
-Sphinx documentation is available in `/docs`. Change into `/docs` and call :bash:`make html` to create the
-documentation. The documentation includes a getting started section.
+Sphinx documentation is available in :ref:`./docs/source/index.rst` to directly access the documentation.
+
 
 Purpose
 -------

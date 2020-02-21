@@ -6,15 +6,15 @@
 Api Service documentation
 ======================================
 
-A microservice which provides an API to access all objects for the Study Registration Tool prototype.
+A microservice which provides an API to access the Metadata Registration Tool.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   setup
+   installation
    introduction
-   modules
+   module/modules
 
 
 

@@ -1,11 +1,10 @@
 # .coveragerc to control coverage.py
 [run]
 branch = True
-source = api_service
+source = metadata_registration_api
 
 omit =
     # Omit server start
-    api_service\wsgi.py
 
 [report]
 # Regexes for lines to exclude from consideration

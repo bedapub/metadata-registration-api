@@ -1,15 +1,18 @@
 from datetime import datetime
-from flask import current_app
+import os
+from urllib.parse import urljoin
+
+from flask import current_app as app
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
-
 from wtforms import ValidationError
 
-from .api_props import property_model_id
 from . import api_utils
-from metadata_registration_api.model import Study
+from .api_props import property_model_id
 from .decorators import token_required
-from metadata_registration_api import my_utils
+from .. import my_utils
+from ..errors import IdenticalPropertyException
+from ..model import Study
 
 api = Namespace("Studies", description="Study related operations")
 
@@ -48,8 +51,8 @@ field_add_model = api.model("Add Field", {
 })
 
 study_add_model = api.model("Add Study", {
-    "form_name": fields.String(example="Form Object Id"),
-    "initial_state": fields.String(default="generic_state", description="The initial state name"),
+    "form_name": fields.String(example="Form Object Id", required=True),
+    "initial_state": fields.String(default="generic_state", required=True, description="The initial state name"),
     "entries": fields.List(fields.Nested(field_add_model)),
     "manual_meta_information": fields.Raw()
 })
@@ -118,35 +121,29 @@ class ApiStudy(Resource):
 
         payload = api.payload
 
-        # 1. Extract form name from payload and get the corresponding form from the FormManager
+        # 1. Split payload
         form_name = payload["form_name"]
+        initial_state = payload["initial_state"]
+        entries = payload["entries"]
+
         try:
-            form_cls = current_app.form_manager.get_form(form_name=form_name)
+            form_cls = app.form_manager.get_form(form_name=form_name)
         except Exception as e:
             raise Exception("Could not load form")
-
-        initial_state = payload["initial_state"]
         try:
-            current_app.study_state_machine.load_initial_state(name=initial_state)
+            app.study_state_machine.load_initial_state(name=initial_state)
         except Exception as e:
             raise Exception("Could not initialize state machine")
 
         # 2. Convert submitted data into form compatible format
-        entries = payload["entries"]
 
         if len(entries) != len({prop["property"] for prop in entries}):
-            raise AttributeError("The entries cannot have several identical property values.")
+            raise IdenticalPropertyException("The entries cannot have several identical property values.")
 
-        try:
-            prop_map = my_utils.map_key_value(url="http://127.0.0.1:8000/properties", key="id", value="name")
-            # prop_map = my_utils.map_key_value(url="http://127.0.0.1:5001/properties", key="id", value="name")
+        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+        prop_map = my_utils.map_key_value(url=property_url, key="id", value="name")
 
-        except Exception as e:
-            raise Exception("Could not load property map")
-
-        form_data_obj = api_utils.json_entries_to_objs(entries, prop_map)
-
-        form_data_json = {entry.name: entry.form_format() for entry in form_data_obj}
+        form_data_json = api_utils.json_input_to_form_format(json_data=entries, mapper=prop_map)
 
         # 3. Validate data against form
         form_instance = form_cls(**form_data_json)
@@ -155,26 +152,21 @@ class ApiStudy(Resource):
             raise ValidationError(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
 
         # 4. Evaluate new state of study by passing form data
-        state = current_app.study_state_machine.eval_next_state(**form_data_json)
+        state = app.study_state_machine.eval_next_state(**form_data_json)
 
-        # 5. Create and append meta information to the entry
+        meta_info = api_utils.MetaInformation(state=state)
+        log = api_utils.ChangeLog(user_id=user.id if user else None,
+                                  action="Created study",
+                                  timestamp=datetime.now(),
+                                  manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        meta_info.add_log(log)
 
-        manual_user = payload.get("manual_meta_information", {}).get("user", None)
-
-        metadata = {
-            "state": state,
-            "change_log": [{"user_id": user.id if user else None,
-                            "manual_user": manual_user,
-                            "action": "Create new study",
-                            "timestamp": datetime.now()}
-                           ]
-        }
-        entry_data = {"entries": entries, "meta_information": metadata}
+        entry_data = {"entries": entries, "meta_information": meta_info.to_json()}
 
         # 6. Insert data into database
         entry = Study(**entry_data)
         entry.save()
-        current_app.study_state_machine.change()
+        app.study_state_machine.change()
         return {"message": f"Study added", "id": str(entry.id)}, 201
 
 
@@ -223,40 +215,47 @@ class ApiStudy(Resource):
         payload = api.payload
 
         study_id = payload["id"]
+        form_name = payload["form_name"]
+        entries = payload["entries"]
+
+        entry = Study.objects(id=study_id).first()
 
         # 1. Extract form name and create form from FormManager
-        form_name = payload["form_name"]
-        form_cls = current_app.form_manager.get_form(form_name=form_name)
+        form_cls = app.form_manager.get_form(form_name=form_name)
 
         # 2. Convert submitted data in form format
-        entries = payload["entries"]
-        prop_map = my_utils.map_key_value(url="http://127.0.0.1:5001/properties", key="id", value="name")
-        form_data = {prop_map[entry["property"]]: entry["value"] for entry in entries}
+        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+        prop_map = my_utils.map_key_value(url=property_url, key="id", value="name")
+
+        form_data_json = api_utils.json_input_to_form_format(json_data=entries, mapper=prop_map)
 
         # 3. Validate data against form
-        form_instance = form_cls(**form_data)
+        form_instance = form_cls(**form_data_json)
 
         if not form_instance.validate():
             raise ValidationError(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
 
         # 4. Determine current state and evaluate next state
-        current_app.study_state_machine.load_state(payload["meta_information"]["state"])
-        state = current_app.study_state_machine.eval_next_state(**form_data)
+        app.study_state_machine.load_state(payload["meta_information"]["state"])
+        state = app.study_state_machine.eval_next_state(**form_data_json)
 
         # 5. Update metadata
         # 5. Create and append meta information to the entry
-        metadata = {
-            "last_change": datetime.now(),
-            "user": user.id,
-            "state": state,
-            "history": []
-        }
-        entry_data = {"entries": entries, "meta_information": metadata}
+
+        meta_info = api_utils.MetaInformation(**entry.metadata)
+
+        log = api_utils.ChangeLog(action="Changed study",
+                                  user_id= user.id if user else None,
+                                  timestamp=datetime.now(),
+                                  manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        meta_info.state = state
+        meta_info.add_log(log)
+
+        entry_data = {"entries": entries, "meta_information": meta_info.to_json()}
 
         # 6. Update data in database
-        entry = Study.objects(id=study_id).first()
         entry.update(**entry_data)
-        current_app.study_state_machine.change()
+        app.study_state_machine.change()
         return {"message": f"Update entry"}
 
 

@@ -100,7 +100,7 @@ form_model_id = api.inherit("Form with id", form_model, {
 })
 
 
-@api.route("/")
+@api.route("")
 class ApiForm(Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument("deprecated",

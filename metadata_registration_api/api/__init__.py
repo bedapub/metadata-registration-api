@@ -27,7 +27,7 @@ from .api_study import api as ns_4
 from .api_user import api as ns_5
 
 api.add_namespace(ns_1, path=os.environ.get("API_EP_PROPERTY", "/properties"))
-api.add_namespace(ns_2, path=os.environ.get("API_EP_CTRL_VOC", "/ctrl_vocs"))
+api.add_namespace(ns_2, path=os.environ.get("API_EP_CTRL_VOC", "/ctrl_voc"))
 api.add_namespace(ns_3, path=os.environ.get("API_EP_FORM", "/forms"))
 api.add_namespace(ns_4, path=os.environ.get("API_EP_STUDY", "/studies"))
 api.add_namespace(ns_5, path=os.environ.get("API_EP_USER", '/users'))

@@ -1,4 +1,5 @@
 import os
+import logging
 import atexit
 
 from flask import Flask
@@ -6,6 +7,8 @@ from mongoengine import connect
 
 from metadata_registration_api.my_utils import load_credentials
 from dynamic_form import FormManager, ApiDataStore
+
+logger = logging.getLogger(__name__)
 
 
 def config_app(app, credentials):
@@ -44,7 +47,7 @@ def config_app(app, credentials):
     app.config["MONGODB_COL_STUDY"] = credentials["database"]["mongodb"]["collection"]["study"]
 
 
-def clear_envirnomental_variables():
+def clear_environmental_variables():
 
     for key in ["PORT", "API_HOST"]:
         if key in os.environ:
@@ -53,7 +56,7 @@ def clear_envirnomental_variables():
 
 def create_app(config="DEVELOPMENT"):
 
-    atexit.register(clear_envirnomental_variables)
+    atexit.register(clear_environmental_variables)
 
     app = Flask(__name__)
 
@@ -96,15 +99,15 @@ def create_app(config="DEVELOPMENT"):
 
     # Initialize FormManager
     url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
+    app.config["URL"] = url
     ds = ApiDataStore(url=url)
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.info(f"DataStore url: {url}")
     # ds = MongoDsAdapter(con.get_database(app.config["MONGODB_DB"]),  app.config["MONGODB_COL_FORM"])
     app.form_manager = FormManager(ds_adapter=ds, initial_load=False)
 
     from state_machine import study_state
     app.study_state_machine = study_state.StudyStateMachine()
+
+    logger.info(f"Created Flask API and exposed {url}")
 
     return app
 
