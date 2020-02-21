@@ -11,7 +11,7 @@ colorama==0.4.3
 coverage==5.0
 cryptography==2.8
 docutils==0.16
--e git+git@github.roche.com:rafaelsm/DynamicForm.git@f159738b4787d765c0e07c5b4893e73de2d4b540#egg=DynamicForm
+-e git+git@github.roche.com:BEDA/metadata_registration_dynamic_form.git@cf7c9cc09ef366f3232aa323904459537048d812#egg=DynamicForm
 Flask==1.1.1
 flask-restx==0.1.0
 Flask-WTF==0.14.2
@@ -48,7 +48,7 @@ sphinxcontrib-htmlhelp==1.0.2
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==1.0.2
 sphinxcontrib-serializinghtml==1.1.3
--e git+git@github.roche.com:rafaelsm/StateMachine.git@dfec8530a7a4c2653243a8bcefe8f662413ae82a#egg=StateMachine
+-e git+git@github.roche.com:BEDA/metadata_registration_state_machine.git@efd7b2ac091b3295545542e97f7ef7d5c859ac40#egg=StateMachine
 urllib3==1.25.7
 Werkzeug==0.16.0
 win-inet-pton==1.1.0
