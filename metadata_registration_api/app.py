@@ -6,7 +6,11 @@ from flask import Flask
 from mongoengine import connect
 
 from metadata_registration_api.my_utils import load_credentials
-from dynamic_form import FormManager, ApiDataStore
+from metadata_registration_api.datastore_api import ApiDataStore
+from metadata_registration_api.api import api
+
+from dynamic_form import FormManager
+from state_machine import study_state
 
 logger = logging.getLogger(__name__)
 
@@ -86,25 +90,22 @@ def create_app(config="DEVELOPMENT"):
     # noinspection PyProtectedMember
     Study._meta["collection"] = app.config["MONGODB_COL_STUDY"]
 
-    from metadata_registration_api.api import api
     api.init_app(app,
                  title="Metadata Registration API",
                  contact="Rafael Müller",
                  contact_email="rafael.mueller@roche.com",
                  description="An API to register and manage study related metadata."
                              "\n\n"
-                             "The code is available here: https://github.roche.com/rafaelsm/metadata_registration_API. "
+                             "The code is available here: https://github.roche.com/BEDA/metadata_registration_api. "
                              "Any issue reports or feature requests are appreciated.",
                  )
 
     # Initialize FormManager
     url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
     app.config["URL"] = url
-    ds = ApiDataStore(url=url)
-    # ds = MongoDsAdapter(con.get_database(app.config["MONGODB_DB"]),  app.config["MONGODB_COL_FORM"])
-    app.form_manager = FormManager(ds_adapter=ds, initial_load=False)
+    data_store = ApiDataStore()
+    app.form_manager = FormManager(data_store=data_store, initial_load=False)
 
-    from state_machine import study_state
     app.study_state_machine = study_state.StudyStateMachine()
 
     logger.info(f"Created Flask API and exposed {url}")

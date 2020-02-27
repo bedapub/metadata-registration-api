@@ -11,7 +11,7 @@ colorama==0.4.3
 coverage==5.0
 cryptography==2.8
 docutils==0.16
--e git+git@github.roche.com:BEDA/metadata_registration_dynamic_form.git@cf7c9cc09ef366f3232aa323904459537048d812#egg=DynamicForm
+-e git+git@github.roche.com:BEDA/metadata_registration_dynamic_form.git@2d6018b656003b9cbdece61a6c411ed318838fd8#egg=DynamicForm
 Flask==1.1.1
 flask-restx==0.1.0
 Flask-WTF==0.14.2

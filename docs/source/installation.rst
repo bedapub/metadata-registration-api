@@ -4,8 +4,8 @@ Installation
 This chapter describes how to install and setup the metadata registration API (hereafter API). Before you can install
 the project, make sure that you meet the requisites:
 
-Requisites
-==========
+Prerequisites
+=============
 
 **Database**
 The API uses MongoDB as data store. Independent on how you install the API, make sure you have the necessary
@@ -39,7 +39,7 @@ takes longer and is more error prone when installing the API in a conda environm
 Run as podman container
 -----------------------------
 
-After, you we have met the requestsite, clone the git repository into our preferred directory. Change into the root
+After, we have met the prerequisites, clone the git repository into our preferred directory. Change into the root
 directory of the project and copy the ssh private key (i. e. id_rsa) and the `.credentials.yaml`. Finally execute the
 following command:
 
@@ -54,7 +54,7 @@ removed, and a new container is build and executed.
 Run as docker container
 -----------------------------
 
-After, you we have met the requestsite, clone the git repository into our preferred directory. Change into the root
+After, we have met the prerequisites, clone the git repository into our preferred directory. Change into the root
 directory of the project and copy the ssh private key (i. e. id_rsa) and the `.credentials.yaml`. Finally execute the
 following command:
 

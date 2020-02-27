@@ -1,7 +1,6 @@
 ===============
 Getting started
 ===============
-
 The API consists of multiple resources. An overview of the resources is available as swagger documentation. The
 swagger documentation is accessible via the index of the url. If you run the software locally, the swagger
 documentation is found under `http://127.0.0.1:5001`_.
