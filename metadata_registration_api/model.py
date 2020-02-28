@@ -172,6 +172,7 @@ class History(EmbeddedDocument):
 
 class MetaInformation(EmbeddedDocument):
     state = StringField()
+    deprecated = BooleanField(default=False)
     change_log = EmbeddedDocumentListField(History)
 
 

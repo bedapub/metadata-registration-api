@@ -2,13 +2,6 @@ FROM python:3.7
 
 LABEL MAINTAINER rafael.mueller1@gmail.com
 
-# Copy SSH key for git private repos
-ADD id_rsa /root/.ssh/id_rsa
-RUN chmod 600 /root/.ssh/id_rsa
-
-# Skip Host verification for git
-RUN echo "StrictHostKeyChecking no " > /root/.ssh/config
-
 ADD ./requirements.txt .
 RUN pip install -r requirements.txt
 

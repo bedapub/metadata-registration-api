@@ -33,6 +33,7 @@ change_log = api.model("Change Log", {
 
 meta_information_model = api.model("Metadata Information", {
     "state": fields.String(),
+    "deprecated": fields.Boolean(),
     "change_log": fields.List(fields.Nested(change_log))
 })
 
@@ -105,14 +106,14 @@ class ApiStudy(Resource):
         """ Fetch a list with all entries """
         # Convert query parameters
         args = self._get_parser.parse_args()
-        # include_deprecate = args["deprecated"]
+        include_deprecate = args["deprecated"]
 
-        # if not include_deprecate:
-        #     res = Study.objects(deprecated=False).all()
-        # else:
-        # Include entries which are deprecated
-        res = Study.objects[args["skip"]:args["skip"]+args["limit"]]
-        return list(res)
+        if not include_deprecate:
+            res = Study.objects(meta_information__deprecated=False)[args["skip"]:args["skip"]+args["limit"]].all()
+        else:
+            # Include entries which are deprecated
+            res = Study.objects[args["skip"]:args["skip"]+args["limit"]]
+            return list(res)
 
     @token_required
     @api.expect(study_add_model)
@@ -127,29 +128,20 @@ class ApiStudy(Resource):
         entries = payload["entries"]
 
         try:
-            form_cls = app.form_manager.get_form(form_name=form_name)
+            form_cls = app.form_manager.get_form_by_name(form_name=form_name)
         except Exception as e:
-            raise Exception("Could not load form")
+            raise Exception("Could not load form" + str(e))
         try:
             app.study_state_machine.load_initial_state(name=initial_state)
         except Exception as e:
-            raise Exception("Could not initialize state machine")
+            raise Exception("Could not initialize state machine" + str(e))
 
         # 2. Convert submitted data into form compatible format
 
         if len(entries) != len({prop["property"] for prop in entries}):
             raise IdenticalPropertyException("The entries cannot have several identical property values.")
 
-        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
-        prop_map = my_utils.map_key_value(url=property_url, key="id", value="name")
-
-        form_data_json = api_utils.json_input_to_form_format(json_data=entries, mapper=prop_map)
-
-        # 3. Validate data against form
-        form_instance = form_cls(**form_data_json)
-
-        if not form_instance.validate():
-            raise ValidationError(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+        form_data_json = validate_against_form(form_cls, form_name, entries)
 
         # 4. Evaluate new state of study by passing form data
         state = app.study_state_machine.eval_next_state(**form_data_json)
@@ -182,12 +174,12 @@ class ApiStudy(Resource):
         force_delete = args["complete"]
 
         entry = Study.objects().all()
-        if not force_delete:
-            entry.update(deprecated=True)
-            return {"message": "Deprecate all entries"}
-        else:
-            entry.delete()
-            return {"message": "Delete all entries"}
+        # if not force_delete:
+        #     entry.update(deprecated=True)
+        #     return {"message": "Deprecate all entries"}
+        # else:
+        entry.delete()
+        return {"message": "Delete all entries"}
 
 
 @api.route("/id/<id>")
@@ -221,20 +213,10 @@ class ApiStudy(Resource):
         entry = Study.objects(id=study_id).first()
 
         # 1. Extract form name and create form from FormManager
-        form_cls = app.form_manager.get_form(form_name=form_name)
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
 
         # 2. Convert submitted data in form format
-        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
-        prop_map = my_utils.map_key_value(url=property_url, key="id", value="name")
-
-        form_data_json = api_utils.json_input_to_form_format(json_data=entries, mapper=prop_map)
-
-        # 3. Validate data against form
-        form_instance = form_cls(**form_data_json)
-
-        if not form_instance.validate():
-            raise ValidationError(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
-
+        form_data_json = validate_against_form(form_cls, form_name, entries)
         # 4. Determine current state and evaluate next state
         app.study_state_machine.load_state(payload["meta_information"]["state"])
         state = app.study_state_machine.eval_next_state(**form_data_json)
@@ -268,9 +250,24 @@ class ApiStudy(Resource):
 
         entry = Study.objects(id=id).get()
         if not force_delete:
-            entry.update(deprecated=True)
-            return {"message": f"Deprecate entry '{entry.name}'"}
+            entry.update(meta_information__deprecated=True)
+            return {"message": "Deprecate entry"}
         else:
             entry.delete()
-            return {"message": f"Delete entry {entry.name}"}
+            return {"message": "Delete entry"}
+
+
+def validate_against_form(form_cls, form_name, entries):
+    property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+    prop_map = my_utils.map_key_value(url=property_url, key="id", value="name")
+
+    form_data_json = api_utils.json_input_to_form_format(json_data=entries, mapper=prop_map)
+
+    # 3. Validate data against form
+    form_instance = form_cls(**form_data_json)
+
+    if not form_instance.validate():
+        raise ValidationError(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+
+    return form_data_json
 
