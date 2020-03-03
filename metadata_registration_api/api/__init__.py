@@ -13,7 +13,7 @@ authorizations = {
     }
 }
 
-api = Api(version="1.0.0", authorizations=authorizations)
+api = Api(version="1.0.1", authorizations=authorizations)
 
 # noinspection PyPep8
 from .api_props import api as ns_1

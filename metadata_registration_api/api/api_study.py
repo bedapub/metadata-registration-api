@@ -113,7 +113,8 @@ class ApiStudy(Resource):
         else:
             # Include entries which are deprecated
             res = Study.objects[args["skip"]:args["skip"]+args["limit"]]
-            return list(res)
+
+        return list(res)
 
     @token_required
     @api.expect(study_add_model)
