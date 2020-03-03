@@ -1,4 +1,6 @@
 import os
+import io
+import re
 
 from flask_restx import Api
 from flask import current_app as app
@@ -13,7 +15,14 @@ authorizations = {
     }
 }
 
-api = Api(version="1.0.1", authorizations=authorizations)
+current_file_path = os.path.dirname(__file__)
+relative_path = "../__init__.py"
+init_file = os.path.join(current_file_path, relative_path)
+
+with io.open(init_file, "rt", encoding="utf8") as f:
+    version = re.search(r"__version__ = \"(.*?)\"", f.read()).group(1)
+
+api = Api(version=version, authorizations=authorizations)
 
 # noinspection PyPep8
 from .api_props import api as ns_1
