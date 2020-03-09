@@ -1,9 +1,12 @@
+import time
+
 import requests
 from urllib.parse import urljoin
 import unittest
 
+from metadata_registration_api.errors import TokenException
 from test.test_api_base import BaseTestCase
-from test import test_utils
+from scripts import setup
 
 from dynamic_form.template_builder import UserTemplate
 
@@ -18,7 +21,7 @@ class MyTestCase(BaseTestCase):
         cls.url = urljoin(cls.host, cls.route)
 
     def setUp(self) -> None:
-        test_utils.clear_collections(entry_point=self.host, routes=[self.route])
+        setup.clear_collection(self.user_endpoint)
 
     # ------------------------------------------------------------------------------------------------------------------
     # POST & GET
@@ -27,10 +30,7 @@ class MyTestCase(BaseTestCase):
 
         res = self.insert_one()
 
-        self.assertEqual(res.status_code, 201)
-        self.assertEqual(len(res.json()), 2)
-
-        res = requests.get(url=self.url + f"/id/{res.json()['id']}")
+        res = requests.get(url=self.user_endpoint + f"/id/{res.json()['id']}")
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.json()), 6)
@@ -40,9 +40,6 @@ class MyTestCase(BaseTestCase):
 
     def test_update_password(self):
         res = self.insert_one()
-
-        self.assertEqual(res.status_code, 201)
-        self.assertEqual(len(res.json()), 2)
 
         data = {"password": "new_password"}
 
@@ -64,27 +61,61 @@ class MyTestCase(BaseTestCase):
         self.assertTrue("X-Access-Token" in res.json().keys())
 
     # ------------------------------------------------------------------------------------------------------------------
-    # Access control
-
-    @unittest.skip
-    def test_post_without_token(self):
-        check_access_token = self.config['CHECK_ACCESS_TOKEN']
-        self.config['CHECK_ACCESS_TOKEN'] = True
-
-        for entrypoint in ["/ctrl_vocs/", "/properties/", "/forms", "/studies/", self.route]:
-            # TODO: Only works if get request needs access token
-            res = requests.get(urljoin(self.host, entrypoint))
-
-            self.assertTrue("error type" in res.json())
-            self.assertEqual("TokenException", res.json()['error type'], f"Failed with {entrypoint}")
-
-        self.config['CHECK_ACCESS_TOKEN'] = check_access_token
-
-    # ------------------------------------------------------------------------------------------------------------------
     # Helper function
 
     def insert_one(self):
         firstname, lastname, email, password = "Jane", "Doe", "jane.doe@email.com", "unhashed"
 
         data = UserTemplate(firstname, lastname, email, password)
-        return requests.post(url=self.url, json=data.to_dict())
+        res = requests.post(url=self.url, json=data.to_dict())
+
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(len(res.json()), 2)
+
+        return res
+
+
+class AuthorizationTest(BaseTestCase):
+    """Check access control"""
+    
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.config_type = "TESTING_SECURE"
+        super(AuthorizationTest, cls).setUpClass()
+
+    def test_post_without_token(self):
+
+        for endpoint in [self.ctrl_voc_endpoint, self.property_endpoint, self.form_endpoint, self.study_endpoint,
+                         self.user_endpoint]:
+
+            res = requests.post(endpoint)
+
+            self.assertEqual(res.status_code, 401, f"Fail {endpoint}")
+            self.assertEqual(res.json()['error type'], TokenException.__name__, f"Fail {endpoint}")
+
+    def test_post_invalid_token(self):
+        for endpooint in [self.ctrl_voc_endpoint]:
+            res = requests.post(endpooint, headers={"X-Access-Token": "unknown"})
+
+            self.assertEqual(res.status_code, 401, f"Fail {endpooint}")
+            self.assertEqual(res.json()["error type"], TokenException.__name__)
+
+    def test_delete_without_token(self):
+
+        for endpoint in [self.ctrl_voc_endpoint, self.property_endpoint, self.form_endpoint, self.study_endpoint,
+                         self.user_endpoint]:
+
+            res = requests.delete(endpoint)
+
+            self.assertEqual(res.status_code, 401, f"Fail {endpoint}")
+            self.assertEqual("TokenException", res.json()['error type'], f"Fail {endpoint}")
+
+    def test_put_without_token(self):
+
+        for endpoint in [self.ctrl_voc_endpoint, self.property_endpoint, self.form_endpoint, self.study_endpoint,
+                         self.user_endpoint]:
+
+            res = requests.put(endpoint + "/id/1")
+
+            self.assertEqual(res.status_code, 401, f"Fail {endpoint}")
+            self.assertEqual("TokenException", res.json()['error type'], f"Fail {endpoint}")

@@ -3,16 +3,7 @@
 import requests
 from urllib.parse import urljoin
 
-
-def clear_collections(entry_point, routes=None, complete=True):
-    """ Remove all entries"""
-
-    for route in routes:
-        url = urljoin(entry_point, route)
-        res = requests.delete(url=url, params={"complete": complete})
-
-        if res.status_code != 200:
-            raise Exception(f"Could not delete {url}. {res.json()}")
+from metadata_registration_api import my_utils
 
 
 def get_ids(endpoint="localhost", deprecated=False):
@@ -30,3 +21,42 @@ def insert(url=None, data=None):
         raise Exception(f"Could not insert entry into {url}. {res.json()}")
 
     return res
+
+import logging
+import os
+from threading import Thread
+from werkzeug.serving import make_server
+from metadata_registration_api.app import create_app
+
+logger = logging.getLogger(__name__)
+
+
+class ServerThread(Thread):
+    
+    def __init__(self, config="TESTING"):
+        super(ServerThread, self).__init__()
+
+        app = create_app(config=config)
+        self.config = app.config
+        self.credentials = my_utils.load_credentials()[config]
+
+        self.srv = make_server(os.environ["API_HOST"], os.environ["PORT"], app)
+
+        self.ctx = app.app_context()
+        self.ctx.push()
+
+    def run(self):
+        super(ServerThread, self).run()
+        logger.info("Start API Server")
+        self.srv.serve_forever()
+
+    def shutdown(self):
+        self.srv.shutdown()
+        logger.info("Stop API Server")
+
+
+if __name__ == '__main__':
+
+    server = ServerThread()
+    server.run()
+    server.shutdown()

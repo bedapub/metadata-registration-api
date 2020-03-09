@@ -1,21 +1,49 @@
-from urllib.parse import urljoin
 import requests
 import unittest
 
-from test import test_utils
 from test.test_api_base import BaseTestCase
 
 from scripts import setup
 
-# from dynamic_form.template_builder import PropertyTemplate, FormTemplate, FieldTemplate
 
-
-# @unittest.skip
-class MyTestCase(BaseTestCase):
+class FormReadTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        super(MyTestCase, cls).setUpClass()
+        super(FormReadTestCase, cls).setUpClass()
+
+        cls.ctrl_voc_map, \
+        cls.prop_map, \
+        cls.form_map = setup.minimal_setup(cls.ctrl_voc_endpoint,
+                                           cls.property_endpoint,
+                                           cls.form_endpoint,
+                                           cls.study_endpoint)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super(FormReadTestCase, cls).tearDownClass()
+
+    def test_get_individual_forms(self):
+        for key, value in self.form_map.items():
+            res = requests.get(self.form_endpoint + f"/id/{value}")
+
+            self.assertEqual(res.status_code, 200, f"Fail to load form '{key}'")
+
+    def test_get_all_forms(self):
+        res = requests.get(self.form_endpoint)
+
+        self.assertEqual(res.status_code, 200)
+
+
+class FormInsertTestCase(BaseTestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super(FormInsertTestCase, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super(FormInsertTestCase, cls).tearDownClass()
 
     def setUp(self) -> None:
         self.ctrl_voc_map, \
@@ -24,20 +52,6 @@ class MyTestCase(BaseTestCase):
                                             self.property_endpoint,
                                             self.form_endpoint,
                                             self.study_endpoint)
-
-    def test_get_individual_forms(self):
-        for key, value in self.form_map.items():
-            res = requests.get(self.form_endpoint + f"/id/{value}")
-
-            self.assertEqual(res.status_code, 200, f"Fail to load form '{key}'")
-
-
-    def test_get_all_forms(self):
-        res = requests.get(self.form_endpoint)
-
-        self.assertEqual(res.status_code, 200)
-
-    # POST
 
     def test_insert_generic_study_form(self):
         self.ctrl_voc_map.update(setup.add_study_related_ctrl_voc(self.host, self.credentials))

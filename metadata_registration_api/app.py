@@ -10,7 +10,7 @@ from metadata_registration_api.datastore_api import ApiDataStore
 from metadata_registration_api.api import api
 
 from dynamic_form import FormManager
-from state_machine import study_state
+from state_machine import context
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ def create_app(config="DEVELOPMENT"):
     data_store = ApiDataStore()
     app.form_manager = FormManager(data_store=data_store, initial_load=False)
 
-    app.study_state_machine = study_state.StudyStateMachine()
+    app.study_state_machine = context.Context()
 
     logger.info(f"Created Flask API and exposed {url}")
 

@@ -12,6 +12,21 @@ Purpose
 This package was written during a six month internship and was developed as part of the Study Registration Tool
 prototype.
 
+Coverage & Documentation
+------------
+Run coverage with:
+
+.. code-block:: console
+
+    $ coverage run ./test/test_main.py && coverage report -m
+
+Run sphinx documentation with:
+
+.. code-block:: console
+
+    $ cd docs
+    $ sphinx-apidoc -f -o ./source/modules ../ && make html
+
 
 Authors
 -------

@@ -2,7 +2,7 @@ from urllib.parse import urljoin
 import requests
 import unittest
 
-from test import test_utils
+from scripts import setup
 from test.test_api_base import BaseTestCase
 
 from dynamic_form.template_builder import \
@@ -11,24 +11,25 @@ from dynamic_form.template_builder import \
     ItemTemplate, \
     PropertyTemplate
 
+
 # @unittest.skip
-class MyTestCase(BaseTestCase):
+class PropertyGetTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        super(MyTestCase, cls).setUpClass()
+        super(PropertyGetTestCase, cls).setUpClass()
         cls.route = "properties"
         cls.url = urljoin(cls.host, cls.route)
 
-    def setUp(self) -> None:
-        test_utils.clear_collections(entry_point=self.host, routes=["ctrl_voc", self.route])
+        setup.clear_collection(cls.ctrl_voc_endpoint)
+        setup.clear_collection(cls.property_endpoint)
+        cls.results = insert_two(cls)
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
 
     def test_get_property_no_param(self):
         """ Get list of properties without query parameter"""
-        self.insert_two()
         res = requests.get(url=self.url)
 
         self.assertEqual(res.status_code, 200)
@@ -36,8 +37,6 @@ class MyTestCase(BaseTestCase):
 
     def test_get_property_deprecate_param(self):
         """ Get list of properties with query parameter deprecate """
-        self.insert_two()
-
         for deprecated in [True, False]:
             res = requests.get(url=self.url, params={"deprecated": deprecated})
 
@@ -49,15 +48,23 @@ class MyTestCase(BaseTestCase):
 
     def test_get_property_single(self):
         """ Get single property by id """
-        results = self.insert_two()
-
-        url = self.url + f"/id/{results[0].json()['id']}"
+        url = self.url + f"/id/{self.results[0].json()['id']}"
         res = requests.get(url=url)
 
         self.assertEqual(res.status_code, 200)
 
-    # ------------------------------------------------------------------------------------------------------------------
-    # PUT
+
+class PropertyTestCase(BaseTestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super(PropertyTestCase, cls).setUpClass()
+        cls.route = "properties"
+        cls.url = urljoin(cls.host, cls.route)
+
+    def setUp(self) -> None:
+        setup.clear_collection(self.ctrl_voc_endpoint)
+        setup.clear_collection(self.property_endpoint)
 
     def test_append_to_synonyms_entire_dataset(self):
         """ Update by passing the entire dataset to the API"""
@@ -147,10 +154,10 @@ class MyTestCase(BaseTestCase):
 
     def test_post_property_double_entry(self):
         """ Try to insert properties twice """
-        results_1 = self.insert_two()
+        results_1 = insert_two(self)
 
         with self.assertRaises(Exception):
-            results_2 = self.insert_two()
+            results_2 = insert_two(self)
 
             for res in results_2:
                 self.assertEqual(res.status_code, 409)
@@ -191,7 +198,7 @@ class MyTestCase(BaseTestCase):
     # Delete
 
     def test_delete_individual_no_param(self):
-        results = self.insert_two()
+        results = insert_two(self)
 
         for res in results:
             res = requests.delete(url=self.url + f"/id/{res.json()['id']}")
@@ -205,8 +212,9 @@ class MyTestCase(BaseTestCase):
 
     def test_delete_individual_complete_param(self):
         for complete in [True, False]:
-            test_utils.clear_collections(entry_point=self.host, routes=["ctrl_voc", self.route])
-            results = self.insert_two()
+            setup.clear_collection(self.ctrl_voc_endpoint)
+            setup.clear_collection(self.property_endpoint)
+            results = insert_two(self)
 
             for i, res in enumerate(results):
                 res_delete = requests.delete(url=self.url + f"/id/{res.json()['id']}", params={"complete": complete})
@@ -226,8 +234,9 @@ class MyTestCase(BaseTestCase):
 
     def test_delete(self):
         for complete in [True, False]:
-            test_utils.clear_collections(entry_point=self.host, routes=["ctrl_voc", self.route])
-            self.insert_two()
+            setup.clear_collection(self.ctrl_voc_endpoint)
+            setup.clear_collection(self.property_endpoint)
+            insert_two(self)
 
             res = requests.delete(url=self.url, params={"complete": complete})
             res_delete = requests.get(url=self.url, params={"deprecated": True})
@@ -243,20 +252,21 @@ class MyTestCase(BaseTestCase):
     # ------------------------------------------------------------------------------------------------------------------
     # Helper methods
 
-    def insert_two(self):
-        """ Insert a normal and a deprecated entry"""
 
-        props = [
-            PropertyTemplate("label1", "name1", "level_1", "description 1"),
-            PropertyTemplate("label2", "name2", "level_2", "description 2", deprecated=True),
-        ]
+def insert_two(self):
+    """ Insert a normal and a deprecated entry"""
 
-        results = [requests.post(self.url, json=prop.to_dict()) for prop in props]
+    props = [
+        PropertyTemplate("label1", "name1", "level_1", "description 1"),
+        PropertyTemplate("label2", "name2", "level_2", "description 2", deprecated=True),
+    ]
 
-        for index, res in enumerate(results):
-            if res.status_code != 201:
-                raise Exception(f"Could not insert {props[index]}. {res.json()}")
+    results = [requests.post(self.url, json=prop.to_dict()) for prop in props]
 
-        return results
+    for index, res in enumerate(results):
+        if res.status_code != 201:
+            raise Exception(f"Could not insert {props[index]}. {res.json()}")
+
+    return results
 
 

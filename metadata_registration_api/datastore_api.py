@@ -41,10 +41,10 @@ class ApiDataStore(IDataStore):
             res = requests.get(f"{self.form_endpoint}/id/{form_entry['id']}")
             return self._process_results(res, f"Fail to load form (name:{name})")
 
-        except StopIteration:
-            error_msg = f"Fail to find requested form in database (name:{name})"
+        except StopIteration as e:
+            error_msg = f"Fail to find form in database (name:{name}, data store: {self.__class__.__name__})"
             logger.error(error_msg)
-            raise DataStoreException(error_msg)
+            raise DataStoreException(error_msg) from e
 
     def load_forms(self):
         """Load all forms from the API"""

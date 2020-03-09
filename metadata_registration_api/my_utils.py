@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import requests
 
+
 def load_credentials(filename=".credentials.yaml"):
     """" Load credential from file. """
     try:
@@ -10,11 +11,11 @@ def load_credentials(filename=".credentials.yaml"):
         location = Path(__file__).parents[1]
         path = os.path.join(location, filename)
         with open(path, 'r') as f:
-            # load credentials from file
             credentials = yaml.load(f, Loader=yaml.SafeLoader)
             return credentials
     except IOError:
         print("Could not find credentials file. Credentials are expected to be in the project root directory.")
+        raise
 
 
 def map_key_value(url, key="id", value="name"):

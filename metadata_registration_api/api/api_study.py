@@ -5,13 +5,12 @@ from urllib.parse import urljoin
 from flask import current_app as app
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
-from wtforms import ValidationError
 
 from . import api_utils
 from .api_props import property_model_id
 from .decorators import token_required
 from .. import my_utils
-from ..errors import IdenticalPropertyException
+from ..errors import IdenticalPropertyException, RequestBodyException
 from ..model import Study
 
 api = Namespace("Studies", description="Study related operations")
@@ -128,26 +127,28 @@ class ApiStudy(Resource):
         initial_state = payload["initial_state"]
         entries = payload["entries"]
 
-        try:
-            form_cls = app.form_manager.get_form_by_name(form_name=form_name)
-        except Exception as e:
-            raise Exception("Could not load form" + str(e))
-        try:
-            app.study_state_machine.load_initial_state(name=initial_state)
-        except Exception as e:
-            raise Exception("Could not initialize state machine" + str(e))
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+
+        if initial_state == "rna_sequencing_biokit":
+            initial_state = "BiokitUploadState"
+
+        app.study_state_machine.load_state(name=initial_state)
 
         # 2. Convert submitted data into form compatible format
 
-        if len(entries) != len({prop["property"] for prop in entries}):
-            raise IdenticalPropertyException("The entries cannot have several identical property values.")
+        try:
+            if len(entries) != len({prop["property"] for prop in entries}):
+                raise IdenticalPropertyException("The entries cannot have several identical property values.")
+        except TypeError as e:
+            raise RequestBodyException("Entries has wrong format.") from e
 
         form_data_json = validate_against_form(form_cls, form_name, entries)
 
         # 4. Evaluate new state of study by passing form data
-        state = app.study_state_machine.eval_next_state(**form_data_json)
+        app.study_state_machine.create_study(**form_data_json)
+        state = app.study_state_machine.current_state
 
-        meta_info = api_utils.MetaInformation(state=state)
+        meta_info = api_utils.MetaInformation(state=str(state))
         log = api_utils.ChangeLog(user_id=user.id if user else None,
                                   action="Created study",
                                   timestamp=datetime.now(),
@@ -159,7 +160,6 @@ class ApiStudy(Resource):
         # 6. Insert data into database
         entry = Study(**entry_data)
         entry.save()
-        app.study_state_machine.change()
         return {"message": f"Study added", "id": str(entry.id)}, 201
 
 
@@ -207,6 +207,7 @@ class ApiStudy(Resource):
 
         payload = api.payload
 
+        # 1. Split payload
         study_id = payload["id"]
         form_name = payload["form_name"]
         entries = payload["entries"]
@@ -219,8 +220,14 @@ class ApiStudy(Resource):
         # 2. Convert submitted data in form format
         form_data_json = validate_against_form(form_cls, form_name, entries)
         # 4. Determine current state and evaluate next state
-        app.study_state_machine.load_state(payload["meta_information"]["state"])
-        state = app.study_state_machine.eval_next_state(**form_data_json)
+        state_name = entry.meta_information.state
+
+        if state_name == "rna_sequencing_biokit":
+            state_name = "BiokitUploadState"
+
+        app.study_state_machine.load_state(name=state_name)
+        app.study_state_machine.change_state(**form_data_json)
+        new_state = app.study_state_machine.current_state
 
         # 5. Update metadata
         # 5. Create and append meta information to the entry
@@ -228,19 +235,17 @@ class ApiStudy(Resource):
         meta_info = api_utils.MetaInformation(**entry.metadata)
 
         log = api_utils.ChangeLog(action="Changed study",
-                                  user_id= user.id if user else None,
+                                  user_id=user.id if user else None,
                                   timestamp=datetime.now(),
                                   manual_user=payload.get("manual_meta_information", {}).get("user", None))
-        meta_info.state = state
+        meta_info.state = new_state
         meta_info.add_log(log)
 
         entry_data = {"entries": entries, "meta_information": meta_info.to_json()}
 
         # 6. Update data in database
         entry.update(**entry_data)
-        app.study_state_machine.change()
         return {"message": f"Update entry"}
-
 
     @token_required
     @api.expect(parser=_delete_parser)
@@ -268,7 +273,7 @@ def validate_against_form(form_cls, form_name, entries):
     form_instance = form_cls(**form_data_json)
 
     if not form_instance.validate():
-        raise ValidationError(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+        raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
 
     return form_data_json
 

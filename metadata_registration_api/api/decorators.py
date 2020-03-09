@@ -1,18 +1,18 @@
 from functools import wraps
 import logging
 import jwt
+from jwt import DecodeError
 from jwt.exceptions import InvalidSignatureError
 
 from flask import current_app as app, request
 
-from . import api
+from metadata_registration_api.api import api
 from metadata_registration_api.model import User
+from metadata_registration_api.errors import TokenException
 
 logger = logging.getLogger(__name__)
 
 
-class TokenException(Exception):
-    pass
 
 
 def token_required(f):
@@ -37,8 +37,8 @@ def token_required(f):
                                  f"generated through log in.")
         try:
             payload = jwt.decode(token, app.secret_key)
-        except InvalidSignatureError:
-            raise TokenException(f"Your given token is invalid. Your can receive a token through log in.")
+        except InvalidSignatureError and DecodeError as e:
+            raise TokenException(f"Your given token is invalid. Your can receive a valid token bt login.") from e
 
         # Get the user and pass it to the request
         user = User.objects(id=payload['user_id']).first()

@@ -3,9 +3,12 @@ import io
 import re
 
 from flask_restx import Api
-from flask import current_app as app
 
 from mongoengine.errors import NotUniqueError, ValidationError, DoesNotExist
+from dynamic_form.errors import DynamicFormException
+from state_machine.errors import StateMachineException
+
+from metadata_registration_api.errors import TokenException, IdenticalPropertyException, RequestBodyException
 
 authorizations = {
     "apikey": {
@@ -42,20 +45,39 @@ api.add_namespace(ns_4, path=os.environ.get("API_EP_STUDY", "/studies"))
 api.add_namespace(ns_5, path=os.environ.get("API_EP_USER", '/users'))
 
 
-@api.errorhandler(ValidationError)
-def handle_validation_error(error):
-    return {"message": f"Validation error: {error.message}"}, 400
+@api.errorhandler(TokenException)
+def handle_authorization_error(error):
+    return {
+               "error type": str(error.__class__.__name__),
+               "message": str(error)
+           }, 401
+
+
+@api.errorhandler(DynamicFormException)
+@api.errorhandler(StateMachineException)
+@api.errorhandler(RequestBodyException)
+@api.errorhandler(IdenticalPropertyException)
+def state_machine_exception(error):
+    return {
+        "error_type": str(error.__class__.__name__),
+        "message": str(error)
+    }, 422
 
 
 @api.errorhandler(NotUniqueError)
 def handle_not_unique_error(error):
-    return {"message": f"The entry already exists. {error}"}, 409
+    return {
+               "error_type": str(error.__class__.__name__),
+               "message": f"The entry already exists: {str(error)}"
+           }, 409
 
 
 @api.errorhandler(DoesNotExist)
 def handle_does_not_exist_error(error):
-    return {"message": f"The entry does not exist. {error}"}, 404
-
+    return {
+               "error_type": str(error.__class__.__name__),
+               "message": f"The entry does not exist: {str(error)}"
+           }, 404
 
 @api.errorhandler(Exception)
 def general_error_handler(error):
