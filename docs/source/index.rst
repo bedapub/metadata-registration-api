@@ -4,9 +4,9 @@
    contain the root `toctree` directive.
 
 Metadata Registration Api documentation
-======================================
+=======================================
 
-A microservice which provides an API to access the Metadata Registration Tool.
+The metadata registration api is a service to register metadata via an API. It runs as a Flask microservice.
 
 .. toctree::
    :maxdepth: 2

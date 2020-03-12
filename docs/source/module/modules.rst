@@ -1,9 +1,7 @@
-Metadata_Registration_API
+metadata_registration_api
 =========================
 
 .. toctree::
    :maxdepth: 4
 
    metadata_registration_api
-   scripts
-   test

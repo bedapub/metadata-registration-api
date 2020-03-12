@@ -9,19 +9,32 @@ Prerequisites
 
 **Database**
 The API uses MongoDB as data store. Independent on how you install the API, make sure you have the necessary
-credentials to access your MongoDB instance.
+credentials (host, port, username, password, database) to access your MongoDB instance.
 
 **Dependencies**
-The API has two internal dependencies. These dependencies are the 'State Machine' and the 'Dynamic Form'. Both
-projects are listed as git repositories in the `requirements.txt` document. To download them, you must be able
-to access github with a SSH key. Check
-`here <https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent>`_
-for a better description.
+The API has two internal dependencies. These dependencies are the `State Machine`_ and the `Dynamic form`_. Both
+projects are listed as git repositories in the `requirements.txt` document. If you run the API as a container, you
+don't have to do anything. The dependencies will be automatically installed like all other packages with pip.
+
+.. figure:: ./images/MRT_Overview.png
+    :width: 600
+    :align: center
+    :alt: Modules of API
+
+.. _State Machine: https://study-state-machine.readthedocs.io/en/stable/
+.. _Dynamic form: https://dynamic-form.readthedocs.io/en/stable/
 
 **Credentials**
-A configuration file is needed. Since the file stores all credentials of the application, it is called
-`.credentials .yaml`. We have to create it because it is not shipped with the git repository. Create this file and add
-all the config information.
+A configuration file is needed. By default, the application expects its name to be `.credentials .yaml`. Currently,
+this file does not exist in our directory. However, in the application root directory you will find a template file
+called `credentials_template.yaml`. Create a copy of this file and rename it to `.credentials.yaml`. Replace the
+empty strings with our authentication data.
+
+.. code-block:: console
+
+    $ cp credentials_template .credentials.yaml
+    $ vim .credentials.yaml # Add authentication data
+
 
 Setup
 ============

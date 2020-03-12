@@ -19,6 +19,14 @@ metadata\_registration\_api.app module
    :undoc-members:
    :show-inheritance:
 
+metadata\_registration\_api.datastore\_api module
+-------------------------------------------------
+
+.. automodule:: metadata_registration_api.datastore_api
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 metadata\_registration\_api.errors module
 -----------------------------------------
 
