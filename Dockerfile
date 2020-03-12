@@ -1,6 +1,6 @@
 FROM python:3.7
 
-LABEL MAINTAINER rafael.mueller1@gmail.com
+LABEL MAINTAINER=rafa.molitoris@gmail.com
 
 ADD ./requirements.txt .
 RUN pip install -r requirements.txt

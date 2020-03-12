@@ -1,5 +1,4 @@
--e git+https://github.roche.com/BEDA/metadata_registration_dynamic_form.git#egg=DynamicForm
--e git+https://github.roche.com/BEDA/metadata_registration_state_machine.git#egg=StateMachine
+dynamic-form==0.3.0
 Flask==1.1.1
 flask-restx==0.1.0
 Flask-WTF==0.14.2
@@ -10,5 +9,7 @@ PyJWT==1.7.1
 pymongo==3.10.1
 PyYAML==5.3
 requests==2.22.0
+Sphinx==2.3.1
+study-state-machine==0.2.3
 Werkzeug==0.16.0
 WTForms==2.2.1

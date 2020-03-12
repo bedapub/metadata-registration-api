@@ -10,7 +10,7 @@ from metadata_registration_api.datastore_api import ApiDataStore
 from metadata_registration_api.api import api
 
 from dynamic_form import FormManager
-from state_machine import context
+from study_state_machine import context
 
 logger = logging.getLogger(__name__)
 
@@ -93,10 +93,10 @@ def create_app(config="DEVELOPMENT"):
     api.init_app(app,
                  title="Metadata Registration API",
                  contact="Rafael Müller",
-                 contact_email="rafael.mueller@roche.com",
+                 contact_email="rafa.molitoris@gmail.com",
                  description="An API to register and manage study related metadata."
                              "\n\n"
-                             "The code is available here: https://github.roche.com/BEDA/metadata_registration_api. "
+                             "The code is available here: https://github.com/BEDApub/metadata_registration_api. "
                              "Any issue reports or feature requests are appreciated.",
                  )
 

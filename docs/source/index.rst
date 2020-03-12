@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Api Service documentation
+Metadata Registration Api documentation
 ======================================
 
 A microservice which provides an API to access the Metadata Registration Tool.

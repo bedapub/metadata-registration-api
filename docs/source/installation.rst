@@ -77,7 +77,7 @@ Run in a conda environment
 
         .. code-block:: bash
 
-            $git clone git@github.roche.com:rafaelsm/metadata_registration_API.git
+            $git clone git@github.com/BEDApub/metadata-registration-api.git
             $conda env --name metadata_registration python=3.7`
             $conda activate metadata_registration`
             $pip install -r requirements.txt

@@ -2,9 +2,19 @@ Metadata Registration API
 =========================
 A flask microservice to register and manage Study metadata via an API.
 
+
 Documentation
 -------------
-Sphinx documentation is available in :ref:`./docs/source/index.rst` to directly access the documentation.
+Please find the documentation on `Read the Docs`_.
+
+.. _Read the docs: https://metadata_registration_api.readthedocs.io/en/stable
+
+Installation
+------------
+
+.. code-block:: console
+
+    $git clone https://github.com/bedapub/metadata-registration-api.git
 
 
 Purpose
@@ -12,23 +22,8 @@ Purpose
 This package was written during a six month internship and was developed as part of the Study Registration Tool
 prototype.
 
-Coverage & Documentation
-------------
-Run coverage with:
-
-.. code-block:: console
-
-    $ coverage run ./test/test_main.py && coverage report -m
-
-Run sphinx documentation with:
-
-.. code-block:: console
-
-    $ cd docs
-    $ sphinx-apidoc -f -o ./source/modules ../ && make html
-
 
 Authors
 -------
-* **Rafael Müller** <mailto:rafael.mueller1@gmail.com> - Initial work
+* **Rafael Müller** <mailto:rafa.molitoris@gmail.com> - Initial work
 * **Laura Badi** - Supervisor

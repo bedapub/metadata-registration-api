@@ -5,7 +5,7 @@
 # Description: Build and run a podman container. If the container is already
 #              running, the running container is stopped and deleted prior.
 #      Author: Rafael Müller
-#       Email: rafael.mueller1@gmail.com
+#       Email: rafa.molitoris@gmail.com
 #  Created on: 17 Feb, 2020
 #==============================================================================
 

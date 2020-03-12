@@ -3,7 +3,7 @@ import unittest
 
 import requests
 from dynamic_form.errors import DataStoreException
-from state_machine.errors import StateNotFoundException
+from study_state_machine.errors import StateNotFoundException
 
 from metadata_registration_api.errors import RequestBodyException, IdenticalPropertyException
 from test.test_api_base import BaseTestCase
@@ -89,6 +89,8 @@ class StudyTestCase(BaseTestCase):
         self.ctrl_voc_map.update(setup.add_study_related_ctrl_voc(self.host, self.credentials))
         self.prop_map.update(setup.add_study_related_properties(self.host, self.credentials, self.ctrl_voc_map))
 
+    @unittest.skipUnless(os.path.exists(os.path.join(os.path.dirname(__file__), "ACpilot_mongodb.json")),
+                         "File to upload not available")
     def test_upload_rna_seq_form(self):
         self.form_map.update(setup.add_rna_seq_form(self.host, self.credentials, self.prop_map))
 
@@ -99,7 +101,12 @@ class StudyTestCase(BaseTestCase):
         # Ensure that inserted study is accessible
         study_endpoint = self.study_endpoint + f"/id/{self.study_map['ACpilot']}/"
         res = requests.get(study_endpoint)
+        self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.json()["entries"]), 10)
+
+        res = requests.get(self.study_endpoint)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.json()), 1)
 
         res = requests.delete(study_endpoint)
         self.assertEqual(res.status_code, 200, f"Could not delete study with id {self.study_map['ACpilot']}")

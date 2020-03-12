@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'ApiService'
+project = 'Metadata Registration API'
 copyright = '2020, Rafael S. Müller'
 author = 'Rafael S. Müller'
 

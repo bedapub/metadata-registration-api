@@ -1,7 +1,7 @@
-Metadata_Registration_API
+metadata_registration_api
 =========================
 
 .. toctree::
    :maxdepth: 4
 
-   Metadata_Registration_API
+   metadata_registration_api
