@@ -16,6 +16,7 @@ __pycharch__
 
 # IDE
 .idea
+.vscode
 
 # Flask
 instance/
