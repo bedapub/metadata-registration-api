@@ -220,7 +220,7 @@ class ApiStudy(Resource):
         # 2. Convert submitted data in form format
         form_data_json = validate_against_form(form_cls, form_name, entries)
         # 4. Determine current state and evaluate next state
-        state_name = entry.meta_information.state
+        state_name = str(entry.meta_information.state)
 
         if state_name == "rna_sequencing_biokit":
             state_name = "BiokitUploadState"
@@ -231,14 +231,16 @@ class ApiStudy(Resource):
 
         # 5. Update metadata
         # 5. Create and append meta information to the entry
-
-        meta_info = api_utils.MetaInformation(**entry.metadata)
+        meta_info = api_utils.MetaInformation(
+            state=state_name,
+            change_log=entry.meta_information.change_log
+        )
 
         log = api_utils.ChangeLog(action="Changed study",
                                   user_id=user.id if user else None,
                                   timestamp=datetime.now(),
                                   manual_user=payload.get("manual_meta_information", {}).get("user", None))
-        meta_info.state = new_state
+        meta_info.state = str(new_state)
         meta_info.add_log(log)
 
         entry_data = {"entries": entries, "meta_information": meta_info.to_json()}
