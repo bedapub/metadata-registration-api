@@ -64,10 +64,13 @@ class StudyEntry:
         if isinstance(self.value, list):
             my_list = []
             for entry in self.value:
-                my_list_2 = {}
-                for item in entry.value:
-                    my_list_2[item.name] = item.form_format()
-                my_list.append({entry.name: my_list_2})
+                if isinstance(entry.value, list):
+                    my_list_2 = {}
+                    for item in entry.value:
+                        my_list_2[item.name] = item.form_format()
+                    my_list.append({entry.name: my_list_2})
+                else:
+                    my_list.append(entry.value)
             return my_list
         else:
             return self.value
