@@ -18,10 +18,8 @@ to access github with a SSH key. Check
 `here <https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent>`_
 for a better description.
 
-**Credentials**
-A configuration file is needed. Since the file stores all credentials of the application, it is called
-`.credentials .yaml`. We have to create it because it is not shipped with the git repository. Create this file and add
-all the config information.
+**Credentials / Configuration**
+A configuration done through environment variables, make sure they're all defined as needed.
 
 Setup
 ============
