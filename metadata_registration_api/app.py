@@ -1,11 +1,10 @@
 import os
 import logging
-import atexit
 
 from flask import Flask
 from mongoengine import connect
 
-from metadata_registration_api.my_utils import load_credentials
+from metadata_registration_api.my_utils import str_to_bool
 from metadata_registration_api.datastore_api import ApiDataStore
 from metadata_registration_api.api import api
 
@@ -15,57 +14,47 @@ from study_state_machine import context
 logger = logging.getLogger(__name__)
 
 
-def config_app(app, credentials):
+def config_app(app):
 
-    app.debug = credentials["DEBUG"]
+    required_env_variables = ["APP_SECRET", "PORT", "API_HOST", "API_EP_CTRL_VOC",
+        "API_EP_PROPERTY", "API_EP_FORM", "API_EP_STUDY", "API_EP_USER", "MONGODB_DB",
+        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_USERNAME", "MONGODB_PASSWORD",
+        "MONGODB_COL_PROPERTY", "MONGODB_COL_CTRL_VOC", "MONGODB_COL_FORM",
+        "MONGODB_COL_USER", "MONGODB_COL_STUDY"]
+
+    for env_variable in required_env_variables:
+        if not env_variable in os.environ:
+            raise Exception(f"The environment variable {env_variable} is required")
+
+    app.debug = str_to_bool(os.getenv("DEBUG", "false"))
 
     # Load app secret and convert to byte string
-    app.secret_key = credentials["app_secret"].encode()
+    app.secret_key = os.environ["APP_SECRET"].encode()
     app.config['WTF_CSRF_ENABLED'] = False
 
-    # API related configuration
-    os.environ["PORT"] = str(credentials["api"]["port"])
-    os.environ["API_HOST"] = credentials["api"]["host"]
-    os.environ["API_EP_CTRL_VOC"] = credentials["api"]["endpoint"]["ctrl_vocs"]
-    os.environ["API_EP_PROPERTY"] = credentials["api"]["endpoint"]["properties"]
-    os.environ["API_EP_FORM"] = credentials["api"]["endpoint"]["forms"]
-    os.environ["API_EP_STUDY"] = credentials["api"]["endpoint"]["studies"]
-    os.environ["API_EP_USER"] = credentials["api"]["endpoint"]["users"]
-
     # Disable checking access token
-    app.config["CHECK_ACCESS_TOKEN"] = credentials.get("check_access_token", True)
+    app.config["CHECK_ACCESS_TOKEN"] = str_to_bool(os.getenv("CHECK_ACCESS_TOKEN", "true"))
 
     # Load mongo database credentials
-    app.config["MONGODB_DB"] = credentials["database"]["mongodb"]["database"]
-    app.config["MONGODB_HOST"] = credentials["database"]["mongodb"]["hostname"]
-    app.config["MONGODB_PORT"] = credentials["database"]["mongodb"]["port"]
-    app.config["MONGODB_USERNAME"] = credentials["database"]["mongodb"]["username"]
-    app.config["MONGODB_PASSWORD"] = credentials["database"]["mongodb"]["password"]
+    app.config["MONGODB_DB"] = os.environ["MONGODB_DB"]
+    app.config["MONGODB_HOST"] = os.environ["MONGODB_HOST"]
+    app.config["MONGODB_PORT"] = int(os.environ["MONGODB_PORT"])
+    app.config["MONGODB_USERNAME"] = os.environ["MONGODB_USERNAME"]
+    app.config["MONGODB_PASSWORD"] = os.environ["MONGODB_PASSWORD"]
     app.config["MONGODB_CONNECT"] = False
 
     # Load mongo collection names
-    app.config["MONGODB_COL_PROPERTY"] = credentials["database"]["mongodb"]["collection"]["property"]
-    app.config["MONGODB_COL_CTRL_VOC"] = credentials["database"]["mongodb"]["collection"]["ctrl_voc"]
-    app.config["MONGODB_COL_FORM"] = credentials["database"]["mongodb"]["collection"]["form"]
-    app.config["MONGODB_COL_USER"] = credentials["database"]["mongodb"]["collection"]["user"]
-    app.config["MONGODB_COL_STUDY"] = credentials["database"]["mongodb"]["collection"]["study"]
+    app.config["MONGODB_COL_PROPERTY"] = os.environ["MONGODB_COL_PROPERTY"]
+    app.config["MONGODB_COL_CTRL_VOC"] = os.environ["MONGODB_COL_CTRL_VOC"]
+    app.config["MONGODB_COL_FORM"] = os.environ["MONGODB_COL_FORM"]
+    app.config["MONGODB_COL_USER"] = os.environ["MONGODB_COL_USER"]
+    app.config["MONGODB_COL_STUDY"] = os.environ["MONGODB_COL_STUDY"]
 
 
-def clear_environmental_variables():
-
-    for key in ["PORT", "API_HOST"]:
-        if key in os.environ:
-            del os.environ[key]
-
-
-def create_app(config="DEVELOPMENT"):
-
-    atexit.register(clear_environmental_variables)
-
+def create_app():
     app = Flask(__name__)
 
-    credentials = load_credentials()
-    config_app(app, credentials[config])
+    config_app(app)
 
     # Restplus API
     app.config["ERROR_404_HELP"] = False
@@ -96,7 +85,7 @@ def create_app(config="DEVELOPMENT"):
                  contact_email="rafa.molitoris@gmail.com",
                  description="An API to register and manage study related metadata."
                              "\n\n"
-                             "The code is available here: https://github.com/BEDApub/metadata_registration_api. "
+                             "The code is available here: https://github.com/BEDApub/metadata-registration-api. "
                              "Any issue reports or feature requests are appreciated.",
                  )
 
@@ -118,10 +107,6 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Start property microservice")
-    parser.add_argument("--config", type=str,
-                        default="DEVELOPMENT",
-                        help="Mode in which the application should start",
-                        )
 
     args = parser.parse_args()
 

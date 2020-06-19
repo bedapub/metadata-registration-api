@@ -1,21 +1,8 @@
-import yaml
-import os
-from pathlib import Path
 import requests
 
 
-def load_credentials(filename=".credentials.yaml"):
-    """" Load credential from file. """
-    try:
-        # Navigate to project root directory
-        location = Path(__file__).parents[1]
-        path = os.path.join(location, filename)
-        with open(path, 'r') as f:
-            credentials = yaml.load(f, Loader=yaml.SafeLoader)
-            return credentials
-    except IOError:
-        print("Could not find credentials file. Credentials are expected to be in the project root directory.")
-        raise
+def str_to_bool(s):
+    return s.lower() in ["true", "1", "y", "yes", "on", "t"]
 
 
 def map_key_value(url, key="id", value="name"):
