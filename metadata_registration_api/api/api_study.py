@@ -272,7 +272,8 @@ def validate_against_form(form_cls, form_name, entries):
     form_data_json = api_utils.json_input_to_form_format(json_data=entries, mapper=prop_map)
 
     # 3. Validate data against form
-    form_instance = form_cls(**form_data_json)
+    form_instance = form_cls()
+    form_instance.process(data=form_data_json)
 
     if not form_instance.validate():
         raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
