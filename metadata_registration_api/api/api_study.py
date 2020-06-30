@@ -107,11 +107,14 @@ class ApiStudy(Resource):
         args = self._get_parser.parse_args()
         include_deprecate = args["deprecated"]
 
+        res = Study.objects.skip(args["skip"])
+
+        # Issue with limit(0) that returns 0 items instead of all of them
+        if args["limit"] != 0:
+            res = res.limit(args["limit"])
+
         if not include_deprecate:
-            res = Study.objects(meta_information__deprecated=False)[args["skip"]:args["skip"]+args["limit"]].all()
-        else:
-            # Include entries which are deprecated
-            res = Study.objects[args["skip"]:args["skip"]+args["limit"]]
+            res = res.filter(meta_information__deprecated=False)
 
         return list(res)
 
