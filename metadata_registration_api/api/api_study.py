@@ -116,7 +116,7 @@ class ApiStudy(Resource):
         if not include_deprecate:
             res = res.filter(meta_information__deprecated=False)
 
-        return list(res)
+        return list(res.select_related())
 
     @token_required
     @api.expect(study_add_model)
