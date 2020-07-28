@@ -1,12 +1,12 @@
-from datetime import datetime
 import os
+from datetime import datetime
 from urllib.parse import urljoin
 
 from flask import current_app as app
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
-from . import api_utils
+from metadata_registration_api.api.api_utils import MetaInformation, ChangeLog, FormatConverter
 from .api_props import property_model_id
 from .decorators import token_required
 from .. import my_utils
@@ -151,11 +151,11 @@ class ApiStudy(Resource):
         app.study_state_machine.create_study(**form_data_json)
         state = app.study_state_machine.current_state
 
-        meta_info = api_utils.MetaInformation(state=str(state))
-        log = api_utils.ChangeLog(user_id=user.id if user else None,
-                                  action="Created study",
-                                  timestamp=datetime.now(),
-                                  manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        meta_info = MetaInformation(state=str(state))
+        log = ChangeLog(user_id=user.id if user else None,
+                        action="Created study",
+                        timestamp=datetime.now(),
+                        manual_user=payload.get("manual_meta_information", {}).get("user", None))
         meta_info.add_log(log)
 
         entry_data = {"entries": entries, "meta_information": meta_info.to_json()}
@@ -234,15 +234,15 @@ class ApiStudy(Resource):
 
         # 5. Update metadata
         # 5. Create and append meta information to the entry
-        meta_info = api_utils.MetaInformation(
+        meta_info = MetaInformation(
             state=state_name,
             change_log=entry.meta_information.change_log
         )
 
-        log = api_utils.ChangeLog(action="Changed study",
-                                  user_id=user.id if user else None,
-                                  timestamp=datetime.now(),
-                                  manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        log = ChangeLog(action="Changed study",
+                        user_id=user.id if user else None,
+                        timestamp=datetime.now(),
+                        manual_user=payload.get("manual_meta_information", {}).get("user", None))
         meta_info.state = str(new_state)
         meta_info.add_log(log)
 
@@ -272,7 +272,7 @@ def validate_against_form(form_cls, form_name, entries):
     property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
     prop_map = my_utils.map_key_value(url=property_url, key="id", value="name")
 
-    form_data_json = api_utils.json_input_to_form_format(json_data=entries, mapper=prop_map)
+    form_data_json = FormatConverter(mapper=prop_map).add_api_format(entries).get_form_format()
 
     # 3. Validate data against form
     form_instance = form_cls()
