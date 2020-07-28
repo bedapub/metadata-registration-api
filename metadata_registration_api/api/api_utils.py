@@ -1,113 +1,192 @@
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
+PRIMITIVES = (bool, int, float, str)
+PRIMITIVES_LIST = (*PRIMITIVES, list)
 
-class StudyEntry:
-    """Helper class to convert between the input and form format
 
-        The input format consists of a property id and a value. The form format consists of a name and a value. This
-        class converts between the two formats.
+class FormatConverter:
+    """Class responsible for converting between api format and form format.
 
-        The value supports several formats. It can contain a value or a list of entries.
+    API FORMAT
+    ----------
+    The api format consists of a list of dictionaries. Each dictionary has two keys: property and value. The value of
+    the property is the property id. The second key (value) can take four different formats:
+        1. primitive data type (string, int, float, boolean)
+        2. list of primitive data types
+        3. dictionary (representing a FormField)
+        4. list of dictionary (representing a list of FormField)
 
-        entry: {
-            prop: 123
-            value: abc
-        }
-
-        entry: {
-            prop: 123
-            value: [{prop: 123, value: abc}, {prop: 123, value: abc}]
-        }
-
-        entry: {
-           prop: 123
-           value: [{prop: 123, value: [{}, ...]}, {prop: 123, value: [{}, ...]}]
-        }
+    FORM FORMAT
+    -----------
+    The form format is designed such that it can be directly passed to a wtf form. It is a dictionary with the
+    property names as key and the given data as value. The value can take four different formats:
+        1. primitive data type (string, int, float, boolean)
+        2. list of primitive data types
+        3. dictionary (representing a FormField)
+        4. list of dictionary (representing a list of FormField)
     """
 
-    def __init__(self, value, identifier=None, name=None):
+    def __init__(self, mapper: dict, key_name: str = "property", value_name: str = "value"):
         """
-        :param value:
-        :param identifier:
-        :param name:
+        :param key_name: name under which the key the property id is stored
+        :param value_name: name under which the user input is stored
+        :param mapper: dict which converts between the property id and property name
         """
-        self.value = value
-        self.identifier = identifier
-        self.name = name
+        self.key_name = key_name
+        self.value_name = value_name
+        self.mapper = mapper
 
-    def set_name_by_id(self, map):
-        """ Set the name of the entry based on the identifier given in the map"""
-        if not self.identifier:
-            raise Exception(f"{self.set_name_by_id.__name__} cannot be used. Identifier of entry not set")
+        self.entries = []
 
-        if isinstance(self.value, list):
-            for entry in self.value:
-                entry.set_name_by_id(map)
+    def __repr__(self):
+        return f"<{self.__class__.__name__} (key name: {self.key_name}, value name: {self.value_name}, " \
+               f"mapper: {self.mapper})>"
 
-        self.name = map[self.identifier]
+    def add_api_format(self, data):
+        """
+        :param data: data in api format
+        :return: self
+        """
+        self.entries = []
+        for entry in data:
+            self.entries.append(Entry(self).add_api_format(entry))
 
-    def set_id_by_name(self, map):
-        """Set the identifier of the entry based on the name given in the map"""
-        if not self.name:
-            raise Exception(f"{self.set_id_by_name.__name__} cannot be used. Name of entry not set")
+        return self
 
-        if isinstance(self.value, list):
-            for entry in self.value:
-                entry.set_name_by_id(self.name, map)
+    def add_form_format(self, data):
+        """
+        :param data: data in form format
+        :return: self
+        """
+        self.entries = [Entry(self).add_form_format(key=key, value=value) for key, value in data.items()]
+        return self
 
-        self.identifier = map[self.name]
+    def get_api_format(self):
+        """
+        :return: Returns data in api format
+        """
+        return [{self.key_name: entry.prop_id, self.value_name: entry.get_api_format()} for entry in self.entries]
 
-    def form_format(self):
-        """Convert to a dictionary in form format"""
-        if isinstance(self.value, list):
-            my_list = []
-            for entry in self.value:
-                if isinstance(entry.value, list):
-                    my_list_2 = {}
-                    for item in entry.value:
-                        my_list_2[item.name] = item.form_format()
-                    my_list.append({entry.name: my_list_2})
-                else:
-                    my_list.append(entry.value)
-            return my_list
-        else:
+    def get_form_format(self):
+        """
+        :return: Returns data in form format
+        """
+        return {entry.prop_name: entry.get_form_format() for entry in self.entries}
+
+
+class Entry:
+
+    def __init__(self, converter):
+        self.converter = converter
+
+        self.prop_id = None
+        self.prop_name = None
+        self.value = None
+
+    def __repr__(self):
+        return f"<Entry(property: {self.prop_name}, id: {self.prop_id}, value: {self.value})>"
+
+    def add_api_format(self, data):
+        self.prop_id = data[self.converter.key_name]
+        self.prop_name = self.converter.mapper[self.prop_id]
+
+        def convert_value(value):
+            if type(value) in PRIMITIVES:  # simple value
+                return value
+            elif isinstance(value, list):
+                if all(type(entry) in PRIMITIVES for entry in value):  # list of simple values
+                    return value
+                elif all(isinstance(entry, dict) for entry in value):  # FormField
+                    return NestedEntry(self.converter).add_api_format(value)
+                elif all(isinstance(entry, list) for entry in value):  # FieldList of FormField
+                    return NestedListEntry(self.converter).add_api_format(value)
+
+        self.value = convert_value(data[self.converter.value_name])
+
+        return self
+
+    def add_form_format(self, key, value):
+        self.prop_name = key
+        self.prop_id = self.converter.mapper[key]
+
+        def convert_value(value):
+            if type(value) in PRIMITIVES:
+                return value
+            elif type(value) is dict:
+                return NestedEntry(self.converter).add_form_format(value)
+            elif isinstance(value, list):
+                if all(type(entry) in PRIMITIVES for entry in value):
+                    return value
+                if all(type(entry) is dict for entry in value):
+                    return NestedListEntry(self.converter).add_form_format(value)
+
+        self.value = convert_value(value)
+
+        return self
+
+    def get_api_format(self):
+        if type(self.value) in PRIMITIVES_LIST:
             return self.value
 
-    def input_format(self):
-        raise NotImplementedError
+        return self.value.get_api_format()
+
+    def get_form_format(self):
+        if type(self.value) in PRIMITIVES_LIST:
+            return self.value
+
+        return self.value.get_form_format()
 
 
-def json_entry_to_obj(entry_data, key_name, value_name):
-    if isinstance(entry_data[value_name], list):
-        my_list = []
-        for item in entry_data[value_name]:
-            my_list.append(json_entry_to_obj(item, key_name, value_name))
-        return StudyEntry(identifier=entry_data[key_name], value=my_list)
-    else:
-        return StudyEntry(identifier=entry_data[key_name], value=entry_data[value_name])
+class NestedEntry:
+
+    def __init__(self, converter):
+        self.converter = converter
+        self.value = None
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} (value: {self.value})>"
+
+    def add_api_format(self, data):
+        self.value = [Entry(self.converter).add_api_format(entry) for entry in data]
+        return self
+
+    def add_form_format(self, data):
+        self.value = [Entry(self.converter).add_form_format(key=key, value=value)
+                      for key, value in data.items()]
+        return self
+
+    def get_api_format(self):
+        return [{self.converter.key_name: entry.prop_id, self.converter.value_name: entry.get_api_format()}
+                for entry in self.value]
+
+    def get_form_format(self):
+        return {entry.prop_name: entry.get_form_format() for entry in self.value}
 
 
-def json_input_to_form_format(json_data, mapper, key_name="property", value_name="value"):
-    """Convert json input format into form format.
+class NestedListEntry:
 
-    The conversation is achieved through an object.
+    def __init__(self, converter):
+        self.converter = converter
+        self.value = None
 
-    :param json_data:
-    :param mapper: dict with id as key and name as value
-    :param key_name:
-    :param value_name:
-    :return: dict with name as key and value in value
-    """
-    entries = []
+    def __repr__(self):
+        return f"<{self.__class__.__name__} (value: {self.value})>"
 
-    for data in json_data:
-        entry = json_entry_to_obj(data, key_name=key_name, value_name=value_name)
-        entry.set_name_by_id(mapper)
-        entries.append(entry)
+    def add_api_format(self, data):
+        self.value = [NestedEntry(self.converter).add_api_format(item) for item in data]
+        return self
 
-    return {entry.name: entry.form_format() for entry in entries}
+    def add_form_format(self, data):
+        self.value = [NestedEntry(self.converter).add_form_format(item) for item in data]
+        return self
+
+    def get_api_format(self):
+        return [entry.get_api_format() for entry in self.value]
+
+    def get_form_format(self):
+        return [entry.get_form_format() for entry in self.value]
 
 
 @dataclass()
