@@ -11,5 +11,6 @@ PyYAML==5.3
 requests==2.22.0
 Sphinx==2.3.1
 study-state-machine==0.2.3
+-e git://github.com/bedapub/metadata-registration-lib.git@master#egg=metadata-registration-lib
 Werkzeug==0.16.0
 WTForms==2.2.1
