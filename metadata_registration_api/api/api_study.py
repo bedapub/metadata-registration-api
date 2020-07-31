@@ -6,10 +6,10 @@ from flask import current_app as app
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
-from metadata_registration_api.api.api_utils import MetaInformation, ChangeLog, FormatConverter
+from metadata_registration_lib.api_utils import FormatConverter, map_key_value
+from metadata_registration_api.api.api_utils import MetaInformation, ChangeLog
 from .api_props import property_model_id
 from .decorators import token_required
-from .. import my_utils
 from ..errors import IdenticalPropertyException, RequestBodyException
 from ..model import Study
 
@@ -270,7 +270,7 @@ class ApiStudy(Resource):
 
 def validate_against_form(form_cls, form_name, entries):
     property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
-    prop_map = my_utils.map_key_value(url=property_url, key="id", value="name")
+    prop_map = map_key_value(url=property_url, key="id", value="name")
 
     form_data_json = FormatConverter(mapper=prop_map).add_api_format(entries).get_form_format()
 
