@@ -63,9 +63,10 @@ study_modify_model = api.inherit("Modify study model", study_add_model, {
     "id": fields.String()
 })
 
-dataset_add_modify_model = api.model("Add or modify a dataset", {
+nested_study_entry_add_modify_model = api.model("Add or modify a nested study entry", {
     "entries": fields.List(fields.Nested(entry_model)),
     "form_name": fields.String(example="Form name for validation", required=True),
+    "manual_meta_information": fields.Raw()
 })
 
 # Routes
@@ -295,11 +296,14 @@ class ApiStudyDataset(Resource):
 
         datasets_entry = study_converter.get_entry_by_name("datasets")
 
-        # The "datasets" entry is a NestedListEntry (return list of list)
-        return datasets_entry.get_api_format()
+        if datasets_entry is not None:
+            # The "datasets" entry is a NestedListEntry (return list of list)
+            return datasets_entry.get_api_format()
+        else:
+            return []
 
     @token_required
-    @api.expect(dataset_add_modify_model)
+    @api.expect(nested_study_entry_add_modify_model)
     def post(self, study_id, user=None):
         """ Add a new dataset for a given study """
         payload = api.payload
@@ -406,9 +410,9 @@ class ApiStudyDataset(Resource):
         return dataset_nested_entry.get_api_format()
 
     @token_required
-    @api.expect(dataset_add_modify_model)
+    @api.expect(nested_study_entry_add_modify_model)
     def put(self, study_id, dataset_uuid, user=None):
-        """ Add a new dataset for a given study """
+        """ Update a dataset for a given study """
         payload = api.payload
 
         property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
@@ -479,6 +483,235 @@ class ApiStudyDataset(Resource):
         # 10. Update data in database
         study.update(**study_data)
         return {"message": f"Update dataset"}
+
+
+@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes")
+@api.param("study_id", "The study identifier")
+@api.param("dataset_uuid", "The dataset identifier")
+class ApiStudyPE(Resource):
+    _get_parser = reqparse.RequestParser()
+
+    # @token_required
+    @api.expect(parser=_get_parser)
+    def get(self, study_id, dataset_uuid):
+        """ Fetch a list of all processing events for a given study """
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+
+        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+        prop_map = map_key_value(url=property_url, key="id", value="name")
+
+        # The converter is used for its get_entry_by_name() method
+        study_converter = FormatConverter(mapper=prop_map)
+        study_converter.add_api_format(study_json["entries"])
+
+        # Find dataset
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+        dataset_nested_entry = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)[0]
+
+        # Find PEs
+        pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+
+        if pes_entry is not None:
+            # The "process_events" entry is a NestedListEntry (return list of list)
+            return pes_entry.get_api_format()
+        else:
+            return []
+
+    @token_required
+    @api.expect(nested_study_entry_add_modify_model)
+    def post(self, study_id, dataset_uuid, user=None):
+        """ Add a new processing event for a given dataset """
+        payload = api.payload
+
+        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+        prop_id_to_name = map_key_value(url=property_url, key="id", value="name")
+        prop_name_to_id = map_key_value(url=property_url, key="name", value="id")
+
+        # 1. Split payload
+        form_name = payload["form_name"]
+        entries = payload["entries"]
+
+        # 2. Get study and dataset data
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+        study_converter = FormatConverter(mapper=prop_id_to_name)
+        study_converter.add_api_format(study_json["entries"])
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+        dataset_nested_entry, dataset_position = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)
+
+        # 3. Generate UUID
+        pe_uuid = str(uuid.uuid1())
+        entries.insert(0, {"property": prop_name_to_id["uuid"], "value": pe_uuid})
+
+        # 4. Format and clean processing event data
+        pe_converter = FormatConverter(mapper=prop_id_to_name)
+        pe_converter.add_api_format(entries)
+        pe_converter.clean_data()
+        pe_nested_entry = NestedEntry(pe_converter)
+        pe_nested_entry.value = pe_converter.entries
+
+        # 5. Check if "process_events"" entry already exist study, creates it if it doesn't
+        pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+
+        if pes_entry is not None:
+            pes_entry.value.value.append(pe_nested_entry)
+        else:
+            pes_entry = Entry(pe_converter).add_api_format({
+                "property": prop_name_to_id["process_events"],
+                "value": [pe_nested_entry.get_api_format()]
+            })
+            dataset_nested_entry.value.append(pes_entry)
+
+        datasets_entry.value.value[dataset_position] = dataset_nested_entry
+
+        # 6. Validate processing data against form
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        form_instance = form_cls()
+        form_instance.process(data=pe_converter.get_form_format())
+
+        if not form_instance.validate():
+            raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+
+        # 7. Determine current state and evaluate next state
+        state_name = str(study.meta_information.state)
+
+        app.study_state_machine.load_state(name=state_name)
+        app.study_state_machine.change_state(**study_converter.get_form_format())
+        new_state = app.study_state_machine.current_state
+
+        # 8. Update metadata / Create and append meta information to the study
+        meta_info = MetaInformation(
+            state=state_name,
+            change_log=study.meta_information.change_log
+        )
+
+        log = ChangeLog(action="Added processing event to dataset",
+                        user_id=user.id if user else None,
+                        timestamp=datetime.now(),
+                        manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        meta_info.state = str(new_state)
+        meta_info.add_log(log)
+
+        study_data = {
+            "entries": study_converter.get_api_format(),
+            "meta_information": meta_info.to_json()
+        }
+
+        # 9. Update data in database
+        study.update(**study_data)
+        return {"message": "Processing event added to dataset", "uuid": pe_uuid}, 201
+
+
+@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes/id/<pe_uuid>")
+@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes/id/<pe_uuid>/")
+@api.param("study_id", "The study identifier")
+@api.param("dataset_uuid", "The dataset identifier")
+@api.param("pe_uuid", "The processing event identifier")
+class ApiStudyPE(Resource):
+
+    # @token_required
+    def get(self, study_id, dataset_uuid, pe_uuid):
+        """ Fetch a specific processing for a given dataset """
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+
+        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+        prop_map = map_key_value(url=property_url, key="id", value="name")
+
+        # The converter is used for its get_entry_by_name() method
+        study_converter = FormatConverter(mapper=prop_map)
+        study_converter.add_api_format(study_json["entries"])
+
+        # Find dataset
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+        dataset_nested_entry = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)[0]
+
+        # Find current PE
+        pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+        pe_nested_entry = pes_entry.value.find_nested_entry("uuid", pe_uuid)[0]
+
+        # The "pe_nested_entry" entry is a NestedEntry (return list of dict)
+        return pe_nested_entry.get_api_format()
+
+    @token_required
+    @api.expect(nested_study_entry_add_modify_model)
+    def put(self, study_id, dataset_uuid, pe_uuid, user=None):
+        """ Update a processing event for a given dataset """
+        payload = api.payload
+
+        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+        prop_id_to_name = map_key_value(url=property_url, key="id", value="name")
+
+        # 1. Split payload
+        form_name = payload["form_name"]
+        entries = payload["entries"]
+
+        # 2. Get study data
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+
+        study_converter = FormatConverter(mapper=prop_id_to_name)
+        study_converter.add_api_format(study_json["entries"])
+
+        # 3. Get dataset data
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+        dataset_nested_entry = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)[0]
+
+        # 4. Get current processing event data
+        pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+        pe_nested_entry = pes_entry.value.find_nested_entry("uuid", pe_uuid)[0]
+        pe_converter = FormatConverter(mapper=prop_id_to_name)
+        pe_converter.entries = pe_nested_entry.value
+
+        # 5. Get new processing event data
+        new_pe_converter = FormatConverter(mapper=prop_id_to_name)
+        new_pe_converter.add_api_format(entries)
+
+        # 6. Clean new data and get entries to remove
+        entries_to_remove = new_pe_converter.clean_data()
+
+        # 7. Update current processing event by adding, updating and deleting entries
+        pe_converter.add_or_update_entries(new_pe_converter.entries)
+        pe_converter.remove_entries(entries=entries_to_remove)
+        pe_nested_entry.value = pe_converter.entries
+
+        # 8. Validate processing event data against form
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        form_instance = form_cls()
+        form_instance.process(data=pe_converter.get_form_format())
+
+        if not form_instance.validate():
+            raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+
+        # 9. Determine current state and evaluate next state
+        state_name = str(study.meta_information.state)
+
+        app.study_state_machine.load_state(name=state_name)
+        app.study_state_machine.change_state(**study_converter.get_form_format())
+        new_state = app.study_state_machine.current_state
+
+        # 10. Update metadata / Create and append meta information to the study
+        meta_info = MetaInformation(
+            state=state_name,
+            change_log=study.meta_information.change_log
+        )
+
+        log = ChangeLog(action="Changed processing event in dataset",
+                        user_id=user.id if user else None,
+                        timestamp=datetime.now(),
+                        manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        meta_info.state = str(new_state)
+        meta_info.add_log(log)
+
+        study_data = {
+            "entries": study_converter.get_api_format(),
+            "meta_information": meta_info.to_json()
+        }
+
+        # 11. Update data in database
+        study.update(**study_data)
+        return {"message": f"Update processing event"}
 
 
 def validate_against_form(form_cls, form_name, entries):
