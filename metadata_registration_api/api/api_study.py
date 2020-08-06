@@ -1,12 +1,14 @@
 import os
 from datetime import datetime
 from urllib.parse import urljoin
+import uuid
 
 from flask import current_app as app
-from flask_restx import Namespace, Resource, fields
+from flask_restx import Namespace, Resource, fields, marshal
 from flask_restx import reqparse, inputs
 
-from metadata_registration_lib.api_utils import FormatConverter, map_key_value
+from metadata_registration_lib.api_utils import (FormatConverter, map_key_value,
+    Entry, NestedEntry)
 from metadata_registration_api.api.api_utils import MetaInformation, ChangeLog
 from .api_props import property_model_id
 from .decorators import token_required
@@ -61,6 +63,10 @@ study_modify_model = api.inherit("Modify study model", study_add_model, {
     "id": fields.String()
 })
 
+dataset_add_modify_model = api.model("Add or modify a dataset", {
+    "entries": fields.List(fields.Nested(entry_model)),
+    "form_name": fields.String(example="Form name for validation", required=True),
+})
 
 # Routes
 # ----------------------------------------------------------------------------------------------------------------------
@@ -266,6 +272,113 @@ class ApiStudy(Resource):
         else:
             entry.delete()
             return {"message": "Delete entry"}
+
+
+@api.route("/id/<study_id>/datasets")
+@api.param("study_id", "The study identifier")
+class ApiStudyDataset(Resource):
+    _get_parser = reqparse.RequestParser()
+
+    # @token_required
+    @api.expect(parser=_get_parser)
+    def get(self, study_id):
+        """ Fetch a list of all datasets for a given study """
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+
+        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+        prop_map = map_key_value(url=property_url, key="id", value="name")
+
+        # The converter is used for its get_entry_by_name() method
+        study_converter = FormatConverter(mapper=prop_map)
+        study_converter.add_api_format(study_json["entries"])
+
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+
+        # The "datasets" entry is a NestedListEntry (return list of list)
+        return datasets_entry.get_api_format()
+
+    @token_required
+    @api.expect(dataset_add_modify_model)
+    def post(self, study_id, user=None):
+        """ Add a new dataset for a given study """
+        payload = api.payload
+
+        property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+        prop_id_to_name = map_key_value(url=property_url, key="id", value="name")
+        prop_name_to_id = map_key_value(url=property_url, key="name", value="id")
+
+        # 1. Split payload
+        form_name = payload["form_name"]
+        entries = payload["entries"]
+
+        # 2. Get study data
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+
+        study_converter = FormatConverter(mapper=prop_id_to_name)
+        study_converter.add_api_format(study_json["entries"])
+
+        # 3. generate UUID
+        dataset_uuid = str(uuid.uuid1())
+        entries.insert(0, {"property": prop_name_to_id["uuid"], "value": dataset_uuid})
+
+        # 4. Format and clean dataset data
+        dataset_converter = FormatConverter(mapper=prop_id_to_name)
+        dataset_converter.add_api_format(entries)
+        dataset_converter.clean_data()
+        dataset_nested_entry = NestedEntry(dataset_converter)
+        dataset_nested_entry.value = dataset_converter.entries
+
+        # 5. Check if "datasets" entry already exist study, creates it if it doesn't
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+
+        if datasets_entry is not None:
+            datasets_entry.value.value.append(dataset_nested_entry)
+        else:
+            datasets_entry = Entry(dataset_converter).add_api_format({
+                "property": prop_name_to_id["datasets"],
+                "value": [dataset_nested_entry.get_api_format()]
+            })
+            study_converter.entries.append(datasets_entry)
+
+        # 6. Validate dataset data against form
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        form_instance = form_cls()
+        form_instance.process(data=dataset_converter.get_form_format())
+
+        if not form_instance.validate():
+            raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+
+        # 7. Determine current state and evaluate next state
+        state_name = str(study.meta_information.state)
+
+        app.study_state_machine.load_state(name=state_name)
+        app.study_state_machine.change_state(**study_converter.get_form_format())
+        new_state = app.study_state_machine.current_state
+
+        # 8. Update metadata / Create and append meta information to the study
+        meta_info = MetaInformation(
+            state=state_name,
+            change_log=study.meta_information.change_log
+        )
+
+        log = ChangeLog(action="Added dataset study",
+                        user_id=user.id if user else None,
+                        timestamp=datetime.now(),
+                        manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        meta_info.state = str(new_state)
+        meta_info.add_log(log)
+
+        study_data = {
+            "entries": study_converter.get_api_format(),
+            "meta_information": meta_info.to_json()
+        }
+
+        # 9. Update data in database
+        study.update(**study_data)
+        return {"message": "Dataset added to study", "uuid": dataset_uuid}, 201
+
 
 
 def validate_against_form(form_cls, form_name, entries):
