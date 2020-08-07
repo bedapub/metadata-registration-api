@@ -1,11 +1,8 @@
-import time
-
 import requests
 from urllib.parse import urljoin
-import unittest
 
 from metadata_registration_api.errors import TokenException
-from test.test_api_base import BaseTestCase
+from test_api_base import BaseTestCase
 from scripts import setup
 
 from dynamic_form.template_builder import UserTemplate
@@ -17,8 +14,7 @@ class MyTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super(MyTestCase, cls).setUpClass()
-        cls.route = "users"
-        cls.url = urljoin(cls.host, cls.route)
+        cls.url = cls.user_endpoint
 
     def setUp(self) -> None:
         setup.clear_collection(self.user_endpoint)
@@ -77,11 +73,12 @@ class MyTestCase(BaseTestCase):
 
 class AuthorizationTest(BaseTestCase):
     """Check access control"""
-    
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.config_type = "TESTING_SECURE"
         super(AuthorizationTest, cls).setUpClass()
+        cls.app.config["CHECK_ACCESS_TOKEN"] = True
+        cls.config = cls.app.config
 
     def test_post_without_token(self):
 
@@ -94,10 +91,11 @@ class AuthorizationTest(BaseTestCase):
             self.assertEqual(res.json()['error type'], TokenException.__name__, f"Fail {endpoint}")
 
     def test_post_invalid_token(self):
-        for endpooint in [self.ctrl_voc_endpoint]:
-            res = requests.post(endpooint, headers={"X-Access-Token": "unknown"})
 
-            self.assertEqual(res.status_code, 401, f"Fail {endpooint}")
+        for endpoint in [self.ctrl_voc_endpoint]:
+            res = requests.post(endpoint, headers={"X-Access-Token": "unknown"})
+
+            self.assertEqual(res.status_code, 401, f"Fail {endpoint}")
             self.assertEqual(res.json()["error type"], TokenException.__name__)
 
     def test_delete_without_token(self):

@@ -1,13 +1,10 @@
-import unittest
 import time
 
-from test.test_api_base import BaseTestCase
+from test_api_base import BaseTestCase
 
 from scripts import setup
 from metadata_registration_api.datastore_api import ApiDataStore
 
-
-from dynamic_form import FormManager
 from dynamic_form.errors import DataStoreException
 
 
@@ -28,7 +25,7 @@ class MyTestCase(BaseTestCase):
                                             self.study_endpoint)
 
     def test_load_form(self):
-        form_tempaltes = self.data_store.load_forms()
+        self.data_store.load_forms()
 
     def test_load_form_by_id(self):
         form_template = self.data_store.load_form(self.form_map["user_login"])

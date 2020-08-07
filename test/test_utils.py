@@ -1,7 +1,6 @@
 """Utility function used for only testing"""
 
 import requests
-from urllib.parse import urljoin
 
 from metadata_registration_api import my_utils
 
@@ -38,7 +37,6 @@ class ServerThread(Thread):
 
         app = create_app(config=config)
         self.config = app.config
-        self.credentials = my_utils.load_credentials()[config]
 
         self.srv = make_server(os.environ["API_HOST"], os.environ["PORT"], app)
 

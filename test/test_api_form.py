@@ -1,7 +1,6 @@
 import requests
-import unittest
 
-from test.test_api_base import BaseTestCase
+from test_api_base import BaseTestCase
 
 from scripts import setup
 
@@ -37,14 +36,6 @@ class FormReadTestCase(BaseTestCase):
 
 class FormInsertTestCase(BaseTestCase):
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        super(FormInsertTestCase, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super(FormInsertTestCase, cls).tearDownClass()
-
     def setUp(self) -> None:
         self.ctrl_voc_map, \
         self.prop_map, \
@@ -53,15 +44,17 @@ class FormInsertTestCase(BaseTestCase):
                                             self.form_endpoint,
                                             self.study_endpoint)
 
+        self.ctrl_voc_map.update(setup.add_study_related_ctrl_voc(self.ctrl_voc_endpoint))
+        self.prop_map.update(setup.add_study_related_properties(self.property_endpoint,
+                                                                self.ctrl_voc_map))
+
     def test_insert_generic_study_form(self):
-        self.ctrl_voc_map.update(setup.add_study_related_ctrl_voc(self.host, self.credentials))
-        self.prop_map.update(setup.add_study_related_properties(self.host, self.credentials, self.ctrl_voc_map))
-        self.form_map.update(setup.add_generic_study_form(self.host, self.credentials, self.prop_map))
+        self.form_map.update(setup.add_generic_study_form(self.form_endpoint,
+                                                          self.prop_map))
 
     def test_insert_rna_seq_study_form(self):
-        self.ctrl_voc_map.update(setup.add_study_related_ctrl_voc(self.host, self.credentials))
-        self.prop_map.update(setup.add_study_related_properties(self.host, self.credentials, self.ctrl_voc_map))
-        self.form_map.update(setup.add_rna_seq_form(self.host, self.credentials, self.prop_map))
+        self.form_map.update(setup.add_rna_seq_form(self.form_endpoint,
+                                                    self.prop_map))
 
 
 

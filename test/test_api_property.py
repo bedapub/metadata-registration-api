@@ -1,9 +1,8 @@
-from urllib.parse import urljoin
 import requests
 import unittest
 
 from scripts import setup
-from test.test_api_base import BaseTestCase
+from test_api_base import BaseTestCase
 
 from dynamic_form.template_builder import \
     ControlledVocabularyTemplate,\
@@ -18,8 +17,7 @@ class PropertyGetTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super(PropertyGetTestCase, cls).setUpClass()
-        cls.route = "properties"
-        cls.url = urljoin(cls.host, cls.route)
+        cls.url = cls.property_endpoint
 
         setup.clear_collection(cls.ctrl_voc_endpoint)
         setup.clear_collection(cls.property_endpoint)
@@ -59,8 +57,7 @@ class PropertyTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super(PropertyTestCase, cls).setUpClass()
-        cls.route = "properties"
-        cls.url = urljoin(cls.host, cls.route)
+        cls.url = cls.property_endpoint
 
     def setUp(self) -> None:
         setup.clear_collection(self.ctrl_voc_endpoint)
@@ -154,7 +151,7 @@ class PropertyTestCase(BaseTestCase):
 
     def test_post_property_double_entry(self):
         """ Try to insert properties twice """
-        results_1 = insert_two(self)
+        insert_two(self)
 
         with self.assertRaises(Exception):
             results_2 = insert_two(self)

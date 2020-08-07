@@ -1,5 +1,6 @@
 # Project specific
 start_up.sh
+scripts
 
 # Credentials
 .credentials.yaml

@@ -1,8 +1,6 @@
-import unittest
-from urllib.parse import urljoin
 import requests
 
-from test.test_api_base import BaseTestCase
+from test_api_base import BaseTestCase
 from scripts import setup
 
 
@@ -12,8 +10,6 @@ class TestCtrlVocStatic(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super(TestCtrlVocStatic, cls).setUpClass()
-        cls.route = "ctrl_voc"
-        cls.url = urljoin(cls.host, cls.route)
 
         cls.ctrl_voc_map, \
         cls.prop_map, \

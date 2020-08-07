@@ -26,8 +26,6 @@ def config_app(app):
         if not env_variable in os.environ:
             raise Exception(f"The environment variable {env_variable} is required")
 
-    app.debug = str_to_bool(os.getenv("DEBUG", "false"))
-
     # Load app secret and convert to byte string
     app.secret_key = os.environ["APP_SECRET"].encode()
     app.config['WTF_CSRF_ENABLED'] = False

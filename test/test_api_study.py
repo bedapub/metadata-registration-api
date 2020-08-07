@@ -1,13 +1,10 @@
-import os
-import unittest
-
 import requests
 from dynamic_form.errors import DataStoreException
 from study_state_machine.errors import StateNotFoundException
 
 from metadata_registration_api.errors import RequestBodyException, IdenticalPropertyException
-from test.test_api_base import BaseTestCase
-from scripts import setup, rna_seq_upload
+from test_api_base import BaseTestCase
+from scripts import setup
 
 
 class StudyExceptionTestCase(BaseTestCase):
@@ -86,30 +83,30 @@ class StudyTestCase(BaseTestCase):
                                                                               self.form_endpoint,
                                                                               self.study_endpoint)
 
-        self.ctrl_voc_map.update(setup.add_study_related_ctrl_voc(self.host, self.credentials))
-        self.prop_map.update(setup.add_study_related_properties(self.host, self.credentials, self.ctrl_voc_map))
+        self.ctrl_voc_map.update(setup.add_study_related_ctrl_voc(self.host))
+        self.prop_map.update(setup.add_study_related_properties(self.host, self.ctrl_voc_map))
 
-    @unittest.skipUnless(os.path.exists(os.path.join(os.path.dirname(__file__), "ACpilot_mongodb.json")),
-                         "File to upload not available")
-    def test_upload_rna_seq_form(self):
-        self.form_map.update(setup.add_rna_seq_form(self.host, self.credentials, self.prop_map))
+    # @unittest.skipUnless(os.path.exists(os.path.join(os.path.dirname(__file__), "ACpilot_mongodb.json")),
+    #                      "File to upload not available")
+    # def test_upload_rna_seq_form(self):
+    #     self.form_map.update(setup.add_rna_seq_form(self.host, self.prop_map))
 
-        input_file = os.path.join(os.path.dirname(__file__), "ACpilot_mongodb.json")
+    #     input_file = os.path.join(os.path.dirname(__file__), "ACpilot_mongodb.json")
 
-        self.study_map.update(rna_seq_upload.post_study(input_file, host=self.host))
+    #     self.study_map.update(rna_seq_upload.post_study(input_file, host=self.host))
 
-        # Ensure that inserted study is accessible
-        study_endpoint = self.study_endpoint + f"/id/{self.study_map['ACpilot']}/"
-        res = requests.get(study_endpoint)
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.json()["entries"]), 10)
+    #     # Ensure that inserted study is accessible
+    #     study_endpoint = self.study_endpoint + f"/id/{self.study_map['ACpilot']}/"
+    #     res = requests.get(study_endpoint)
+    #     self.assertEqual(res.status_code, 200)
+    #     self.assertEqual(len(res.json()["entries"]), 10)
 
-        res = requests.get(self.study_endpoint)
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.json()), 1)
+    #     res = requests.get(self.study_endpoint)
+    #     self.assertEqual(res.status_code, 200)
+    #     self.assertEqual(len(res.json()), 1)
 
-        res = requests.delete(study_endpoint)
-        self.assertEqual(res.status_code, 200, f"Could not delete study with id {self.study_map['ACpilot']}")
+    #     res = requests.delete(study_endpoint)
+    #     self.assertEqual(res.status_code, 200, f"Could not delete study with id {self.study_map['ACpilot']}")
 
 
 
