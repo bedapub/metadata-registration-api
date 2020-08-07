@@ -2,15 +2,6 @@
 
 import requests
 
-from metadata_registration_api import my_utils
-
-
-def get_ids(endpoint="localhost", deprecated=False):
-    """ Get the id of all properties """
-    return requests.get(ulr=f"{endpoint}?deprecated={deprecated}",
-                        headers={"X-Fields": "id"},
-                        )
-
 
 def insert(url=None, data=None):
     """ Insert a new entry """
@@ -31,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class ServerThread(Thread):
-    
+
     def __init__(self, config="TESTING"):
         super(ServerThread, self).__init__()
 
