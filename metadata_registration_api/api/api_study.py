@@ -246,7 +246,7 @@ class ApiStudy(Resource):
             change_log=entry.meta_information.change_log
         )
 
-        log = ChangeLog(action="Changed study",
+        log = ChangeLog(action="Updated study",
                         user_id=user.id if user else None,
                         timestamp=datetime.now(),
                         manual_user=payload.get("manual_meta_information", {}).get("user", None))
@@ -348,8 +348,9 @@ class ApiStudyDataset(Resource):
         validate_form_format_against_form(form_name, dataset_converter.get_form_format())
 
         # 7. Update study state, data and ulpoad on DB
-        update_study(study, study_converter, payload, user)
-        return {"message": "Dataset added to study", "uuid": dataset_uuid}, 201
+        message = "Added dataset"
+        update_study(study, study_converter, payload, message, user)
+        return {"message": message, "uuid": dataset_uuid}, 201
 
 
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>")
@@ -417,8 +418,9 @@ class ApiStudyDataset(Resource):
         validate_form_format_against_form(form_name, dataset_converter.get_form_format())
 
         # 8. Update study state, data and ulpoad on DB
-        update_study(study, study_converter, payload, user)
-        return {"message": f"Update dataset"}
+        message = "Updated dataset"
+        update_study(study, study_converter, payload, message, user)
+        return {"message": message}
 
 
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes")
@@ -503,8 +505,9 @@ class ApiStudyPE(Resource):
         validate_form_format_against_form(form_name, pe_converter.get_form_format())
 
         # 7. Update study state, data and ulpoad on DB
-        update_study(study, study_converter, payload, user)
-        return {"message": "Processing event added to dataset", "uuid": pe_uuid}, 201
+        message = "Added processing event"
+        update_study(study, study_converter, payload, message, user)
+        return {"message": message, "uuid": pe_uuid}, 201
 
 
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes/id/<pe_uuid>")
@@ -582,9 +585,10 @@ class ApiStudyPE(Resource):
         validate_form_format_against_form(form_name, pe_converter.get_form_format())
 
         # 9. Update study state, data and ulpoad on DB
-        update_study(study, study_converter, payload, user)
+        message = "Updated processing event"
+        update_study(study, study_converter, payload, message, user)
         
-        return {"message": f"Update processing event"}
+        return {"message": message}
 
 
 def validate_against_form(form_cls, form_name, entries):
@@ -615,7 +619,7 @@ def get_property_map(key, value):
     property_map = map_key_value(url=property_url, key=key, value=value)
     return property_map
 
-def update_study(study, study_converter, payload, user=None):
+def update_study(study, study_converter, payload, message, user=None):
     """ Steps to update study state, metadata and upload to DB """
     # 1. Determine current state and evaluate next state
     state_name = str(study.meta_information.state)
@@ -630,7 +634,7 @@ def update_study(study, study_converter, payload, user=None):
         change_log=study.meta_information.change_log
     )
 
-    log = ChangeLog(action="Changed processing event in dataset",
+    log = ChangeLog(action=message,
                     user_id=user.id if user else None,
                     timestamp=datetime.now(),
                     manual_user=payload.get("manual_meta_information", {}).get("user", None))
