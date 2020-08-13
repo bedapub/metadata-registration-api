@@ -218,7 +218,7 @@ class ApiStudy(Resource):
         payload = api.payload
 
         # 1. Split payload
-        study_id = payload["id"]
+        study_id = id
         form_name = payload["form_name"]
         entries = payload["entries"]
 
