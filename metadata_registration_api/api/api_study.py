@@ -25,6 +25,10 @@ entry_model = api.model("Entry", {
     "value": fields.Raw()
 })
 
+entry_model_form_format = api.model("Entry (form format)", {
+    "property_name": fields.Raw(example="Some value")
+})
+
 change_log = api.model("Change Log", {
     "user_id": fields.String(),
     "manual_user": fields.String(),
@@ -41,9 +45,12 @@ meta_information_model = api.model("Metadata Information", {
 study_model = api.model("Study", {
     "entries": fields.List(fields.Nested(entry_model)),
     "meta_information": fields.Nested(meta_information_model),
+    "id": fields.String()
 })
 
-study_model_id = api.inherit("Study with id", study_model, {
+study_model_form_format = api.model("Study (form format)", {
+    "entries": fields.List(fields.Nested(entry_model_form_format)),
+    "meta_information": fields.Nested(meta_information_model),
     "id": fields.String()
 })
 
@@ -52,22 +59,32 @@ field_add_model = api.model("Add Field", {
     "value": fields.Raw()
 })
 
-study_add_model = api.model("Add Study", {
-    "form_name": fields.String(example="Form Object Id", required=True),
-    "initial_state": fields.String(default="generic_state", required=True, description="The initial state name"),
+nested_study_entry_model = api.model("Nested study entry", {
     "entries": fields.List(fields.Nested(field_add_model)),
+    "entry_format": fields.String(example="api", description="Format used for entries (api or form)"),
+    "form_name": fields.String(example="form_name", required=True),
     "manual_meta_information": fields.Raw()
 })
 
-study_modify_model = api.inherit("Modify study model", study_add_model, {
-    "id": fields.String()
+study_add_model = api.inherit("Add Study", nested_study_entry_model, {
+    "initial_state": fields.String(default="GenericState", required=True, description="The initial state name"),
 })
 
-nested_study_entry_add_modify_model = api.model("Add or modify a nested study entry", {
-    "entries": fields.List(fields.Nested(entry_model)),
-    "form_name": fields.String(example="Form name for validation", required=True),
-    "manual_meta_information": fields.Raw()
-})
+# Common parser params
+# ----------------------------------------------------------------------------------------------------------------------
+entry_format_param = {
+    "type": str,
+    "location": "args",
+    "choices": ("api", "form"),
+    "default": "api",
+    "help": "Format used for entries (api or form)"
+}
+
+complete_param = {
+    "type": inputs.boolean,
+    "default": False,
+    "help": "Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
+}
 
 # Routes
 # ----------------------------------------------------------------------------------------------------------------------
@@ -75,11 +92,7 @@ nested_study_entry_add_modify_model = api.model("Add or modify a nested study en
 @api.route("")
 class ApiStudy(Resource):
     _delete_parser = reqparse.RequestParser()
-    _delete_parser.add_argument("complete",
-                                type=inputs.boolean,
-                                default=False,
-                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
-                                )
+    _delete_parser.add_argument("complete", **complete_param)
 
     _get_parser = reqparse.RequestParser()
     _get_parser.add_argument(
@@ -96,7 +109,6 @@ class ApiStudy(Resource):
         default=0,
         help="Number of results which should be skipped"
     )
-
     _get_parser.add_argument(
         "limit",
         type=int,
@@ -104,10 +116,12 @@ class ApiStudy(Resource):
         default=100,
         help="Number of results which should be returned"
     )
+    _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.marshal_with(study_model_id)
-    @api.expect(parser=_get_parser)
+    @api.response("200 - api", "Success (API format)", [study_model])
+    @api.response("200 - form", "Success (form format)", [study_model_form_format])
+    @api.doc(parser=_get_parser)
     def get(self):
         """ Fetch a list with all entries """
         # Convert query parameters
@@ -123,7 +137,18 @@ class ApiStudy(Resource):
         if not include_deprecate:
             res = res.filter(meta_information__deprecated=False)
 
-        return list(res.select_related())
+        study_json_list = marshal(list(res.select_related()), study_model)
+
+        if args["entry_format"] == "api":
+            return study_json_list
+
+        elif args["entry_format"] == "form":
+            prop_map = get_property_map(key="id", value="name")
+            for study_json in study_json_list:
+                study_converter = FormatConverter(prop_map).add_api_format(study_json["entries"])
+                study_json["entries"] = study_converter.get_form_format()
+
+            return study_json_list
 
     @token_required
     @api.expect(study_add_model)
@@ -136,6 +161,7 @@ class ApiStudy(Resource):
         form_name = payload["form_name"]
         initial_state = payload["initial_state"]
         entries = payload["entries"]
+        entry_format = payload.get("entry_format", "api")
 
         form_cls = app.form_manager.get_form_by_name(form_name=form_name)
 
@@ -144,18 +170,29 @@ class ApiStudy(Resource):
 
         app.study_state_machine.load_state(name=initial_state)
 
-        # 2. Convert submitted data into form compatible format
+        # 2. Make sure to have both API and form format
+        if entry_format == "api":
+            try:
+                if len(entries) != len({prop["property"] for prop in entries}):
+                    raise IdenticalPropertyException("The entries cannot have several identical property values.")
+            except TypeError as e:
+                raise RequestBodyException("Entries has wrong format.") from e
 
-        try:
-            if len(entries) != len({prop["property"] for prop in entries}):
-                raise IdenticalPropertyException("The entries cannot have several identical property values.")
-        except TypeError as e:
-            raise RequestBodyException("Entries has wrong format.") from e
+            entries = {
+                "api_format": entries,
+                "form_format": validate_against_form(form_cls, form_name, entries)
+            }
 
-        form_data_json = validate_against_form(form_cls, form_name, entries)
+        else:
+            validate_form_format_against_form(form_name, entries)
+            prop_map = get_property_map(key="name", value="id")
+            entries = {
+                "api_format": FormatConverter(mapper=prop_map).add_form_format(entries).get_api_format(),
+                "form_format": entries
+            }
 
         # 4. Evaluate new state of study by passing form data
-        app.study_state_machine.create_study(**form_data_json)
+        app.study_state_machine.create_study(**entries["form_format"])
         state = app.study_state_machine.current_state
 
         meta_info = MetaInformation(state=str(state))
@@ -165,21 +202,21 @@ class ApiStudy(Resource):
                         manual_user=payload.get("manual_meta_information", {}).get("user", None))
         meta_info.add_log(log)
 
-        entry_data = {"entries": entries, "meta_information": meta_info.to_json()}
+        study_data = {"entries": entries["api_format"], "meta_information": meta_info.to_json()}
 
         # 6. Insert data into database
-        entry = Study(**entry_data)
-        entry.save()
-        return {"message": f"Study added", "id": str(entry.id)}, 201
+        study = Study(**study_data)
+        study.save()
+        return {"message": f"Study added", "id": str(study.id)}, 201
 
 
     @token_required
-    @api.expect(parser=_delete_parser)
+    @api.doc(parser=_delete_parser)
     def delete(self, user=None):
         """ Deprecates all entries """
 
         parser = reqparse.RequestParser()
-        parser.add_argument("complete", type=inputs.boolean, default=False)
+        parser.add_argument("complete", **complete_param)
         args = parser.parse_args()
 
         force_delete = args["complete"]
@@ -197,20 +234,31 @@ class ApiStudy(Resource):
 @api.param("id", "The property identifier")
 class ApiStudyId(Resource):
     _delete_parser = reqparse.RequestParser()
-    _delete_parser.add_argument("complete",
-                               type=inputs.boolean,
-                               default=False,
-                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
-                               )
+    _delete_parser.add_argument("complete", **complete_param)
+
+    _get_parser = reqparse.RequestParser()
+    _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.marshal_with(study_model_id)
+    @api.response("200 - api", "Success (API format)", study_model)
+    @api.response("200 - form", "Success (form format)", study_model_form_format)
+    @api.doc(parser=_get_parser)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
-        return Study.objects(id=id).get()
+        args = self._get_parser.parse_args()
+        study_json = marshal(Study.objects(id=id).get(), study_model)
+
+        if args["entry_format"] == "api":
+            return study_json
+
+        elif args["entry_format"] == "form":
+            prop_map = get_property_map(key="id", value="name")
+            study_converter = FormatConverter(prop_map).add_api_format(study_json["entries"])
+            study_json["entries"] = study_converter.get_form_format()
+            return study_json
 
     @token_required
-    @api.expect(study_modify_model)
+    @api.expect(nested_study_entry_model)
     def put(self, id, user=None):
         """ Update an entry given its unique identifier """
 
@@ -220,29 +268,43 @@ class ApiStudyId(Resource):
         study_id = id
         form_name = payload["form_name"]
         entries = payload["entries"]
+        entry_format = payload.get("entry_format", "api")
 
-        entry = Study.objects(id=study_id).first()
+        study = Study.objects(id=study_id).first()
 
         # 1. Extract form name and create form from FormManager
         form_cls = app.form_manager.get_form_by_name(form_name=form_name)
 
-        # 2. Convert submitted data in form format
-        form_data_json = validate_against_form(form_cls, form_name, entries)
-        # 4. Determine current state and evaluate next state
-        state_name = str(entry.meta_information.state)
+        # 2. Make sure to have both API and form format
+        if entry_format == "api":
+            entries = {
+                "api_format": entries,
+                "form_format": validate_against_form(form_cls, form_name, entries)
+            }
+
+        else:
+            validate_form_format_against_form(form_name, entries)
+            prop_map = get_property_map(key="name", value="id")
+            entries = {
+                "api_format": FormatConverter(mapper=prop_map).add_form_format(entries).get_api_format(),
+                "form_format": entries
+            }
+
+        # 3. Determine current state and evaluate next state
+        state_name = str(study.meta_information.state)
 
         if state_name == "rna_sequencing_biokit":
             state_name = "BiokitUploadState"
 
         app.study_state_machine.load_state(name=state_name)
-        app.study_state_machine.change_state(**form_data_json)
+        app.study_state_machine.change_state(**entries["form_format"])
         new_state = app.study_state_machine.current_state
 
-        # 5. Update metadata
-        # 5. Create and append meta information to the entry
+        # 4. Update metadata
+        # 5. Create and append meta information to the study
         meta_info = MetaInformation(
             state=state_name,
-            change_log=entry.meta_information.change_log
+            change_log=study.meta_information.change_log
         )
 
         log = ChangeLog(action="Updated study",
@@ -252,14 +314,14 @@ class ApiStudyId(Resource):
         meta_info.state = str(new_state)
         meta_info.add_log(log)
 
-        entry_data = {"entries": entries, "meta_information": meta_info.to_json()}
+        study_data = {"entries": entries["api_format"], "meta_information": meta_info.to_json()}
 
         # 6. Update data in database
-        entry.update(**entry_data)
-        return {"message": f"Update entry"}
+        study.update(**study_data)
+        return {"message": f"Update study"}
 
     @token_required
-    @api.expect(parser=_delete_parser)
+    @api.doc(parser=_delete_parser)
     def delete(self, id, user=None):
         """ Delete an entry given its unique identifier """
         args = self._delete_parser.parse_args()
@@ -278,11 +340,16 @@ class ApiStudyId(Resource):
 @api.param("study_id", "The study identifier")
 class ApiStudyDataset(Resource):
     _get_parser = reqparse.RequestParser()
+    _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.expect(parser=_get_parser)
+    @api.response("200 - api", "Success (API format)", [entry_model])
+    @api.response("200 - form", "Success (form format)", [entry_model_form_format])
+    @api.doc(parser=_get_parser)
     def get(self, study_id):
         """ Fetch a list of all datasets for a given study """
+        args = self._get_parser.parse_args()
+
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
 
@@ -296,12 +363,15 @@ class ApiStudyDataset(Resource):
 
         if datasets_entry is not None:
             # The "datasets" entry is a NestedListEntry (return list of list)
-            return datasets_entry.get_api_format()
+            if args["entry_format"] == "api":
+                return datasets_entry.get_api_format()
+            elif args["entry_format"] == "form":
+                return datasets_entry.get_form_format()
         else:
             return []
 
     @token_required
-    @api.expect(nested_study_entry_add_modify_model)
+    @api.expect(nested_study_entry_model)
     def post(self, study_id, user=None):
         """ Add a new dataset for a given study """
         payload = api.payload
@@ -312,6 +382,7 @@ class ApiStudyDataset(Resource):
         # 1. Split payload
         form_name = payload["form_name"]
         entries = payload["entries"]
+        entry_format = payload.get("entry_format", "api")
 
         # 2. Get study data
         study = Study.objects().get(id=study_id)
@@ -320,14 +391,23 @@ class ApiStudyDataset(Resource):
         study_converter = FormatConverter(mapper=prop_id_to_name)
         study_converter.add_api_format(study_json["entries"])
 
-        # 3. Generate UUID
-        dataset_uuid = str(uuid.uuid1())
-        entries.insert(0, {"property": prop_name_to_id["uuid"], "value": dataset_uuid})
+        # 3. Format and clean dataset data
+        if entry_format == "api":
+            dataset_converter = FormatConverter(mapper=prop_id_to_name)
+            dataset_converter.add_api_format(entries)
+        elif entry_format == "form":
+            dataset_converter = FormatConverter(mapper=prop_name_to_id)
+            dataset_converter.add_form_format(entries)
 
-        # 4. Format and clean dataset data
-        dataset_converter = FormatConverter(mapper=prop_id_to_name)
-        dataset_converter.add_api_format(entries)
         dataset_converter.clean_data()
+
+        # 4. Generate UUID
+        dataset_uuid = str(uuid.uuid1())
+        dataset_converter.entries.append(
+            Entry(FormatConverter(prop_name_to_id))\
+                .add_form_format("uuid", dataset_uuid)
+        )
+
         dataset_nested_entry = NestedEntry(dataset_converter)
         dataset_nested_entry.value = dataset_converter.entries
 
@@ -337,10 +417,8 @@ class ApiStudyDataset(Resource):
         if datasets_entry is not None:
             datasets_entry.value.value.append(dataset_nested_entry)
         else:
-            datasets_entry = Entry(dataset_converter).add_api_format({
-                "property": prop_name_to_id["datasets"],
-                "value": [dataset_nested_entry.get_api_format()]
-            })
+            datasets_entry = Entry(FormatConverter(prop_name_to_id))\
+                .add_form_format("datasets", [dataset_nested_entry.get_form_format()])
             study_converter.entries.append(datasets_entry)
 
         # 6. Validate dataset data against form
@@ -356,10 +434,17 @@ class ApiStudyDataset(Resource):
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 class ApiStudyDatasetId(Resource):
+    _get_parser = reqparse.RequestParser()
+    _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
+    @api.response("200 - api", "Success (API format)", entry_model)
+    @api.response("200 - form", "Success (form format)", entry_model_form_format)
+    @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid):
         """ Fetch a specific dataset for a given study """
+        args = self._get_parser.parse_args()
+
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
 
@@ -373,10 +458,13 @@ class ApiStudyDatasetId(Resource):
         dataset_nested_entry = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)[0]
 
         # The "dataset_nested_entry" entry is a NestedEntry (return list of dict)
-        return dataset_nested_entry.get_api_format()
+        if args["entry_format"] == "api":
+            return dataset_nested_entry.get_api_format()
+        elif args["entry_format"] == "form":
+            return dataset_nested_entry.get_form_format()
 
     @token_required
-    @api.expect(nested_study_entry_add_modify_model)
+    @api.expect(nested_study_entry_model)
     def put(self, study_id, dataset_uuid, user=None):
         """ Update a dataset for a given study """
         payload = api.payload
@@ -386,6 +474,7 @@ class ApiStudyDatasetId(Resource):
         # 1. Split payload
         form_name = payload["form_name"]
         entries = payload["entries"]
+        entry_format = payload.get("entry_format", "api")
 
         # 2. Get study data
         study = Study.objects().get(id=study_id)
@@ -401,8 +490,13 @@ class ApiStudyDatasetId(Resource):
         dataset_converter.entries = dataset_nested_entry.value
 
         # 4. Get new dataset data
-        new_dataset_converter = FormatConverter(mapper=prop_id_to_name)
-        new_dataset_converter.add_api_format(entries)
+        if entry_format == "api":
+            new_dataset_converter = FormatConverter(mapper=prop_id_to_name)
+            new_dataset_converter.add_api_format(entries)
+        elif entry_format == "form":
+            prop_name_to_id = get_property_map(key="name", value="id")
+            new_dataset_converter = FormatConverter(mapper=prop_name_to_id)
+            new_dataset_converter.add_form_format(entries)
 
         # 5. Clean new data and get entries to remove
         entries_to_remove = new_dataset_converter.clean_data()
@@ -426,11 +520,16 @@ class ApiStudyDatasetId(Resource):
 @api.param("dataset_uuid", "The dataset identifier")
 class ApiStudyPE(Resource):
     _get_parser = reqparse.RequestParser()
+    _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.expect(parser=_get_parser)
+    @api.response("200 - api", "Success (API format)", [entry_model])
+    @api.response("200 - form", "Success (form format)", [entry_model_form_format])
+    @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid):
         """ Fetch a list of all processing events for a given study """
+        args = self._get_parser.parse_args()
+
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
 
@@ -449,12 +548,15 @@ class ApiStudyPE(Resource):
 
         if pes_entry is not None:
             # The "process_events" entry is a NestedListEntry (return list of list)
-            return pes_entry.get_api_format()
+            if args["entry_format"] == "api":
+                return pes_entry.get_api_format()
+            elif args["entry_format"] == "form":
+                return pes_entry.get_form_format()
         else:
             return []
 
     @token_required
-    @api.expect(nested_study_entry_add_modify_model)
+    @api.expect(nested_study_entry_model)
     def post(self, study_id, dataset_uuid, user=None):
         """ Add a new processing event for a given dataset """
         payload = api.payload
@@ -465,6 +567,7 @@ class ApiStudyPE(Resource):
         # 1. Split payload
         form_name = payload["form_name"]
         entries = payload["entries"]
+        entry_format = payload.get("entry_format", "api")
 
         # 2. Get study and dataset data
         study = Study.objects().get(id=study_id)
@@ -474,14 +577,23 @@ class ApiStudyPE(Resource):
         datasets_entry = study_converter.get_entry_by_name("datasets")
         dataset_nested_entry, dataset_position = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)
 
-        # 3. Generate UUID
-        pe_uuid = str(uuid.uuid1())
-        entries.insert(0, {"property": prop_name_to_id["uuid"], "value": pe_uuid})
+        # 3. Format and clean processing event data
+        if entry_format == "api":
+            pe_converter = FormatConverter(mapper=prop_id_to_name)
+            pe_converter.add_api_format(entries)
+        elif entry_format == "form":
+            pe_converter = FormatConverter(mapper=prop_name_to_id)
+            pe_converter.add_form_format(entries)
 
-        # 4. Format and clean processing event data
-        pe_converter = FormatConverter(mapper=prop_id_to_name)
-        pe_converter.add_api_format(entries)
         pe_converter.clean_data()
+
+        # 4. Generate UUID
+        pe_uuid = str(uuid.uuid1())
+        pe_converter.entries.append(
+            Entry(FormatConverter(prop_name_to_id))\
+                .add_form_format("uuid", pe_uuid)
+        )
+
         pe_nested_entry = NestedEntry(pe_converter)
         pe_nested_entry.value = pe_converter.entries
 
@@ -491,10 +603,8 @@ class ApiStudyPE(Resource):
         if pes_entry is not None:
             pes_entry.value.value.append(pe_nested_entry)
         else:
-            pes_entry = Entry(pe_converter).add_api_format({
-                "property": prop_name_to_id["process_events"],
-                "value": [pe_nested_entry.get_api_format()]
-            })
+            pes_entry = Entry(FormatConverter(prop_name_to_id))\
+                .add_form_format("process_events", [pe_nested_entry.get_form_format()])
             dataset_nested_entry.value.append(pes_entry)
 
         datasets_entry.value.value[dataset_position] = dataset_nested_entry
@@ -513,10 +623,17 @@ class ApiStudyPE(Resource):
 @api.param("dataset_uuid", "The dataset identifier")
 @api.param("pe_uuid", "The processing event identifier")
 class ApiStudyPEId(Resource):
+    _get_parser = reqparse.RequestParser()
+    _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
+    @api.response("200 - api", "Success (API format)", entry_model)
+    @api.response("200 - form", "Success (form format)", entry_model_form_format)
+    @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid, pe_uuid):
         """ Fetch a specific processing for a given dataset """
+        args = self._get_parser.parse_args()
+
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
 
@@ -535,10 +652,13 @@ class ApiStudyPEId(Resource):
         pe_nested_entry = pes_entry.value.find_nested_entry("uuid", pe_uuid)[0]
 
         # The "pe_nested_entry" entry is a NestedEntry (return list of dict)
-        return pe_nested_entry.get_api_format()
+        if args["entry_format"] == "api":
+            return pe_nested_entry.get_api_format()
+        elif args["entry_format"] == "form":
+            return pe_nested_entry.get_form_format()
 
     @token_required
-    @api.expect(nested_study_entry_add_modify_model)
+    @api.expect(nested_study_entry_model)
     def put(self, study_id, dataset_uuid, pe_uuid, user=None):
         """ Update a processing event for a given dataset """
         payload = api.payload
@@ -548,6 +668,7 @@ class ApiStudyPEId(Resource):
         # 1. Split payload
         form_name = payload["form_name"]
         entries = payload["entries"]
+        entry_format = payload.get("entry_format", "api")
 
         # 2. Get study data
         study = Study.objects().get(id=study_id)
@@ -567,8 +688,13 @@ class ApiStudyPEId(Resource):
         pe_converter.entries = pe_nested_entry.value
 
         # 5. Get new processing event data
-        new_pe_converter = FormatConverter(mapper=prop_id_to_name)
-        new_pe_converter.add_api_format(entries)
+        if entry_format == "api":
+            new_pe_converter = FormatConverter(mapper=prop_id_to_name)
+            new_pe_converter.add_api_format(entries)
+        elif entry_format == "form":
+            prop_name_to_id = get_property_map(key="name", value="id")
+            new_pe_converter = FormatConverter(mapper=prop_name_to_id)
+            new_pe_converter.add_form_format(entries)
 
         # 6. Clean new data and get entries to remove
         entries_to_remove = new_pe_converter.clean_data()
@@ -584,7 +710,6 @@ class ApiStudyPEId(Resource):
         # 9. Update study state, data and ulpoad on DB
         message = "Updated processing event"
         update_study(study, study_converter, payload, message, user)
-        
         return {"message": message}
 
 

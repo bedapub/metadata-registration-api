@@ -55,7 +55,7 @@ class ApiControlledVocabulary(Resource):
                             )
 
     @api.marshal_with(ctrl_voc_model_id)
-    @api.expect(parser=get_parser)
+    @api.doc(parser=get_parser)
     def get(self):
         """ Fetch a list with all entries """
 
@@ -82,7 +82,7 @@ class ApiControlledVocabulary(Resource):
                 "id": str(entry.id)}, 201
 
     @token_required
-    @api.expect(parser=_delete_parser)
+    @api.doc(parser=_delete_parser)
     def delete(self, user=None):
         """ Delete all entries"""
 
@@ -123,7 +123,7 @@ class ApiControlledVocabularyId(Resource):
         return {"message": f"Update entry '{entry.name}'"}
 
     @token_required
-    @api.expect(parser=_delete_parser)
+    @api.doc(parser=_delete_parser)
     def delete(self, id, user=None):
         """ Delete an entry given its unique identifier """
 
