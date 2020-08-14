@@ -86,7 +86,7 @@ class ApiUser(Resource):
                         )
 
     # @token_required
-    @api.expect(parser=parser)
+    @api.doc(parser=parser)
     @api.marshal_with(user_model_id)
     def get(self):
         """ Fetch a list with all entries """
@@ -113,7 +113,7 @@ class ApiUser(Resource):
                 "id": str(entry.id)}, 201
 
     @token_required
-    @api.expect(parser=_delete_parser)
+    @api.doc(parser=_delete_parser)
     def delete(self, user=None):
         """ Delete all entries"""
 
@@ -156,7 +156,7 @@ class ApiUserId(Resource):
         return {"message": f"Update entry '{entry.firstname}'"}
 
     @token_required
-    @api.expect(parser=_delete_parser)
+    @api.doc(parser=_delete_parser)
     def delete(self, id, user=None):
         """ Delete an entry given its unique identifier """
 

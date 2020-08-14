@@ -98,7 +98,7 @@ class ApiStudy(Resource):
 
     # @token_required
     @api.marshal_with(study_model)
-    @api.expect(parser=_get_parser)
+    @api.doc(parser=_get_parser)
     def get(self):
         """ Fetch a list with all entries """
         # Convert query parameters
@@ -165,7 +165,7 @@ class ApiStudy(Resource):
 
 
     @token_required
-    @api.expect(parser=_delete_parser)
+    @api.doc(parser=_delete_parser)
     def delete(self, user=None):
         """ Deprecates all entries """
 
@@ -250,7 +250,7 @@ class ApiStudyId(Resource):
         return {"message": f"Update entry"}
 
     @token_required
-    @api.expect(parser=_delete_parser)
+    @api.doc(parser=_delete_parser)
     def delete(self, id, user=None):
         """ Delete an entry given its unique identifier """
         args = self._delete_parser.parse_args()
@@ -271,7 +271,7 @@ class ApiStudyDataset(Resource):
     _get_parser = reqparse.RequestParser()
 
     # @token_required
-    @api.expect(parser=_get_parser)
+    @api.doc(parser=_get_parser)
     def get(self, study_id):
         """ Fetch a list of all datasets for a given study """
         study = Study.objects().get(id=study_id)
@@ -419,7 +419,7 @@ class ApiStudyPE(Resource):
     _get_parser = reqparse.RequestParser()
 
     # @token_required
-    @api.expect(parser=_get_parser)
+    @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid):
         """ Fetch a list of all processing events for a given study """
         study = Study.objects().get(id=study_id)
