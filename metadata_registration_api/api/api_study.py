@@ -41,9 +41,6 @@ meta_information_model = api.model("Metadata Information", {
 study_model = api.model("Study", {
     "entries": fields.List(fields.Nested(entry_model)),
     "meta_information": fields.Nested(meta_information_model),
-})
-
-study_model_id = api.inherit("Study with id", study_model, {
     "id": fields.String()
 })
 
@@ -52,22 +49,16 @@ field_add_model = api.model("Add Field", {
     "value": fields.Raw()
 })
 
-study_add_model = api.model("Add Study", {
-    "form_name": fields.String(example="Form Object Id", required=True),
-    "initial_state": fields.String(default="generic_state", required=True, description="The initial state name"),
+nested_study_entry_model = api.model("Nested study entry", {
     "entries": fields.List(fields.Nested(field_add_model)),
+    "form_name": fields.String(example="form_name", required=True),
     "manual_meta_information": fields.Raw()
 })
 
-study_modify_model = api.inherit("Modify study model", study_add_model, {
-    "id": fields.String()
+study_add_model = api.inherit("Add Study", nested_study_entry_model, {
+    "initial_state": fields.String(default="GenericState", required=True, description="The initial state name"),
 })
 
-nested_study_entry_add_modify_model = api.model("Add or modify a nested study entry", {
-    "entries": fields.List(fields.Nested(entry_model)),
-    "form_name": fields.String(example="Form name for validation", required=True),
-    "manual_meta_information": fields.Raw()
-})
 
 # Routes
 # ----------------------------------------------------------------------------------------------------------------------
@@ -106,7 +97,7 @@ class ApiStudy(Resource):
     )
 
     # @token_required
-    @api.marshal_with(study_model_id)
+    @api.marshal_with(study_model)
     @api.expect(parser=_get_parser)
     def get(self):
         """ Fetch a list with all entries """
@@ -204,13 +195,13 @@ class ApiStudyId(Resource):
                                )
 
     # @token_required
-    @api.marshal_with(study_model_id)
+    @api.marshal_with(study_model)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         return Study.objects(id=id).get()
 
     @token_required
-    @api.expect(study_modify_model)
+    @api.expect(nested_study_entry_model)
     def put(self, id, user=None):
         """ Update an entry given its unique identifier """
 
@@ -301,7 +292,7 @@ class ApiStudyDataset(Resource):
             return []
 
     @token_required
-    @api.expect(nested_study_entry_add_modify_model)
+    @api.expect(nested_study_entry_model)
     def post(self, study_id, user=None):
         """ Add a new dataset for a given study """
         payload = api.payload
@@ -376,7 +367,7 @@ class ApiStudyDatasetId(Resource):
         return dataset_nested_entry.get_api_format()
 
     @token_required
-    @api.expect(nested_study_entry_add_modify_model)
+    @api.expect(nested_study_entry_model)
     def put(self, study_id, dataset_uuid, user=None):
         """ Update a dataset for a given study """
         payload = api.payload
@@ -454,7 +445,7 @@ class ApiStudyPE(Resource):
             return []
 
     @token_required
-    @api.expect(nested_study_entry_add_modify_model)
+    @api.expect(nested_study_entry_model)
     def post(self, study_id, dataset_uuid, user=None):
         """ Add a new processing event for a given dataset """
         payload = api.payload
@@ -538,7 +529,7 @@ class ApiStudyPEId(Resource):
         return pe_nested_entry.get_api_format()
 
     @token_required
-    @api.expect(nested_study_entry_add_modify_model)
+    @api.expect(nested_study_entry_model)
     def put(self, study_id, dataset_uuid, pe_uuid, user=None):
         """ Update a processing event for a given dataset """
         payload = api.payload
