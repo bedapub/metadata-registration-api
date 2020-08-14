@@ -157,8 +157,7 @@ class ApiForm(Resource):
             return {"message": f"Delete all entries"}
 
 
-@api.route("/id/<id>")
-@api.route("/id/<id>/")
+@api.route("/id/<id>", strict_slashes=False)
 @api.param("id", "The property identifier")
 class ApiForm(Resource):
     _delete_parser = reqparse.RequestParser()

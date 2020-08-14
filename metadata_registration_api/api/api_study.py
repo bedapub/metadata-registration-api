@@ -193,8 +193,7 @@ class ApiStudy(Resource):
         return {"message": "Delete all entries"}
 
 
-@api.route("/id/<id>")
-@api.route("/id/<id>/")
+@api.route("/id/<id>", strict_slashes=False)
 @api.param("id", "The property identifier")
 class ApiStudy(Resource):
     _delete_parser = reqparse.RequestParser()
@@ -353,8 +352,7 @@ class ApiStudyDataset(Resource):
         return {"message": message, "uuid": dataset_uuid}, 201
 
 
-@api.route("/id/<study_id>/datasets/id/<dataset_uuid>")
-@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/")
+@api.route("/id/<study_id>/datasets/id/<dataset_uuid>", strict_slashes=False)
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 class ApiStudyDataset(Resource):
@@ -510,8 +508,7 @@ class ApiStudyPE(Resource):
         return {"message": message, "uuid": pe_uuid}, 201
 
 
-@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes/id/<pe_uuid>")
-@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes/id/<pe_uuid>/")
+@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes/id/<pe_uuid>", strict_slashes=False)
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 @api.param("pe_uuid", "The processing event identifier")
