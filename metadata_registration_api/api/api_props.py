@@ -132,8 +132,7 @@ class ApiProperties(Resource):
             return {"message": "Delete all entries"}
 
 
-@api.route("/id/<id>")
-@api.route("/id/<id>/")
+@api.route("/id/<id>", strict_slashes=False)
 @api.param("id", "The property identifier")
 class ApiProperty(Resource):
     _delete_parser = reqparse.RequestParser()
