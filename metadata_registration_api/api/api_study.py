@@ -195,7 +195,7 @@ class ApiStudy(Resource):
 
 @api.route("/id/<id>", strict_slashes=False)
 @api.param("id", "The property identifier")
-class ApiStudy(Resource):
+class ApiStudyId(Resource):
     _delete_parser = reqparse.RequestParser()
     _delete_parser.add_argument("complete",
                                type=inputs.boolean,
@@ -355,7 +355,7 @@ class ApiStudyDataset(Resource):
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>", strict_slashes=False)
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
-class ApiStudyDataset(Resource):
+class ApiStudyDatasetId(Resource):
 
     # @token_required
     def get(self, study_id, dataset_uuid):
@@ -512,7 +512,7 @@ class ApiStudyPE(Resource):
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 @api.param("pe_uuid", "The processing event identifier")
-class ApiStudyPE(Resource):
+class ApiStudyPEId(Resource):
 
     # @token_required
     def get(self, study_id, dataset_uuid, pe_uuid):
