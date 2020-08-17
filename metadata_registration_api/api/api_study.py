@@ -25,8 +25,14 @@ entry_model = api.model("Entry", {
     "value": fields.Raw()
 })
 
+entry_model_prop_id = api.model("Entry (property collapsed)", {
+    "property": fields.String(example="Property Object Id"),
+    "value": fields.Raw()
+})
+
 entry_model_form_format = api.model("Entry (form format)", {
-    "property_name": fields.Raw(example="Some value")
+    "property_name_1": fields.Raw(example="Some value"),
+    "property_name_2": fields.Raw(example="Some value")
 })
 
 change_log = api.model("Change Log", {
@@ -48,19 +54,27 @@ study_model = api.model("Study", {
     "id": fields.String()
 })
 
+study_model_prop_id = api.model("Study (prop id)", {
+    "entries": fields.List(fields.Nested(entry_model_prop_id)),
+    "meta_information": fields.Nested(meta_information_model),
+    "id": fields.String()
+})
+
 study_model_form_format = api.model("Study (form format)", {
     "entries": fields.List(fields.Nested(entry_model_form_format)),
     "meta_information": fields.Nested(meta_information_model),
     "id": fields.String()
 })
 
-field_add_model = api.model("Add Field", {
-    "property": fields.String(example="Property Object Id"),
-    "value": fields.Raw()
+nested_study_entry_model = api.model("Nested study entry", {
+    "entries": fields.List(fields.Nested(entry_model)),
+    "entry_format": fields.String(example="api", description="Format used for entries (api or form)"),
+    "form_name": fields.String(example="form_name", required=True),
+    "manual_meta_information": fields.Raw()
 })
 
-nested_study_entry_model = api.model("Nested study entry", {
-    "entries": fields.List(fields.Nested(field_add_model)),
+nested_study_entry_model_prop_id = api.model("Nested study entry (prop id)", {
+    "entries": fields.List(fields.Nested(entry_model_prop_id)),
     "entry_format": fields.String(example="api", description="Format used for entries (api or form)"),
     "form_name": fields.String(example="form_name", required=True),
     "manual_meta_information": fields.Raw()
@@ -258,7 +272,7 @@ class ApiStudyId(Resource):
             return study_json
 
     @token_required
-    @api.expect(nested_study_entry_model)
+    @api.expect(nested_study_entry_model_prop_id)
     def put(self, id, user=None):
         """ Update an entry given its unique identifier """
 
@@ -343,7 +357,7 @@ class ApiStudyDataset(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", [entry_model])
+    @api.response("200 - api", "Success (API format)", [[entry_model_prop_id]])
     @api.response("200 - form", "Success (form format)", [entry_model_form_format])
     @api.doc(parser=_get_parser)
     def get(self, study_id):
@@ -371,7 +385,7 @@ class ApiStudyDataset(Resource):
             return []
 
     @token_required
-    @api.expect(nested_study_entry_model)
+    @api.expect(nested_study_entry_model_prop_id)
     def post(self, study_id, user=None):
         """ Add a new dataset for a given study """
         payload = api.payload
@@ -431,6 +445,8 @@ class ApiStudyDataset(Resource):
 
 
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>", strict_slashes=False)
+@api.route("/datasets/id/<dataset_uuid>", strict_slashes=False,
+    doc={"description": "Alias route for a specific dataset without study_id"})
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 class ApiStudyDatasetId(Resource):
@@ -438,17 +454,23 @@ class ApiStudyDatasetId(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", entry_model)
+    @api.response("200 - api", "Success (API format)", [entry_model_prop_id])
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
-    def get(self, study_id, dataset_uuid):
+    def get(self, dataset_uuid, study_id=None):
         """ Fetch a specific dataset for a given study """
         args = self._get_parser.parse_args()
 
+        prop_map = get_property_map(key="id", value="name")
+
+        # Used for helper route using only dataset_uuid
+        if study_id is None:
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_map)
+            if study_id is None:
+                raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
+
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
-
-        prop_map = get_property_map(key="id", value="name")
 
         # The converter is used for its get_entry_by_name() method
         study_converter = FormatConverter(mapper=prop_map)
@@ -464,12 +486,18 @@ class ApiStudyDatasetId(Resource):
             return dataset_nested_entry.get_form_format()
 
     @token_required
-    @api.expect(nested_study_entry_model)
-    def put(self, study_id, dataset_uuid, user=None):
+    @api.expect(nested_study_entry_model_prop_id)
+    def put(self, dataset_uuid, study_id=None, user=None):
         """ Update a dataset for a given study """
-        payload = api.payload
-
         prop_id_to_name = get_property_map(key="id", value="name")
+
+        # Used for helper route using only dataset_uuid
+        if study_id is None:
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_id_to_name)
+            if study_id is None:
+                raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
+
+        payload = api.payload
 
         # 1. Split payload
         form_name = payload["form_name"]
@@ -516,6 +544,8 @@ class ApiStudyDatasetId(Resource):
 
 
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes")
+@api.route("/datasets/id/<dataset_uuid>/pes",
+    doc={"description": "Alias route for a dataset's PEs without study_id"})
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 class ApiStudyPE(Resource):
@@ -523,17 +553,23 @@ class ApiStudyPE(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", [entry_model])
+    @api.response("200 - api", "Success (API format)", [[entry_model_prop_id]])
     @api.response("200 - form", "Success (form format)", [entry_model_form_format])
     @api.doc(parser=_get_parser)
-    def get(self, study_id, dataset_uuid):
+    def get(self, dataset_uuid, study_id=None):
         """ Fetch a list of all processing events for a given study """
         args = self._get_parser.parse_args()
 
+        prop_map = get_property_map(key="id", value="name")
+
+        # Used for helper route using only dataset_uuid
+        if study_id is None:
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_map)
+            if study_id is None:
+                raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
+
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
-
-        prop_map = get_property_map(key="id", value="name")
 
         # The converter is used for its get_entry_by_name() method
         study_converter = FormatConverter(mapper=prop_map)
@@ -556,13 +592,19 @@ class ApiStudyPE(Resource):
             return []
 
     @token_required
-    @api.expect(nested_study_entry_model)
-    def post(self, study_id, dataset_uuid, user=None):
+    @api.expect(nested_study_entry_model_prop_id)
+    def post(self, dataset_uuid, study_id=None, user=None):
         """ Add a new processing event for a given dataset """
-        payload = api.payload
-
         prop_id_to_name = get_property_map(key="id", value="name")
         prop_name_to_id = get_property_map(key="name", value="id")
+
+        # Used for helper route using only dataset_uuid
+        if study_id is None:
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_id_to_name)
+            if study_id is None:
+                raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
+
+        payload = api.payload
 
         # 1. Split payload
         form_name = payload["form_name"]
@@ -619,6 +661,8 @@ class ApiStudyPE(Resource):
 
 
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes/id/<pe_uuid>", strict_slashes=False)
+@api.route("/pes/id/<pe_uuid>", strict_slashes=False,
+    doc={"description": "Alias route for a specific PE without study_id or dataset_uuid"})
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 @api.param("pe_uuid", "The processing event identifier")
@@ -627,17 +671,29 @@ class ApiStudyPEId(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", entry_model)
+    @api.response("200 - api", "Success (API format)", [entry_model_prop_id])
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
-    def get(self, study_id, dataset_uuid, pe_uuid):
+    def get(self, pe_uuid, study_id=None, dataset_uuid=None):
         """ Fetch a specific processing for a given dataset """
         args = self._get_parser.parse_args()
 
+        prop_map = get_property_map(key="id", value="name")
+
+        # Used for helper route using only pe_uuid
+        if dataset_uuid is None:
+            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(pe_uuid, prop_map)
+            if study_id is None or dataset_uuid is None:
+                raise Exception(f"Processing event not found in any study (uuid = {pe_uuid})")
+
+        # Used for helper route using only dataset_uuid
+        if study_id is None:
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_map)
+            if study_id is None:
+                raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
+
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
-
-        prop_map =get_property_map(key="id", value="name")
 
         # The converter is used for its get_entry_by_name() method
         study_converter = FormatConverter(mapper=prop_map)
@@ -658,12 +714,24 @@ class ApiStudyPEId(Resource):
             return pe_nested_entry.get_form_format()
 
     @token_required
-    @api.expect(nested_study_entry_model)
-    def put(self, study_id, dataset_uuid, pe_uuid, user=None):
+    @api.expect(nested_study_entry_model_prop_id)
+    def put(self, pe_uuid, study_id=None, dataset_uuid=None, user=None):
         """ Update a processing event for a given dataset """
         payload = api.payload
 
         prop_id_to_name = get_property_map(key="id", value="name")
+
+        # Used for helper route using only pe_uuid
+        if dataset_uuid is None:
+            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(pe_uuid, prop_id_to_name)
+            if study_id is None or dataset_uuid is None:
+                raise Exception(f"Processing event not found in any study (uuid = {pe_uuid})")
+
+        # Used for helper route using only dataset_uuid
+        if study_id is None:
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_id_to_name)
+            if study_id is None:
+                raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
         # 1. Split payload
         form_name = payload["form_name"]
@@ -770,3 +838,50 @@ def update_study(study, study_converter, payload, message, user=None):
 
     # 3. Update data in database
     study.update(**study_data)
+
+
+def find_study_id_from_dataset(dataset_uuid, prop_map):
+    """ Find parent study given a dataset_uuid """
+    study_id = None
+
+    for study in Study.objects().all():
+        study_json = marshal(study, study_model)
+
+        study_converter = FormatConverter(mapper=prop_map)
+        study_converter.add_api_format(study_json["entries"])
+
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+        if datasets_entry is not None:
+            try:
+                datasets_entry.value.find_nested_entry("uuid", dataset_uuid)
+                return study_json["id"]
+            except:
+                pass # Dataset not in this study
+    return study_id
+
+
+def find_dataset_and_study_id_from_pe(pe_uuid, prop_map):
+    """ Find parent study and dataset given a pe_uuid """
+    study_id = None
+    dataset_uuid = None
+
+    for study in Study.objects().all():
+        study_json = marshal(study, study_model)
+
+        study_converter = FormatConverter(mapper=prop_map)
+        study_converter.add_api_format(study_json["entries"])
+
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+        if datasets_entry is not None:
+            for dataset_nested_entry in datasets_entry.value.value:
+                dataset_uuid = dataset_nested_entry.get_entry_by_name("uuid").value
+                pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+
+                if datasets_entry is not None:
+                    try:
+                        pes_entry.value.find_nested_entry("uuid", pe_uuid)
+                        return study_json["id"], dataset_uuid
+                    except:
+                        pass # Processing event not in this dataset
+
+    return study_id, dataset_uuid
