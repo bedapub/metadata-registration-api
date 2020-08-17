@@ -417,7 +417,7 @@ class ApiStudyDataset(Resource):
 
         # 4. Generate UUID
         dataset_uuid = str(uuid.uuid1())
-        dataset_converter.entries.append(
+        dataset_converter.entries.insert(0,
             Entry(FormatConverter(prop_name_to_id))\
                 .add_form_format("uuid", dataset_uuid)
         )
@@ -631,7 +631,7 @@ class ApiStudyPE(Resource):
 
         # 4. Generate UUID
         pe_uuid = str(uuid.uuid1())
-        pe_converter.entries.append(
+        pe_converter.entries.insert(0,
             Entry(FormatConverter(prop_name_to_id))\
                 .add_form_format("uuid", pe_uuid)
         )
