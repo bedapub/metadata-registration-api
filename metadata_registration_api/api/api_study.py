@@ -25,8 +25,14 @@ entry_model = api.model("Entry", {
     "value": fields.Raw()
 })
 
+entry_model_prop_id = api.model("Entry (property collapsed)", {
+    "property": fields.String(example="Property Object Id"),
+    "value": fields.Raw()
+})
+
 entry_model_form_format = api.model("Entry (form format)", {
-    "property_name": fields.Raw(example="Some value")
+    "property_name_1": fields.Raw(example="Some value"),
+    "property_name_2": fields.Raw(example="Some value")
 })
 
 change_log = api.model("Change Log", {
@@ -48,19 +54,27 @@ study_model = api.model("Study", {
     "id": fields.String()
 })
 
+study_model_prop_id = api.model("Study (prop id)", {
+    "entries": fields.List(fields.Nested(entry_model_prop_id)),
+    "meta_information": fields.Nested(meta_information_model),
+    "id": fields.String()
+})
+
 study_model_form_format = api.model("Study (form format)", {
     "entries": fields.List(fields.Nested(entry_model_form_format)),
     "meta_information": fields.Nested(meta_information_model),
     "id": fields.String()
 })
 
-field_add_model = api.model("Add Field", {
-    "property": fields.String(example="Property Object Id"),
-    "value": fields.Raw()
+nested_study_entry_model = api.model("Nested study entry", {
+    "entries": fields.List(fields.Nested(entry_model)),
+    "entry_format": fields.String(example="api", description="Format used for entries (api or form)"),
+    "form_name": fields.String(example="form_name", required=True),
+    "manual_meta_information": fields.Raw()
 })
 
-nested_study_entry_model = api.model("Nested study entry", {
-    "entries": fields.List(fields.Nested(field_add_model)),
+nested_study_entry_model_prop_id = api.model("Nested study entry (prop id)", {
+    "entries": fields.List(fields.Nested(entry_model_prop_id)),
     "entry_format": fields.String(example="api", description="Format used for entries (api or form)"),
     "form_name": fields.String(example="form_name", required=True),
     "manual_meta_information": fields.Raw()
@@ -258,7 +272,7 @@ class ApiStudyId(Resource):
             return study_json
 
     @token_required
-    @api.expect(nested_study_entry_model)
+    @api.expect(nested_study_entry_model_prop_id)
     def put(self, id, user=None):
         """ Update an entry given its unique identifier """
 
@@ -343,7 +357,7 @@ class ApiStudyDataset(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", [entry_model])
+    @api.response("200 - api", "Success (API format)", [[entry_model]])
     @api.response("200 - form", "Success (form format)", [entry_model_form_format])
     @api.doc(parser=_get_parser)
     def get(self, study_id):
@@ -371,7 +385,7 @@ class ApiStudyDataset(Resource):
             return []
 
     @token_required
-    @api.expect(nested_study_entry_model)
+    @api.expect(nested_study_entry_model_prop_id)
     def post(self, study_id, user=None):
         """ Add a new dataset for a given study """
         payload = api.payload
@@ -438,7 +452,7 @@ class ApiStudyDatasetId(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", entry_model)
+    @api.response("200 - api", "Success (API format)", [entry_model])
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid):
@@ -464,7 +478,7 @@ class ApiStudyDatasetId(Resource):
             return dataset_nested_entry.get_form_format()
 
     @token_required
-    @api.expect(nested_study_entry_model)
+    @api.expect(nested_study_entry_model_prop_id)
     def put(self, study_id, dataset_uuid, user=None):
         """ Update a dataset for a given study """
         payload = api.payload
@@ -523,7 +537,7 @@ class ApiStudyPE(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", [entry_model])
+    @api.response("200 - api", "Success (API format)", [[entry_model]])
     @api.response("200 - form", "Success (form format)", [entry_model_form_format])
     @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid):
@@ -556,7 +570,7 @@ class ApiStudyPE(Resource):
             return []
 
     @token_required
-    @api.expect(nested_study_entry_model)
+    @api.expect(nested_study_entry_model_prop_id)
     def post(self, study_id, dataset_uuid, user=None):
         """ Add a new processing event for a given dataset """
         payload = api.payload
@@ -627,7 +641,7 @@ class ApiStudyPEId(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", entry_model)
+    @api.response("200 - api", "Success (API format)", [entry_model])
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid, pe_uuid):
@@ -658,7 +672,7 @@ class ApiStudyPEId(Resource):
             return pe_nested_entry.get_form_format()
 
     @token_required
-    @api.expect(nested_study_entry_model)
+    @api.expect(nested_study_entry_model_prop_id)
     def put(self, study_id, dataset_uuid, pe_uuid, user=None):
         """ Update a processing event for a given dataset """
         payload = api.payload
