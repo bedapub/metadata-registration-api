@@ -452,7 +452,7 @@ class ApiStudyDatasetId(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", [entry_model])
+    @api.response("200 - api", "Success (API format)", [entry_model_prop_id])
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid):
@@ -537,7 +537,7 @@ class ApiStudyPE(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", [[entry_model]])
+    @api.response("200 - api", "Success (API format)", [[entry_model_prop_id]])
     @api.response("200 - form", "Success (form format)", [entry_model_form_format])
     @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid):
@@ -641,7 +641,7 @@ class ApiStudyPEId(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
-    @api.response("200 - api", "Success (API format)", [entry_model])
+    @api.response("200 - api", "Success (API format)", [entry_model_prop_id])
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
     def get(self, study_id, dataset_uuid, pe_uuid):
