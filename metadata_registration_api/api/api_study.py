@@ -8,7 +8,7 @@ from flask_restx import Namespace, Resource, fields, marshal
 from flask_restx import reqparse, inputs
 
 from metadata_registration_lib.api_utils import (FormatConverter, map_key_value,
-    Entry, NestedEntry)
+    Entry, NestedEntry, NestedListEntry)
 from metadata_registration_api.api.api_utils import MetaInformation, ChangeLog
 from .api_props import property_model_id
 from .decorators import token_required
@@ -461,11 +461,12 @@ class ApiStudyDatasetId(Resource):
         """ Fetch a specific dataset for a given study """
         args = self._get_parser.parse_args()
 
-        prop_map = get_property_map(key="id", value="name")
+        prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = get_property_map(key="name", value="id")
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_map)
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -473,7 +474,7 @@ class ApiStudyDatasetId(Resource):
         study_json = marshal(study, study_model)
 
         # The converter is used for its get_entry_by_name() method
-        study_converter = FormatConverter(mapper=prop_map)
+        study_converter = FormatConverter(mapper=prop_id_to_name)
         study_converter.add_api_format(study_json["entries"])
 
         datasets_entry = study_converter.get_entry_by_name("datasets")
@@ -490,10 +491,11 @@ class ApiStudyDatasetId(Resource):
     def put(self, dataset_uuid, study_id=None, user=None):
         """ Update a dataset for a given study """
         prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = get_property_map(key="name", value="id")
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_id_to_name)
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -560,11 +562,12 @@ class ApiStudyPE(Resource):
         """ Fetch a list of all processing events for a given study """
         args = self._get_parser.parse_args()
 
-        prop_map = get_property_map(key="id", value="name")
+        prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = get_property_map(key="name", value="id")
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_map)
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -572,7 +575,7 @@ class ApiStudyPE(Resource):
         study_json = marshal(study, study_model)
 
         # The converter is used for its get_entry_by_name() method
-        study_converter = FormatConverter(mapper=prop_map)
+        study_converter = FormatConverter(mapper=prop_id_to_name)
         study_converter.add_api_format(study_json["entries"])
 
         # Find dataset
@@ -600,7 +603,7 @@ class ApiStudyPE(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_id_to_name)
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -678,17 +681,22 @@ class ApiStudyPEId(Resource):
         """ Fetch a specific processing for a given dataset """
         args = self._get_parser.parse_args()
 
-        prop_map = get_property_map(key="id", value="name")
+        prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = get_property_map(key="name", value="id")
 
         # Used for helper route using only pe_uuid
         if dataset_uuid is None:
-            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(pe_uuid, prop_map)
+            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(
+                pe_uuid = pe_uuid,
+                prop_name_to_id = prop_name_to_id,
+                prop_id_to_name = prop_id_to_name
+            )
             if study_id is None or dataset_uuid is None:
                 raise Exception(f"Processing event not found in any study (uuid = {pe_uuid})")
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_map)
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -696,7 +704,7 @@ class ApiStudyPEId(Resource):
         study_json = marshal(study, study_model)
 
         # The converter is used for its get_entry_by_name() method
-        study_converter = FormatConverter(mapper=prop_map)
+        study_converter = FormatConverter(mapper=prop_id_to_name)
         study_converter.add_api_format(study_json["entries"])
 
         # Find dataset
@@ -720,16 +728,21 @@ class ApiStudyPEId(Resource):
         payload = api.payload
 
         prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = get_property_map(key="name", value="id")
 
         # Used for helper route using only pe_uuid
         if dataset_uuid is None:
-            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(pe_uuid, prop_id_to_name)
+            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(
+                pe_uuid = pe_uuid,
+                prop_name_to_id = prop_name_to_id,
+                prop_id_to_name = prop_id_to_name
+            )
             if study_id is None or dataset_uuid is None:
                 raise Exception(f"Processing event not found in any study (uuid = {pe_uuid})")
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_id_to_name)
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -840,48 +853,229 @@ def update_study(study, study_converter, payload, message, user=None):
     study.update(**study_data)
 
 
-def find_study_id_from_dataset(dataset_uuid, prop_map):
+def find_study_id_from_dataset(dataset_uuid, prop_name_to_id):
     """ Find parent study given a dataset_uuid """
     study_id = None
 
-    for study in Study.objects().all():
-        study_json = marshal(study, study_model)
+    aggregated_studies = get_aggregated_studies_and_datasets(prop_name_to_id)
 
-        study_converter = FormatConverter(mapper=prop_map)
-        study_converter.add_api_format(study_json["entries"])
+    for study in aggregated_studies:
+        if dataset_uuid in study["datasets_uuids"]:
+            return study["id"]
 
-        datasets_entry = study_converter.get_entry_by_name("datasets")
-        if datasets_entry is not None:
-            try:
-                datasets_entry.value.find_nested_entry("uuid", dataset_uuid)
-                return study_json["id"]
-            except:
-                pass # Dataset not in this study
     return study_id
 
 
-def find_dataset_and_study_id_from_pe(pe_uuid, prop_map):
+def find_dataset_and_study_id_from_pe(pe_uuid, prop_name_to_id, prop_id_to_name):
     """ Find parent study and dataset given a pe_uuid """
     study_id = None
     dataset_uuid = None
 
-    for study in Study.objects().all():
-        study_json = marshal(study, study_model)
+    aggregated_studies = get_aggregated_studies_and_datasets(prop_name_to_id)
 
-        study_converter = FormatConverter(mapper=prop_map)
-        study_converter.add_api_format(study_json["entries"])
+    for potential_study in aggregated_studies:
+        if pe_uuid in potential_study["pe_uuids"]:
+            study = potential_study
+            study_id = study["id"]
+            break
+    else:
+        return study_id, dataset_uuid
 
-        datasets_entry = study_converter.get_entry_by_name("datasets")
-        if datasets_entry is not None:
-            for dataset_nested_entry in datasets_entry.value.value:
-                dataset_uuid = dataset_nested_entry.get_entry_by_name("uuid").value
-                pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+    datasets_list_entry = NestedListEntry(FormatConverter(prop_id_to_name))\
+        .add_api_format(study["datasets"])
 
-                if datasets_entry is not None:
-                    try:
-                        pes_entry.value.find_nested_entry("uuid", pe_uuid)
-                        return study_json["id"], dataset_uuid
-                    except:
-                        pass # Processing event not in this dataset
+    for dataset_nested_entry in datasets_list_entry.value:
+        dataset_uuid = dataset_nested_entry.get_entry_by_name("uuid").value
+        pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+
+        try:
+            pes_entry.value.find_nested_entry("uuid", pe_uuid)
+            return study_id, dataset_uuid
+        except:
+            pass # Processing event not in this dataset
 
     return study_id, dataset_uuid
+
+def get_aggregated_studies_and_datasets(prop_map):
+    """
+    Super messy and dirty mongoDB aggregation to save time finding a study
+    from a dataset_uuid.
+    Note to future self: so sorry about that but no worry, Elastic Search will replace that.
+    """
+    # TODO: This should go away when we index all studies in form format with Elastic Search
+
+    pipeline = [
+        # Keep only datasets entry
+        {"$addFields": {
+            "datasets": {
+                "$filter": {
+                    "input":"$entries",
+                    "as":"entry",
+                    "cond":{"$eq": [{"$toString": "$$entry.property"}, prop_map["datasets"]]}
+                }
+            }
+        }},
+
+        # Keep studies with at least one dataset
+        {"$match": {"datasets.0" : {"$exists" : True}}},
+
+        # Take first (and only) element of filtered entries
+        {"$addFields": {"datasets": {"$arrayElemAt": ["$datasets", 0]}}},
+        # Get the actual list of datasets from the datasets entry value
+        {"$addFields": {"datasets": "$datasets.value"}},
+
+        # Dataset UUIDs: Keep only dataset_uuid entries (exactly 1)
+        {"$addFields": {
+            "datasets_uuids": {
+                "$map": {
+                    "input": "$datasets",
+                    "as": "dataset",
+                    "in": {
+                        "$filter": {
+                            "input": "$$dataset",
+                            "as": "dataset_entry",
+                            "cond":{"$eq": ["$$dataset_entry.property", prop_map["uuid"]]}
+                        }
+                    }
+                }
+            }
+        }},
+
+        # Dataset UUIDs: Take first (and only) element of filtered entries
+        {"$addFields": {
+            "datasets_uuids": {
+                "$map": {
+                    "input": "$datasets_uuids",
+                    "as": "dataset",
+                    "in": {"$arrayElemAt": ["$$dataset", 0]}
+                }
+            }
+        }},
+
+        # Dataset UUIDs: make a flat list of UUIDs
+        {"$addFields": {
+            "datasets_uuids": {
+                "$map": {
+                    "input": "$datasets_uuids",
+                    "as": "uuid_entry",
+                    "in": "$$uuid_entry.value"
+                }
+            }
+        }},
+
+        # Processing envents UUIDs: Keep only process_events entries (exactly 1)
+        {"$addFields": {
+            "datasets_for_pe": {
+                "$map": {
+                    "input": "$datasets",
+                    "as": "dataset",
+                    "in": {
+                        "$filter": {
+                            "input": "$$dataset",
+                            "as": "dataset_entry",
+                            "cond":{"$eq": ["$$dataset_entry.property", prop_map["process_events"]]}
+                        }
+                    }
+                }
+            }
+        }},
+
+        # Processing envents UUIDs: Take first (and only) element of filtered dataset entries
+        {"$addFields": {
+            "datasets_for_pe": {
+                "$map": {
+                    "input": "$datasets_for_pe",
+                    "as": "dataset",
+                    "in": {"$arrayElemAt": ["$$dataset", 0]}
+                }
+            }
+        }},
+
+        # Processing envents UUIDs: make a flat list of processing events
+        {"$addFields": {
+            "datasets_for_pe": {
+                "$map": {
+                    "input": "$datasets_for_pe",
+                    "as": "dataset",
+                    "in": "$$dataset.value"
+                }
+            }
+        }},
+
+        # Processing envents UUIDs: Keep only uuid entries (exactly 1)
+        {"$addFields": {
+            "datasets_for_pe": {
+                "$map": {
+                    "input": "$datasets_for_pe",
+                    "as": "dataset",
+                    "in": {
+                        "$map": {
+                            "input": "$$dataset",
+                            "as": "pe",
+                            "in": {
+                                "$filter": {
+                                    "input": "$$pe",
+                                    "as": "pe_entry",
+                                    "cond":{"$eq": ["$$pe_entry.property", prop_map["uuid"]]}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }},
+
+        # Processing envents UUIDs: Take first (and only) element of filtered entries
+        {"$addFields": {
+            "datasets_for_pe": {
+                "$map": {
+                    "input": "$datasets_for_pe",
+                    "as": "dataset",
+                    "in": {
+                        "$map": {
+                            "input": "$$dataset",
+                            "as": "pe",
+                            "in": {"$arrayElemAt": ["$$pe", 0]}
+                        }
+                    }
+                }
+            }
+        }},
+
+        # Processing envents UUIDs: make a flat list of UUIDs (per dataset)
+        {"$addFields": {
+            "pe_uuids": {
+                "$map": {
+                    "input": "$datasets_for_pe",
+                    "as": "dataset",
+                    "in": {
+                        "$map": {
+                            "input": "$$dataset",
+                            "as": "pe",
+                            "in": "$$pe.value"
+                        }
+                    }
+                }
+            }
+        }},
+
+        # Processing envents UUIDs: Flatten the UUID list (no separation per dataset)
+        # It also removes the None but I have no idea why
+        {"$unwind": "$pe_uuids"},
+        {"$unwind": "$pe_uuids"},
+        {"$unwind": "$datasets_uuids"},
+        {"$unwind": "$datasets_uuids"},
+        {"$unwind": "$datasets"},
+        {"$group": {
+            "_id": "$_id",
+            "pe_uuids": {"$addToSet": "$pe_uuids"},
+            "datasets_uuids": {"$addToSet": "$datasets_uuids"},
+            "datasets": {"$addToSet": "$datasets"},
+        }},
+
+        # Clean, project only wanted fields
+        {"$project": {"id": {"$toString": "$_id"}, "datasets_uuids": 1, "pe_uuids": 1, "datasets":1, "_id": 0}},
+    ]
+    aggregated_studies = Study.objects().aggregate(pipeline)
+
+    return aggregated_studies
