@@ -7,8 +7,8 @@ from flask import current_app as app
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_restx import reqparse, inputs
 
-from metadata_registration_lib.api_utils import (FormatConverter, map_key_value,
-    Entry, NestedEntry, NestedListEntry)
+from metadata_registration_lib.api_utils import (reverse_map, map_key_value,
+    FormatConverter, Entry, NestedEntry, NestedListEntry)
 from metadata_registration_api.api.api_utils import MetaInformation, ChangeLog
 from .api_props import property_model_id
 from .decorators import token_required
@@ -201,7 +201,7 @@ class ApiStudy(Resource):
             validate_form_format_against_form(form_name, entries)
             prop_map = get_property_map(key="name", value="id")
             entries = {
-                "api_format": FormatConverter(mapper=prop_map).add_form_format(entries).get_api_format(),
+                "api_format": FormatConverter(prop_map).add_form_format(entries).get_api_format(),
                 "form_format": entries
             }
 
@@ -300,7 +300,7 @@ class ApiStudyId(Resource):
             validate_form_format_against_form(form_name, entries)
             prop_map = get_property_map(key="name", value="id")
             entries = {
-                "api_format": FormatConverter(mapper=prop_map).add_form_format(entries).get_api_format(),
+                "api_format": FormatConverter(prop_map).add_form_format(entries).get_api_format(),
                 "form_format": entries
             }
 
@@ -391,7 +391,7 @@ class ApiStudyDataset(Resource):
         payload = api.payload
 
         prop_id_to_name = get_property_map(key="id", value="name")
-        prop_name_to_id = get_property_map(key="name", value="id")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
         # 1. Split payload
         form_name = payload["form_name"]
@@ -462,7 +462,7 @@ class ApiStudyDatasetId(Resource):
         args = self._get_parser.parse_args()
 
         prop_id_to_name = get_property_map(key="id", value="name")
-        prop_name_to_id = get_property_map(key="name", value="id")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
@@ -491,7 +491,7 @@ class ApiStudyDatasetId(Resource):
     def put(self, dataset_uuid, study_id=None, user=None):
         """ Update a dataset for a given study """
         prop_id_to_name = get_property_map(key="id", value="name")
-        prop_name_to_id = get_property_map(key="name", value="id")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
@@ -524,7 +524,6 @@ class ApiStudyDatasetId(Resource):
             new_dataset_converter = FormatConverter(mapper=prop_id_to_name)
             new_dataset_converter.add_api_format(entries)
         elif entry_format == "form":
-            prop_name_to_id = get_property_map(key="name", value="id")
             new_dataset_converter = FormatConverter(mapper=prop_name_to_id)
             new_dataset_converter.add_form_format(entries)
 
@@ -563,7 +562,7 @@ class ApiStudyPE(Resource):
         args = self._get_parser.parse_args()
 
         prop_id_to_name = get_property_map(key="id", value="name")
-        prop_name_to_id = get_property_map(key="name", value="id")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
@@ -599,7 +598,7 @@ class ApiStudyPE(Resource):
     def post(self, dataset_uuid, study_id=None, user=None):
         """ Add a new processing event for a given dataset """
         prop_id_to_name = get_property_map(key="id", value="name")
-        prop_name_to_id = get_property_map(key="name", value="id")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
@@ -682,7 +681,7 @@ class ApiStudyPEId(Resource):
         args = self._get_parser.parse_args()
 
         prop_id_to_name = get_property_map(key="id", value="name")
-        prop_name_to_id = get_property_map(key="name", value="id")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
         # Used for helper route using only pe_uuid
         if dataset_uuid is None:
@@ -728,7 +727,7 @@ class ApiStudyPEId(Resource):
         payload = api.payload
 
         prop_id_to_name = get_property_map(key="id", value="name")
-        prop_name_to_id = get_property_map(key="name", value="id")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
         # Used for helper route using only pe_uuid
         if dataset_uuid is None:
@@ -773,7 +772,6 @@ class ApiStudyPEId(Resource):
             new_pe_converter = FormatConverter(mapper=prop_id_to_name)
             new_pe_converter.add_api_format(entries)
         elif entry_format == "form":
-            prop_name_to_id = get_property_map(key="name", value="id")
             new_pe_converter = FormatConverter(mapper=prop_name_to_id)
             new_pe_converter.add_form_format(entries)
 
@@ -797,7 +795,7 @@ class ApiStudyPEId(Resource):
 def validate_against_form(form_cls, form_name, entries):
     prop_map = get_property_map(key="id", value="name")
 
-    form_data_json = FormatConverter(mapper=prop_map).add_api_format(entries).get_form_format()
+    form_data_json = FormatConverter(prop_map).add_api_format(entries).get_form_format()
 
     # 3. Validate data against form
     form_instance = form_cls()
