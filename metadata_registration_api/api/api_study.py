@@ -61,7 +61,7 @@ study_model_prop_id = api.model("Study (prop id)", {
 })
 
 study_model_form_format = api.model("Study (form format)", {
-    "entries": fields.List(fields.Nested(entry_model_form_format)),
+    "entries": fields.Nested(entry_model_form_format),
     "meta_information": fields.Nested(meta_information_model),
     "id": fields.String()
 })
