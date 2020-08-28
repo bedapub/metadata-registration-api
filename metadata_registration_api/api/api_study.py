@@ -872,7 +872,7 @@ def find_dataset_and_study_id_from_pe(pe_uuid, prop_name_to_id, prop_id_to_name)
     aggregated_studies = get_aggregated_studies_and_datasets(prop_name_to_id)
 
     for potential_study in aggregated_studies:
-        if pe_uuid in potential_study["pe_uuids"]:
+        if pe_uuid in potential_study["pes_uuids"]:
             study = potential_study
             study_id = study["id"]
             break
@@ -1042,7 +1042,7 @@ def get_aggregated_studies_and_datasets(prop_map):
 
         # Processing envents UUIDs: make a flat list of UUIDs (per dataset)
         {"$addFields": {
-            "pe_uuids": {
+            "pes_uuids": {
                 "$map": {
                     "input": "$datasets_for_pe",
                     "as": "dataset",
@@ -1059,20 +1059,20 @@ def get_aggregated_studies_and_datasets(prop_map):
 
         # Processing envents UUIDs: Flatten the UUID list (no separation per dataset)
         # It also removes the None but I have no idea why
-        {"$unwind": "$pe_uuids"},
-        {"$unwind": "$pe_uuids"},
+        {"$unwind": "$pes_uuids"},
+        {"$unwind": "$pes_uuids"},
         {"$unwind": "$datasets_uuids"},
         {"$unwind": "$datasets_uuids"},
         {"$unwind": "$datasets"},
         {"$group": {
             "_id": "$_id",
-            "pe_uuids": {"$addToSet": "$pe_uuids"},
+            "pes_uuids": {"$addToSet": "$pes_uuids"},
             "datasets_uuids": {"$addToSet": "$datasets_uuids"},
             "datasets": {"$addToSet": "$datasets"},
         }},
 
         # Clean, project only wanted fields
-        {"$project": {"id": {"$toString": "$_id"}, "datasets_uuids": 1, "pe_uuids": 1, "datasets":1, "_id": 0}},
+        {"$project": {"id": {"$toString": "$_id"}, "datasets_uuids": 1, "pes_uuids": 1, "datasets":1, "_id": 0}},
     ]
     aggregated_studies = Study.objects().aggregate(pipeline)
 
