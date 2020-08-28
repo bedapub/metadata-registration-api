@@ -855,7 +855,10 @@ def find_study_id_from_dataset(dataset_uuid, prop_name_to_id):
     """ Find parent study given a dataset_uuid """
     study_id = None
 
-    aggregated_studies = get_aggregated_studies_and_datasets(prop_name_to_id)
+    aggregated_studies = get_aggregated_studies_and_datasets(
+        prop_map = prop_name_to_id,
+        pes = False
+    )
 
     for study in aggregated_studies:
         if dataset_uuid in study["datasets_uuids"]:
@@ -869,7 +872,10 @@ def find_dataset_and_study_id_from_pe(pe_uuid, prop_name_to_id, prop_id_to_name)
     study_id = None
     dataset_uuid = None
 
-    aggregated_studies = get_aggregated_studies_and_datasets(prop_name_to_id)
+    aggregated_studies = get_aggregated_studies_and_datasets(
+        prop_map = prop_name_to_id,
+        pes = True
+    )
 
     for potential_study in aggregated_studies:
         if pe_uuid in potential_study["pes_uuids"]:
@@ -894,15 +900,17 @@ def find_dataset_and_study_id_from_pe(pe_uuid, prop_name_to_id, prop_id_to_name)
 
     return study_id, dataset_uuid
 
-def get_aggregated_studies_and_datasets(prop_map):
+def get_aggregated_studies_and_datasets(prop_map, pes=False):
     """
     Super messy and dirty mongoDB aggregation to save time finding a study
     from a dataset_uuid.
     Note to future self: so sorry about that but no worry, Elastic Search will replace that.
+    If pes = False, only datasets_uuids will be returned
+    If pes = True, only datasets with at least one pe will be returned
     """
     # TODO: This should go away when we index all studies in form format with Elastic Search
 
-    pipeline = [
+    pipeline_datasets = [
         # Keep only datasets entry
         {"$addFields": {
             "datasets": {
@@ -959,121 +967,135 @@ def get_aggregated_studies_and_datasets(prop_map):
                     "in": "$$uuid_entry.value"
                 }
             }
-        }},
+        }}
+    ]
 
-        # Processing envents UUIDs: Keep only process_events entries (exactly 1)
-        {"$addFields": {
-            "datasets_for_pe": {
-                "$map": {
-                    "input": "$datasets",
-                    "as": "dataset",
-                    "in": {
-                        "$filter": {
-                            "input": "$$dataset",
-                            "as": "dataset_entry",
-                            "cond":{"$eq": ["$$dataset_entry.property", prop_map["process_events"]]}
+    if pes == False:
+        pipeline_datasets_format = [
+            # Clean, project only wanted fields
+            {"$project": {"id": {"$toString": "$_id"}, "datasets_uuids": 1, "datasets":1, "_id": 0}},
+        ]
+        pipeline = pipeline_datasets + pipeline_datasets_format
+        aggregated_studies = Study.objects().aggregate(pipeline)
+
+        return aggregated_studies
+
+    else:
+        pipeline_pes = [
+            # Processing envents UUIDs: Keep only process_events entries (exactly 1)
+            {"$addFields": {
+                "datasets_for_pe": {
+                    "$map": {
+                        "input": "$datasets",
+                        "as": "dataset",
+                        "in": {
+                            "$filter": {
+                                "input": "$$dataset",
+                                "as": "dataset_entry",
+                                "cond":{"$eq": ["$$dataset_entry.property", prop_map["process_events"]]}
+                            }
                         }
                     }
                 }
-            }
-        }},
+            }},
 
-        # Processing envents UUIDs: Take first (and only) element of filtered dataset entries
-        {"$addFields": {
-            "datasets_for_pe": {
-                "$map": {
-                    "input": "$datasets_for_pe",
-                    "as": "dataset",
-                    "in": {"$arrayElemAt": ["$$dataset", 0]}
+            # Processing envents UUIDs: Take first (and only) element of filtered dataset entries
+            {"$addFields": {
+                "datasets_for_pe": {
+                    "$map": {
+                        "input": "$datasets_for_pe",
+                        "as": "dataset",
+                        "in": {"$arrayElemAt": ["$$dataset", 0]}
+                    }
                 }
-            }
-        }},
+            }},
 
-        # Processing envents UUIDs: make a flat list of processing events
-        {"$addFields": {
-            "datasets_for_pe": {
-                "$map": {
-                    "input": "$datasets_for_pe",
-                    "as": "dataset",
-                    "in": "$$dataset.value"
+            # Processing envents UUIDs: make a flat list of processing events
+            {"$addFields": {
+                "datasets_for_pe": {
+                    "$map": {
+                        "input": "$datasets_for_pe",
+                        "as": "dataset",
+                        "in": "$$dataset.value"
+                    }
                 }
-            }
-        }},
+            }},
 
-        # Processing envents UUIDs: Keep only uuid entries (exactly 1)
-        {"$addFields": {
-            "datasets_for_pe": {
-                "$map": {
-                    "input": "$datasets_for_pe",
-                    "as": "dataset",
-                    "in": {
-                        "$map": {
-                            "input": "$$dataset",
-                            "as": "pe",
-                            "in": {
-                                "$filter": {
-                                    "input": "$$pe",
-                                    "as": "pe_entry",
-                                    "cond":{"$eq": ["$$pe_entry.property", prop_map["uuid"]]}
+            # Processing envents UUIDs: Keep only uuid entries (exactly 1)
+            {"$addFields": {
+                "datasets_for_pe": {
+                    "$map": {
+                        "input": "$datasets_for_pe",
+                        "as": "dataset",
+                        "in": {
+                            "$map": {
+                                "input": "$$dataset",
+                                "as": "pe",
+                                "in": {
+                                    "$filter": {
+                                        "input": "$$pe",
+                                        "as": "pe_entry",
+                                        "cond":{"$eq": ["$$pe_entry.property", prop_map["uuid"]]}
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-        }},
+            }},
 
-        # Processing envents UUIDs: Take first (and only) element of filtered entries
-        {"$addFields": {
-            "datasets_for_pe": {
-                "$map": {
-                    "input": "$datasets_for_pe",
-                    "as": "dataset",
-                    "in": {
-                        "$map": {
-                            "input": "$$dataset",
-                            "as": "pe",
-                            "in": {"$arrayElemAt": ["$$pe", 0]}
+            # Processing envents UUIDs: Take first (and only) element of filtered entries
+            {"$addFields": {
+                "datasets_for_pe": {
+                    "$map": {
+                        "input": "$datasets_for_pe",
+                        "as": "dataset",
+                        "in": {
+                            "$map": {
+                                "input": "$$dataset",
+                                "as": "pe",
+                                "in": {"$arrayElemAt": ["$$pe", 0]}
+                            }
                         }
                     }
                 }
-            }
-        }},
+            }},
 
-        # Processing envents UUIDs: make a flat list of UUIDs (per dataset)
-        {"$addFields": {
-            "pes_uuids": {
-                "$map": {
-                    "input": "$datasets_for_pe",
-                    "as": "dataset",
-                    "in": {
-                        "$map": {
-                            "input": "$$dataset",
-                            "as": "pe",
-                            "in": "$$pe.value"
+            # Processing envents UUIDs: make a flat list of UUIDs (per dataset)
+            {"$addFields": {
+                "pes_uuids": {
+                    "$map": {
+                        "input": "$datasets_for_pe",
+                        "as": "dataset",
+                        "in": {
+                            "$map": {
+                                "input": "$$dataset",
+                                "as": "pe",
+                                "in": "$$pe.value"
+                            }
                         }
                     }
                 }
-            }
-        }},
+            }},
 
-        # Processing envents UUIDs: Flatten the UUID list (no separation per dataset)
-        # It also removes the None but I have no idea why
-        {"$unwind": "$pes_uuids"},
-        {"$unwind": "$pes_uuids"},
-        {"$unwind": "$datasets_uuids"},
-        {"$unwind": "$datasets_uuids"},
-        {"$unwind": "$datasets"},
-        {"$group": {
-            "_id": "$_id",
-            "pes_uuids": {"$addToSet": "$pes_uuids"},
-            "datasets_uuids": {"$addToSet": "$datasets_uuids"},
-            "datasets": {"$addToSet": "$datasets"},
-        }},
+            # Processing envents UUIDs: Flatten the UUID list (no separation per dataset)
+            # It also removes the None but I have no idea why
+            {"$unwind": "$pes_uuids"},
+            {"$unwind": "$pes_uuids"},
+            {"$unwind": "$datasets_uuids"},
+            {"$unwind": "$datasets_uuids"},
+            {"$unwind": "$datasets"},
+            {"$group": {
+                "_id": "$_id",
+                "pes_uuids": {"$addToSet": "$pes_uuids"},
+                "datasets_uuids": {"$addToSet": "$datasets_uuids"},
+                "datasets": {"$addToSet": "$datasets"},
+            }},
 
-        # Clean, project only wanted fields
-        {"$project": {"id": {"$toString": "$_id"}, "datasets_uuids": 1, "pes_uuids": 1, "datasets":1, "_id": 0}},
-    ]
-    aggregated_studies = Study.objects().aggregate(pipeline)
+            # Clean, project only wanted fields
+            {"$project": {"id": {"$toString": "$_id"}, "datasets_uuids": 1, "pes_uuids": 1, "datasets":1, "_id": 0}},
+        ]
+        pipeline = pipeline_datasets + pipeline_pes
+        aggregated_studies = Study.objects().aggregate(pipeline)
 
-    return aggregated_studies
+        return aggregated_studies
