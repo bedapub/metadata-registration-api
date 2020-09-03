@@ -26,7 +26,7 @@ entry_model = api.model("Entry", {
 })
 
 entry_model_prop_id = api.model("Entry (property collapsed)", {
-    "property": fields.String(example="Property Object Id"),
+    "property": fields.String(attribute='property.id', example="Property Object Id"),
     "value": fields.Raw()
 })
 
@@ -130,6 +130,13 @@ class ApiStudy(Resource):
         default=100,
         help="Number of results which should be returned"
     )
+    _get_parser.add_argument(
+        "properties_id_only",
+        type=inputs.boolean,
+        location="args",
+        default=False,
+        help="Boolean indicator which determines if the entries properties need to be reduced to their id"
+    )
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
@@ -151,7 +158,13 @@ class ApiStudy(Resource):
         if not include_deprecate:
             res = res.filter(meta_information__deprecated=False)
 
-        study_json_list = marshal(list(res.select_related()), study_model)
+        if args["properties_id_only"]:
+            marchal_model = study_model_prop_id
+        else:
+            marchal_model = study_model
+
+        # Marshal studies
+        study_json_list = marshal(list(res.select_related()), marchal_model)
 
         if args["entry_format"] == "api":
             return study_json_list
