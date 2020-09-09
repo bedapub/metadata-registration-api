@@ -830,7 +830,7 @@ def validate_form_format_against_form(form_name, form_data):
 def get_property_map(key, value):
     """ Helper to get property mapper """
     property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
-    property_map = map_key_value(url=property_url, key=key, value=value)
+    property_map = map_key_value(url=f"{property_url}?deprecated=true", key=key, value=value)
     return property_map
 
 def update_study(study, study_converter, payload, message, user=None):
