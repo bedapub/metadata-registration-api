@@ -197,6 +197,8 @@ class ApiStudy(Resource):
 
         app.study_state_machine.load_state(name=initial_state)
 
+        prop_map = get_property_map(key="name", value="id")
+
         # 2. Make sure to have both API and form format
         if entry_format == "api":
             try:
@@ -212,11 +214,13 @@ class ApiStudy(Resource):
 
         else:
             validate_form_format_against_form(form_name, entries)
-            prop_map = get_property_map(key="name", value="id")
             entries = {
                 "api_format": FormatConverter(prop_map).add_form_format(entries).get_api_format(),
                 "form_format": entries
             }
+
+        # 3. Check unicity of pseudo alternate pk in entries
+        check_alternate_pk_unicity(entries=entries["form_format"], pseudo_apks=["study_id"], prop_map=prop_map)
 
         # 4. Evaluate new state of study by passing form data
         app.study_state_machine.create_study(**entries["form_format"])
@@ -231,7 +235,7 @@ class ApiStudy(Resource):
 
         study_data = {"entries": entries["api_format"], "meta_information": meta_info.to_json()}
 
-        # 6. Insert data into database
+        # 5. Insert data into database
         study = Study(**study_data)
         study.save()
         return {"message": f"Study added", "id": str(study.id)}, 201
@@ -299,6 +303,8 @@ class ApiStudyId(Resource):
 
         study = Study.objects(id=study_id).first()
 
+        prop_map = get_property_map(key="name", value="id")
+
         # 1. Extract form name and create form from FormManager
         form_cls = app.form_manager.get_form_by_name(form_name=form_name)
 
@@ -311,13 +317,15 @@ class ApiStudyId(Resource):
 
         else:
             validate_form_format_against_form(form_name, entries)
-            prop_map = get_property_map(key="name", value="id")
             entries = {
                 "api_format": FormatConverter(prop_map).add_form_format(entries).get_api_format(),
                 "form_format": entries
             }
 
-        # 3. Determine current state and evaluate next state
+        # 3. Check unicity of pseudo alternate pk in entries
+        check_alternate_pk_unicity(entries=entries["form_format"], pseudo_apks=["study_id"], prop_map=prop_map)
+
+        # 4. Determine current state and evaluate next state
         state_name = str(study.meta_information.state)
 
         if state_name == "rna_sequencing_biokit":
@@ -327,7 +335,6 @@ class ApiStudyId(Resource):
         app.study_state_machine.change_state(**entries["form_format"])
         new_state = app.study_state_machine.current_state
 
-        # 4. Update metadata
         # 5. Create and append meta information to the study
         meta_info = MetaInformation(
             state=state_name,
@@ -1112,3 +1119,32 @@ def get_aggregated_studies_and_datasets(prop_map, pes=False):
         aggregated_studies = Study.objects().aggregate(pipeline)
 
         return aggregated_studies
+
+def check_alternate_pk_unicity(entries, pseudo_apks, prop_map):
+    """
+    Another dirty mongoDB aggregation to enforce unicity of certain entry properties. 
+    """
+    for prop_name in pseudo_apks:
+        prop_id = prop_map[prop_name]
+        pipeline = [
+            # Keep the wanted field
+            {"$addFields": {
+                prop_name: {
+                    "$filter": {
+                        "input":"$entries",
+                        "as":"entry",
+                        "cond":{"$eq": [{"$toString": "$$entry.property"}, prop_id]}
+                    }
+                }
+            }},
+            # Take first (and only) element of filtered entries
+            {"$addFields": {prop_name: {"$arrayElemAt": [f"${prop_name}", 0]}}},
+            # Get the actual entry value
+            {"$addFields": {prop_name: f"${prop_name}.value"}},
+            {"$group": {"_id": 1, prop_name: {"$addToSet": f"${prop_name}"}}},
+            {"$project": {prop_name: 1, "_id": 0}}
+        ]
+
+        existing_list = Study.objects().aggregate(pipeline).next()[prop_name]
+        if entries[prop_name] in existing_list:
+            raise Exception(f"The property '{prop_name}' needs to be unique across all studies")
