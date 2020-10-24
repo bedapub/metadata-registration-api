@@ -323,7 +323,7 @@ class ApiStudyId(Resource):
             }
 
         # 3. Check unicity of pseudo alternate pk in entries
-        check_alternate_pk_unicity(entries=entries["form_format"], pseudo_apks=["study_id"], prop_map=prop_map)
+        # check_alternate_pk_unicity(entries=entries["form_format"], pseudo_apks=["study_id"], prop_map=prop_map)
 
         # 4. Determine current state and evaluate next state
         state_name = str(study.meta_information.state)
