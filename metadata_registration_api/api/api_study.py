@@ -99,6 +99,12 @@ complete_param = {
     "default": False,
     "help": "Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
 }
+properties_id_only_param = {
+    "type": inputs.boolean,
+    "location": "args",
+    "default": False,
+    "help": "Boolean indicator which determines if the entries properties need to be reduced to their id"
+}
 
 # Routes
 # ----------------------------------------------------------------------------------------------------------------------
@@ -130,13 +136,7 @@ class ApiStudy(Resource):
         default=100,
         help="Number of results which should be returned"
     )
-    _get_parser.add_argument(
-        "properties_id_only",
-        type=inputs.boolean,
-        location="args",
-        default=False,
-        help="Boolean indicator which determines if the entries properties need to be reduced to their id"
-    )
+    _get_parser.add_argument("properties_id_only", **properties_id_only_param)
     _get_parser.add_argument("entry_format", **entry_format_param)
 
     # @token_required
@@ -158,7 +158,7 @@ class ApiStudy(Resource):
         if not include_deprecate:
             res = res.filter(meta_information__deprecated=False)
 
-        if args["properties_id_only"]:
+        if args["properties_id_only"] or args["entry_format"] == "form":
             marchal_model = study_model_prop_id
         else:
             marchal_model = study_model
@@ -269,6 +269,7 @@ class ApiStudyId(Resource):
 
     _get_parser = reqparse.RequestParser()
     _get_parser.add_argument("entry_format", **entry_format_param)
+    _get_parser.add_argument("properties_id_only", **properties_id_only_param)
 
     # @token_required
     @api.response("200 - api", "Success (API format)", study_model)
@@ -277,7 +278,13 @@ class ApiStudyId(Resource):
     def get(self, id):
         """Fetch an entry given its unique identifier"""
         args = self._get_parser.parse_args()
-        study_json = marshal(Study.objects(id=id).get(), study_model)
+
+        if args["properties_id_only"] or args["entry_format"] == "form":
+            marchal_model = study_model_prop_id
+        else:
+            marchal_model = study_model
+
+        study_json = marshal(Study.objects(id=id).get(), marchal_model)
 
         if args["entry_format"] == "api":
             return study_json
