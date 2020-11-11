@@ -1,6 +1,12 @@
 from dataclasses import dataclass
 from datetime import datetime
+import os
 from typing import Optional
+from urllib.parse import urljoin
+
+from flask import current_app as app
+
+from metadata_registration_lib.api_utils import map_key_value
 
 
 @dataclass()
@@ -32,3 +38,10 @@ class MetaInformation:
             "state": self.state,
             "change_log": self.change_log
         }
+
+
+def get_property_map(key, value):
+    """ Helper to get property mapper """
+    property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
+    property_map = map_key_value(url=f"{property_url}?deprecated=true", key=key, value=value)
+    return property_map

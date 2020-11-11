@@ -1,15 +1,14 @@
-import os
 from datetime import datetime
-from urllib.parse import urljoin
 import uuid
 
 from flask import current_app as app
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_restx import reqparse, inputs
 
-from metadata_registration_lib.api_utils import (reverse_map, map_key_value,
-    FormatConverter, Entry, NestedEntry, NestedListEntry)
-from metadata_registration_api.api.api_utils import MetaInformation, ChangeLog
+from metadata_registration_lib.api_utils import (reverse_map, FormatConverter,
+    Entry, NestedEntry, NestedListEntry)
+from metadata_registration_api.api.api_utils import (MetaInformation, ChangeLog,
+    get_property_map)
 from .api_props import property_model_id
 from .decorators import token_required
 from ..errors import IdenticalPropertyException, RequestBodyException
@@ -841,11 +840,6 @@ def validate_form_format_against_form(form_name, form_data):
     if not form_instance.validate():
         raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
 
-def get_property_map(key, value):
-    """ Helper to get property mapper """
-    property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
-    property_map = map_key_value(url=f"{property_url}?deprecated=true", key=key, value=value)
-    return property_map
 
 def update_study(study, study_converter, payload, message, user=None):
     """ Steps to update study state, metadata and upload to DB """
