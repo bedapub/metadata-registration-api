@@ -5,13 +5,13 @@ from flask import current_app as app
 from flask import after_this_request, Response, send_file
 from flask_restx import Namespace, reqparse, Resource, inputs
 
-from metadata_registration_lib.api_utils import map_key_value
+from metadata_registration_lib.api_utils import map_key_value_from_dict_list
 from metadata_registration_lib.data_utils import NormConverter
 from metadata_registration_lib.file_utils import write_file_from_denorm_data_2
 
 from metadata_registration_api.api.api_utils import (get_json, get_property_map,
     get_cv_items_name_to_label_map)
-from .api_study import api
+from .api_study import find_study_id_from_dataset
 
 import tempfile
 import json
@@ -82,11 +82,10 @@ class DownloadSamples(Resource):
         }
 
         # 1. Get samples data
-        url = f"{study_endpoint}/id/{study_id}?entry_format=form"
-        study_json = get_json(url)
+        study_url = f"{study_endpoint}/id/{study_id}?entry_format=form"
 
         try:
-            samples = study_json["entries"]["samples"]
+            samples = get_json(study_url)["entries"]["samples"]
         except:
             raise Exception(f"The given study '{study_id}' doesn't have samples data")
 
@@ -138,9 +137,36 @@ class DownloadExperiments(Resource):
             dataset_url = f"{study_endpoint}/id/{study_id}/datasets/id/{dataset_uuid}?entry_format=form"
         else:
             dataset_url = f"{study_endpoint}/datasets/id/{dataset_uuid}?entry_format=form"
-        experiments = get_json(dataset_url)["experiments"]
 
-        # 2. Convert to flat format (denormalized)
+        try:
+            experiments = get_json(dataset_url)["experiments"]
+        except:
+            raise Exception(f"The given study '{study_id}' doesn't have samples data")
+
+
+        # 2. Replace sample UUIDs in experiments by nested sample objects
+        # 2.1. Get the samples data
+        if study_id is None:
+            prop_name_to_id = get_property_map(key="name", value="id")
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+
+        study_url = f"{study_endpoint}/id/{study_id}?entry_format=form"
+        try:
+            samples = get_json(study_url)["entries"]["samples"]
+        except:
+            raise Exception(f"The given study '{study_id}' doesn't have samples data")
+
+        # 2.2. Replace sample UUIDs samples objects
+        sam_uuid_to_obj = map_key_value_from_dict_list(samples, key="uuid", value=None)
+        try:
+            for experiment in experiments:
+                experiment["samples"] = [sam_uuid_to_obj[uuid] for uuid in experiment["samples"]]
+        except:
+            message = "Experiments sample UUIDs did not match the samples of the study,"
+            message += " please update the experiments if the samples have been changed"
+            raise Exception(message)
+
+        # 3. Convert to flat format (denormalized)
         converter = NormConverter(nested_data=experiments)
         experiments_flat = converter.get_denorm_data_2_from_nested(
             vars_to_denorm=["samples"],
