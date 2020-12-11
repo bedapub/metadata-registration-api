@@ -262,7 +262,6 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
         @after_this_request
         def cleanup(response):
             os.unlink(f.name)
-            print(f.name)
             return response
 
         response = send_file(
