@@ -141,7 +141,7 @@ class DownloadExperiments(Resource):
         try:
             experiments = get_json(dataset_url)["experiments"]
         except:
-            raise Exception(f"The given study '{study_id}' doesn't have samples data")
+            raise Exception(f"The given study '{study_id}' doesn't have exeperiments data")
 
 
         # 2. Replace sample UUIDs in experiments by nested sample objects
