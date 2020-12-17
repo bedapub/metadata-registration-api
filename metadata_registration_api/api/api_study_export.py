@@ -2,7 +2,7 @@ import os
 from urllib.parse import urljoin
 
 from flask import current_app as app
-from flask import after_this_request, Response, send_file
+from flask import after_this_request, Response, request, send_file
 from flask_restx import Namespace, reqparse, Resource, inputs
 
 from metadata_registration_lib.api_utils import map_key_value_from_dict_list
@@ -12,6 +12,7 @@ from metadata_registration_lib.file_utils import write_file_from_denorm_data_2
 from metadata_registration_api.api.api_utils import (get_json, get_property_map,
     get_cv_items_name_to_label_map)
 from .api_study import find_study_id_from_dataset
+from .decorators import token_required
 
 import tempfile
 import json
@@ -66,8 +67,9 @@ export_get_parser.add_argument(
 class DownloadSamples(Resource):
     _get_parser = export_get_parser
 
+    @token_required
     @api.doc(parser=_get_parser)
-    def get(self, study_id):
+    def get(self, study_id, user=None):
         """Download samples in a denormalized file"""
         args = self._get_parser.parse_args()
         header_sep = args["header_sep"].strip()
@@ -85,7 +87,7 @@ class DownloadSamples(Resource):
         study_url = f"{study_endpoint}/id/{study_id}?entry_format=form"
 
         try:
-            samples = get_json(study_url)["entries"]["samples"]
+            samples = get_json(study_url, headers=request.headers)["entries"]["samples"]
         except:
             raise Exception(f"The given study '{study_id}' doesn't have samples data")
 
@@ -116,8 +118,9 @@ class DownloadSamples(Resource):
 class DownloadExperiments(Resource):
     _get_parser = export_get_parser
 
+    @token_required
     @api.doc(parser=_get_parser)
-    def get(self, dataset_uuid, study_id=None):
+    def get(self, dataset_uuid, study_id=None, user=None):
         """Download experiments in a denormalized file"""
         args = self._get_parser.parse_args()
         header_sep = args["header_sep"].strip()
@@ -139,7 +142,7 @@ class DownloadExperiments(Resource):
             dataset_url = f"{study_endpoint}/datasets/id/{dataset_uuid}?entry_format=form"
 
         try:
-            experiments = get_json(dataset_url)["experiments"]
+            experiments = get_json(dataset_url, headers=request.headers)["experiments"]
         except:
             raise Exception(f"The given study '{study_id}' doesn't have exeperiments data")
 
@@ -152,7 +155,7 @@ class DownloadExperiments(Resource):
 
         study_url = f"{study_endpoint}/id/{study_id}?entry_format=form"
         try:
-            samples = get_json(study_url)["entries"]["samples"]
+            samples = get_json(study_url, headers=request.headers)["entries"]["samples"]
         except:
             raise Exception(f"The given study '{study_id}' doesn't have samples data")
 

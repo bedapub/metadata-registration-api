@@ -138,11 +138,11 @@ class ApiStudy(Resource):
     _get_parser.add_argument("properties_id_only", **properties_id_only_param)
     _get_parser.add_argument("entry_format", **entry_format_param)
 
-    # @token_required
+    @token_required
     @api.response("200 - api", "Success (API format)", [study_model])
     @api.response("200 - form", "Success (form format)", [study_model_form_format])
     @api.doc(parser=_get_parser)
-    def get(self):
+    def get(self, user=None):
         """ Fetch a list with all entries """
         # Convert query parameters
         args = self._get_parser.parse_args()
@@ -270,11 +270,11 @@ class ApiStudyId(Resource):
     _get_parser.add_argument("entry_format", **entry_format_param)
     _get_parser.add_argument("properties_id_only", **properties_id_only_param)
 
-    # @token_required
+    @token_required
     @api.response("200 - api", "Success (API format)", study_model)
     @api.response("200 - form", "Success (form format)", study_model_form_format)
     @api.doc(parser=_get_parser)
-    def get(self, id):
+    def get(self, id, user=None):
         """Fetch an entry given its unique identifier"""
         args = self._get_parser.parse_args()
 
@@ -382,11 +382,11 @@ class ApiStudyDataset(Resource):
     _get_parser = reqparse.RequestParser()
     _get_parser.add_argument("entry_format", **entry_format_param)
 
-    # @token_required
+    @token_required
     @api.response("200 - api", "Success (API format)", [[entry_model_prop_id]])
     @api.response("200 - form", "Success (form format)", [entry_model_form_format])
     @api.doc(parser=_get_parser)
-    def get(self, study_id):
+    def get(self, study_id, user=None):
         """ Fetch a list of all datasets for a given study """
         args = self._get_parser.parse_args()
 
@@ -479,11 +479,11 @@ class ApiStudyDatasetId(Resource):
     _get_parser = reqparse.RequestParser()
     _get_parser.add_argument("entry_format", **entry_format_param)
 
-    # @token_required
+    @token_required
     @api.response("200 - api", "Success (API format)", [entry_model_prop_id])
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
-    def get(self, dataset_uuid, study_id=None):
+    def get(self, dataset_uuid, study_id=None, user=None):
         """ Fetch a specific dataset for a given study """
         args = self._get_parser.parse_args()
 
@@ -579,11 +579,11 @@ class ApiStudyPE(Resource):
     _get_parser = reqparse.RequestParser()
     _get_parser.add_argument("entry_format", **entry_format_param)
 
-    # @token_required
+    @token_required
     @api.response("200 - api", "Success (API format)", [[entry_model_prop_id]])
     @api.response("200 - form", "Success (form format)", [entry_model_form_format])
     @api.doc(parser=_get_parser)
-    def get(self, dataset_uuid, study_id=None):
+    def get(self, dataset_uuid, study_id=None, user=None):
         """ Fetch a list of all processing events for a given study """
         args = self._get_parser.parse_args()
 
@@ -698,11 +698,11 @@ class ApiStudyPEId(Resource):
     _get_parser = reqparse.RequestParser()
     _get_parser.add_argument("entry_format", **entry_format_param)
 
-    # @token_required
+    @token_required
     @api.response("200 - api", "Success (API format)", [entry_model_prop_id])
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
-    def get(self, pe_uuid, study_id=None, dataset_uuid=None):
+    def get(self, pe_uuid, study_id=None, dataset_uuid=None, user=None):
         """ Fetch a specific processing for a given dataset """
         args = self._get_parser.parse_args()
 
