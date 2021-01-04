@@ -235,15 +235,21 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
                 if prop_value_type["data_type"] == "ctrl_voc":
                     cv_name = prop_value_type["controlled_vocabulary"]["name"]
                     cv_items_map = cv_items_name_to_label_map[cv_name]
-                    data[header] = [cv_items_map.get(v, v) for v in data_list]
+                    new_data_list = []
+                    for value in data_list:
+                        if type(value) == list:
+                            new_data_list.append([cv_items_map.get(v, v) for v in value])
+                        else:
+                            new_data_list.append(cv_items_map.get(value, value))
+                    data[header] = new_data_list
 
-        # 5. Ignore certain properties
+        # 3. Ignore certain properties
         for header in list(data.keys()):
             property_name = header.split(header_sep)[-1]
             if property_name in prop_to_ignore:
                 data.pop(header)
 
-        # 6. Update headers
+        # 4. Update headers
         if prettify_headers:
             prop_name_to_label = get_property_map(key="name", value="label")
             old_data = data
@@ -255,11 +261,15 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
                     split_header[1] if len(split_header) > 1 else split_header[0]
                 )
                 prop_label = prop_name_to_label[prop_name]
+                if prefix in header_prefix_to_suffix:
                 suffix = header_prefix_to_suffix[prefix]
                 new_header = f"{prop_label} ({suffix})"
+                else:
+                    new_header = f"{prop_label}"
+
                 data[new_header] = data_list
 
-        # 7. Write file
+        # 5. Write file
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         write_file_from_denorm_data_2(f, data, file_format)
         f.close()
