@@ -72,7 +72,8 @@ class DownloadSamples(Resource):
     def get(self, study_id, user=None):
         """Download samples in a denormalized file"""
         args = self._get_parser.parse_args()
-        header_sep = args["header_sep"].strip()
+        prettify_headers = args["prettify_headers"]
+        header_sep = "__" if prettify_headers else args["header_sep"].strip()
 
         study_endpoint = urljoin(app.config["URL"], os.environ["API_EP_STUDY"])
 
@@ -123,7 +124,8 @@ class DownloadExperiments(Resource):
     def get(self, dataset_uuid, study_id=None, user=None):
         """Download experiments in a denormalized file"""
         args = self._get_parser.parse_args()
-        header_sep = args["header_sep"].strip()
+        prettify_headers = args["prettify_headers"]
+        header_sep = "__" if prettify_headers else args["header_sep"].strip()
 
         study_endpoint = urljoin(app.config["URL"], os.environ["API_EP_STUDY"])
 
