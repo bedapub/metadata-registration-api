@@ -78,33 +78,43 @@ class DownloadSamples(Resource):
         study_endpoint = urljoin(app.config["URL"], os.environ["API_EP_STUDY"])
 
         header_prefix_to_suffix = {
-            "sample": "SAM",
-            "sample__individual__treatment": "TRE > IND",
-            "sample__treatment": "TRE > SAM",
-            "sample__individual": "IND",
+            "": "STU",
+            "samples": "SAM",
+            "samples__individual__treatment": "TRE > IND",
+            "samples__treatment": "TRE > SAM",
+            "samples__individual": "IND",
         }
 
-        # 1. Get samples data
+        # 1. Get study and samples data
         study_url = f"{study_endpoint}/id/{study_id}?entry_format=form"
 
         try:
-            samples = get_json(study_url, headers=request.headers)["entries"]["samples"]
+            study = get_json(study_url, headers=request.headers)["entries"]
         except:
+            raise Exception(f"Error retrieving study data from id '{study_id}'")
+
+        if not "samples" in study:
             raise Exception(f"The given study '{study_id}' doesn't have samples data")
 
-        # 2. Convert to flat format (denormalized)
-        converter = NormConverter(nested_data=samples)
-        samples_flat = converter.get_denorm_data_2_from_nested(
-            vars_to_denorm=[],
+        # 2. Removing data we don't want in the file
+        # Removing datasets data to avoid too much denormalization and duplication of lines
+        if "datasets" in study:
+            study["datasets"] = len(study["datasets"])
+
+
+        # 3. Convert to flat format (denormalized)
+        converter = NormConverter(nested_data=study)
+        data_flat = converter.get_denorm_data_2_from_nested(
+            vars_to_denorm=["samples"],
             use_parent_key=True,
             sep=header_sep,
-            initial_parent_key="sample",
+            initial_parent_key="",
             missing_value="",
         )
 
         return download_denorm_file(
             request_args=args,
-            data=samples_flat,
+            data=data_flat,
             header_prefix_to_suffix=header_prefix_to_suffix,
             file_name="samples",
         )
@@ -262,8 +272,8 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
                 )
                 prop_label = prop_name_to_label[prop_name]
                 if prefix in header_prefix_to_suffix:
-                suffix = header_prefix_to_suffix[prefix]
-                new_header = f"{prop_label} ({suffix})"
+                    suffix = header_prefix_to_suffix[prefix]
+                    new_header = f"{prop_label} ({suffix})"
                 else:
                     new_header = f"{prop_label}"
 
