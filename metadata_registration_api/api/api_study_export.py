@@ -101,7 +101,6 @@ class DownloadSamples(Resource):
         if "datasets" in study:
             study["datasets"] = len(study["datasets"])
 
-
         # 3. Convert to flat format (denormalized)
         converter = NormConverter(nested_data=study)
         data_flat = converter.get_denorm_data_2_from_nested(
@@ -140,60 +139,82 @@ class DownloadExperiments(Resource):
         study_endpoint = urljoin(app.config["URL"], os.environ["API_EP_STUDY"])
 
         header_prefix_to_suffix = {
-            "": "EXP",
-            "samples": "SAM",
-            "samples__individual__treatment": "TRE > IND",
-            "samples__treatment": "TRE > SAM",
-            "samples__individual": "IND",
+            "": "STU",
+            "datasets": "DAT",
+            "datasets__experiments": "EXP",
+            "datasets__experiments__samples": "SAM",
+            "datasets__experiments__samples__individual__treatment": "TRE > IND",
+            "datasets__experiments__samples__treatment": "TRE > SAM",
+            "datasets__experiments__samples__individual": "IND",
         }
 
-        # 1. Get the experiments data
-        if study_id is not None:
-            dataset_url = f"{study_endpoint}/id/{study_id}/datasets/id/{dataset_uuid}?entry_format=form"
-        else:
-            dataset_url = f"{study_endpoint}/datasets/id/{dataset_uuid}?entry_format=form"
-
-        try:
-            experiments = get_json(dataset_url, headers=request.headers)["experiments"]
-        except:
-            raise Exception(f"The given study '{study_id}' doesn't have exeperiments data")
-
-
-        # 2. Replace sample UUIDs in experiments by nested sample objects
-        # 2.1. Get the samples data
+        # 1. Get the study, dataset and experiments data
         if study_id is None:
             prop_name_to_id = get_property_map(key="name", value="id")
             study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
 
         study_url = f"{study_endpoint}/id/{study_id}?entry_format=form"
-        try:
-            samples = get_json(study_url, headers=request.headers)["entries"]["samples"]
-        except:
+        study = get_json(study_url, headers=request.headers)["entries"]
+
+        for d in study["datasets"]:
+            if d["uuid"] == dataset_uuid:
+                dataset = d
+                break
+        else:
+            raise Exception(f"Dataset '{dataset_uuid}' not found in study '{study_id}'")
+
+        if not "experiments" in dataset:
+            raise Exception(f"Dataset '{dataset_uuid}' doesn't have exeperiments data")
+
+        if not "samples" in study:
             raise Exception(f"The given study '{study_id}' doesn't have samples data")
 
-        # 2.2. Replace sample UUIDs samples objects
-        sam_uuid_to_obj = map_key_value_from_dict_list(samples, key="uuid", value=None)
+        # 2. Replace sample UUIDs in experiments by nested sample objects
+        sam_uuid_to_obj = map_key_value_from_dict_list(study["samples"], key="uuid", value=None)
         try:
-            for experiment in experiments:
+            for experiment in dataset["experiments"]:
                 experiment["samples"] = [sam_uuid_to_obj[uuid] for uuid in experiment["samples"]]
         except:
             message = "Experiments sample UUIDs did not match the samples of the study,"
             message += " please update the experiments if the samples have been changed"
             raise Exception(message)
 
-        # 3. Convert to flat format (denormalized)
-        converter = NormConverter(nested_data=experiments)
-        experiments_flat = converter.get_denorm_data_2_from_nested(
+        # 3. Removing data we don't want in the file
+        # 3.1. Relevant samples are in dataset > experiments
+        del study["samples"]
+
+        # 3.2. Removing processing event data to avoid too much denormalization and duplication of lines
+        if "process_events" in dataset:
+            dataset["process_events"] = len(dataset["process_events"])
+
+        # 3.3. Only interested in one dataset
+        study["datasets"] = dataset
+
+        # 4. Convert to flat format (denormalized)
+        # 4.1. Experiments
+        converter = NormConverter(nested_data=study["datasets"]["experiments"])
+        data_flat = converter.get_denorm_data_2_from_nested(
             vars_to_denorm=["samples"],
             use_parent_key=True,
             sep=header_sep,
-            initial_parent_key="",
+            initial_parent_key="datasets__experiments",
             missing_value="",
         )
 
+        # 4.2. Add dataset data
+        nb_lines = len(list(data_flat.values())[0])
+        for dataset_prop, value in dataset.items():
+            if not dataset_prop in ["experiments"]:
+                data_flat[f"datasets__{dataset_prop}"] = [value] * nb_lines
+
+        # 4.3. Add study data
+        for study_prop, value in study.items():
+            if not study_prop in ["datasets"]:
+                data_flat[study_prop] = [value] * nb_lines
+
         return download_denorm_file(
             request_args=args,
-            data=experiments_flat,
+            data=data_flat,
             header_prefix_to_suffix=header_prefix_to_suffix,
             file_name="experiments",
         )
