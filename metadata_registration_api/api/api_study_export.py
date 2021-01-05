@@ -36,7 +36,7 @@ export_get_parser.add_argument(
     location="args",
     default="xlsx",
     choices=("xlsx", "tsv", "csv"),
-    help="Header sep",
+    help="File format",
 )
 export_get_parser.add_argument(
     "prop_to_ignore",
