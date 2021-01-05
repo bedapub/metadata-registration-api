@@ -254,7 +254,13 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
             if p.strip().lower() != ""
         ]
 
-        # 2. Convert CV item names to labels
+        # 2. Ignore certain properties
+        for header in list(data.keys()):
+            property_name = header.split(header_sep)[-1]
+            if property_name in prop_to_ignore:
+                data.pop(header)
+
+        # 3. Convert CV item names to labels
         if use_cv_labels:
             prop_name_to_data_type = get_property_map(key="name", value="value_type")
             cv_items_name_to_label_map = get_cv_items_name_to_label_map()
@@ -274,13 +280,12 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
                             new_data_list.append(cv_items_map.get(value, value))
                     data[header] = new_data_list
 
-        # 3. Ignore certain properties
-        for header in list(data.keys()):
-            property_name = header.split(header_sep)[-1]
-            if property_name in prop_to_ignore:
-                data.pop(header)
+        # 4. Stringify simple lists
+        for header, data_list in data.items():
+            if type(data_list[0]) == list:
+                data[header] = [", ".join(map(str, v)) for v in data_list]
 
-        # 4. Update headers
+        # 5. Update headers
         if prettify_headers:
             prop_name_to_label = get_property_map(key="name", value="label")
             old_data = data
@@ -300,7 +305,7 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
 
                 data[new_header] = data_list
 
-        # 5. Write file
+        # 6. Write file
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         write_file_from_denorm_data_2(f, data, file_format)
         f.close()
