@@ -50,7 +50,7 @@ export_get_parser.add_argument(
     type=inputs.boolean,
     location="args",
     default=True,
-    help="If true, will repalce CV item names by their labels",
+    help="If true, will replace CV item names by their labels",
 )
 export_get_parser.add_argument(
     "prettify_headers",
@@ -236,7 +236,7 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
         - prop_to_ignore = comma separated list of property names to ignore (default to "uuid")
             Default: uuid
         - use_cv_labels = true / false
-            ==> If true, will repalce CV item names by their labels
+            ==> If true, will replace CV item names by their labels
             Default: true
         - prettify_headers = true / false
             ==> If true, will replace property name by labels and header suffixes by nice preffixes
