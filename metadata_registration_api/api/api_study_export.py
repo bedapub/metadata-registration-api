@@ -57,7 +57,7 @@ export_get_parser.add_argument(
     type=inputs.boolean,
     location="args",
     default=True,
-    help="If true, will replace property name by labels and header suffixes by nice preffixes",
+    help="If true, will replace property name by labels and header prefixes by shorter suffixes",
 )
 
 # Routes
@@ -239,7 +239,7 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
             ==> If true, will replace CV item names by their labels
             Default: true
         - prettify_headers = true / false
-            ==> If true, will replace property name by labels and header suffixes by nice preffixes
+            ==> If true, will replace property name by labels and header prefixes by shorter suffixes
             Default: true
     """
     try:
