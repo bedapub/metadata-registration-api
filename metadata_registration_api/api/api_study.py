@@ -569,6 +569,35 @@ class ApiStudyDatasetId(Resource):
         update_study(study, study_converter, payload, message, user)
         return {"message": message}
 
+    @token_required
+    def delete(self, dataset_uuid, study_id=None, user=None):
+        """ Delete a dataset from a study given its unique identifier """
+        prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = reverse_map(prop_id_to_name)
+
+        # Used for helper route using only dataset_uuid
+        if study_id is None:
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            if study_id is None:
+                raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
+
+        # 1. Get study data
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+
+        study_converter = FormatConverter(mapper=prop_id_to_name)
+        study_converter.add_api_format(study_json["entries"])
+
+        # 2. Delete specific dataset
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+        datasets_entry.value.delete_nested_entry("uuid", dataset_uuid)
+
+        # 3. Update study state, data and ulpoad on DB
+        message = f"Deleted dataset"
+        update_study(study, study_converter, {}, message, user)
+
+        return {"message": message}
+
 
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>/pes")
 @api.route("/datasets/id/<dataset_uuid>/pes",
@@ -717,7 +746,7 @@ class ApiStudyPEId(Resource):
                 prop_id_to_name = prop_id_to_name
             )
             if study_id is None or dataset_uuid is None:
-                raise Exception(f"Processing event not found in any study (uuid = {pe_uuid})")
+                raise Exception(f"Processing event not found in any dataset (uuid = {pe_uuid})")
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
@@ -763,7 +792,7 @@ class ApiStudyPEId(Resource):
                 prop_id_to_name = prop_id_to_name
             )
             if study_id is None or dataset_uuid is None:
-                raise Exception(f"Processing event not found in any study (uuid = {pe_uuid})")
+                raise Exception(f"Processing event not found in any dataset (uuid = {pe_uuid})")
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
@@ -815,6 +844,49 @@ class ApiStudyPEId(Resource):
         # 9. Update study state, data and ulpoad on DB
         message = "Updated processing event"
         update_study(study, study_converter, payload, message, user)
+        return {"message": message}
+
+    @token_required
+    def delete(self, pe_uuid, study_id=None, dataset_uuid=None, user=None):
+        """ Delete a dataset from a study given its unique identifier """
+        prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = reverse_map(prop_id_to_name)
+
+        # Used for helper route using only pe_uuid
+        if dataset_uuid is None:
+            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(
+                pe_uuid = pe_uuid,
+                prop_name_to_id = prop_name_to_id,
+                prop_id_to_name = prop_id_to_name
+            )
+            if study_id is None or dataset_uuid is None:
+                raise Exception(f"Processing event not found in any dataset (uuid = {pe_uuid})")
+
+        # Used for helper route using only dataset_uuid
+        if study_id is None:
+            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            if study_id is None:
+                raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
+
+        # 1. Get study data
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+
+        study_converter = FormatConverter(mapper=prop_id_to_name)
+        study_converter.add_api_format(study_json["entries"])
+
+        # 2. Get dataset data
+        datasets_entry = study_converter.get_entry_by_name("datasets")
+        dataset_nested_entry = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)[0]
+
+        # 3. Delete specific processing event
+        pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+        pes_entry.value.delete_nested_entry("uuid", pe_uuid)
+
+        # 4. Update study state, data and ulpoad on DB
+        message = f"Deleted processing event"
+        update_study(study, study_converter, {}, message, user)
+
         return {"message": message}
 
 
