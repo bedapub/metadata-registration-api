@@ -592,6 +592,9 @@ class ApiStudyDatasetId(Resource):
         datasets_entry = study_converter.get_entry_by_name("datasets")
         datasets_entry.value.delete_nested_entry("uuid", dataset_uuid)
 
+        if len(datasets_entry.value.value) == 0:
+            study_converter.remove_entries(prop_names=["datasets"])
+
         # 3. Update study state, data and ulpoad on DB
         message = f"Deleted dataset"
         update_study(study, study_converter, {}, message, user)
@@ -882,6 +885,9 @@ class ApiStudyPEId(Resource):
         # 3. Delete specific processing event
         pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
         pes_entry.value.delete_nested_entry("uuid", pe_uuid)
+
+        if len(pes_entry.value.value) == 0:
+            dataset_nested_entry.remove_entries(prop_names=["process_events"])
 
         # 4. Update study state, data and ulpoad on DB
         message = f"Deleted processing event"
