@@ -597,7 +597,7 @@ class ApiStudyDatasetId(Resource):
 
         # 3. Update study state, data and ulpoad on DB
         message = f"Deleted dataset"
-        update_study(study, study_converter, {}, message, user)
+        update_study(study, study_converter, api.payload, message, user)
 
         return {"message": message}
 
@@ -891,7 +891,8 @@ class ApiStudyPEId(Resource):
 
         # 4. Update study state, data and ulpoad on DB
         message = f"Deleted processing event"
-        update_study(study, study_converter, {}, message, user)
+        print(api.payload)
+        update_study(study, study_converter, api.payload, message, user)
 
         return {"message": message}
 
