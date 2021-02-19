@@ -48,6 +48,16 @@ def config_app(app):
     app.config["MONGODB_COL_USER"] = os.environ["MONGODB_COL_USER"]
     app.config["MONGODB_COL_STUDY"] = os.environ["MONGODB_COL_STUDY"]
 
+    # Elastic search
+    app.config["ES"] = {
+        "HOST": os.environ.get("ES_HOST"),
+        "PORT": os.environ.get("ES_PORT"),
+        "INDEX": os.environ.get("ES_INDEX"),
+        "SECURE": str_to_bool(os.environ.get("ES_SECURE", "false")),
+        "USERNAME": os.environ.get("ES_USERNAME"),
+        "PASSWORD": os.environ.get("ES_PASSWORD"),
+        "USE": os.environ.get("ES_USE"),
+    }
 
 def create_app():
     app = Flask(__name__)

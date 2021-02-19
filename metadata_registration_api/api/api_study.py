@@ -7,6 +7,10 @@ from flask_restx import reqparse, inputs
 
 from metadata_registration_lib.api_utils import (reverse_map, FormatConverter,
     Entry, NestedEntry, NestedListEntry)
+from metadata_registration_api.es_utils import (
+    index_study,
+    remove_study_from_index,
+)
 from metadata_registration_api.api.api_utils import (MetaInformation, ChangeLog,
     get_property_map)
 from .api_props import property_model_id
@@ -237,6 +241,10 @@ class ApiStudy(Resource):
         # 5. Insert data into database
         study = Study(**study_data)
         study.save()
+
+        # Index study on ES
+        index_study_if_es(study, entries["form_format"], "add")
+
         return {"message": f"Study added", "id": str(study.id)}, 201
 
 
@@ -358,6 +366,10 @@ class ApiStudyId(Resource):
 
         # 6. Update data in database
         study.update(**study_data)
+
+        # Index study on ES
+        index_study_if_es(study, entries["form_format"], "update")
+
         return {"message": f"Update study"}
 
     @token_required
@@ -373,6 +385,9 @@ class ApiStudyId(Resource):
             return {"message": "Deprecate entry"}
         else:
             entry.delete()
+            # Update ES
+            if app.config["ES"]["USE"]:
+                remove_study_from_index(app.config, id)
             return {"message": "Delete entry"}
 
 
@@ -891,7 +906,6 @@ class ApiStudyPEId(Resource):
 
         # 4. Update study state, data and ulpoad on DB
         message = f"Deleted processing event"
-        print(api.payload)
         update_study(study, study_converter, api.payload, message, user)
 
         return {"message": message}
@@ -918,6 +932,13 @@ def validate_form_format_against_form(form_name, form_data):
 
     if not form_instance.validate():
         raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+
+
+def index_study_if_es(study, entries, action):
+    if app.config["ES"]["USE"]:
+        study_to_index = marshal(study, study_model_prop_id)
+        study_to_index["entries"] = entries
+        index_study(app.config, study_to_index, action)
 
 
 def update_study(study, study_converter, payload, message, user=None):
@@ -949,6 +970,9 @@ def update_study(study, study_converter, payload, message, user=None):
 
     # 3. Update data in database
     study.update(**study_data)
+
+    # Index study on ES
+    index_study_if_es(study, study_converter.get_form_format(), "update")
 
 
 def find_study_id_from_dataset(dataset_uuid, prop_name_to_id):
