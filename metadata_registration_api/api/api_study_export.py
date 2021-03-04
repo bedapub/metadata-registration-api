@@ -120,18 +120,18 @@ class DownloadSamples(Resource):
 
 
 
-@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/exp/download")
-@api.route("/datasets/<dataset_uuid>/exp/download",
+@api.route("/id/<study_id>/datasets/id/<dataset_uuid>/rdt/download")
+@api.route("/datasets/<dataset_uuid>/rdt/download",
     doc={"description": "Alias route for a getting samples without study_id"})
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
-class DownloadExperiments(Resource):
+class DownloadReadouts(Resource):
     _get_parser = export_get_parser
 
     @token_required
     @api.doc(parser=_get_parser)
     def get(self, dataset_uuid, study_id=None, user=None):
-        """Download experiments in a denormalized file"""
+        """Download readouts in a denormalized file"""
         args = self._get_parser.parse_args()
         prettify_headers = args["prettify_headers"]
         header_sep = "__" if prettify_headers else args["header_sep"].strip()
@@ -141,14 +141,14 @@ class DownloadExperiments(Resource):
         header_prefix_to_suffix = {
             "": "STU",
             "datasets": "DAT",
-            "datasets__experiments": "EXP",
-            "datasets__experiments__samples": "SAM",
-            "datasets__experiments__samples__individual__treatment": "TRE > IND",
-            "datasets__experiments__samples__treatment": "TRE > SAM",
-            "datasets__experiments__samples__individual": "IND",
+            "datasets__readouts": "RDT",
+            "datasets__readouts__samples": "SAM",
+            "datasets__readouts__samples__individual__treatment": "TRE > IND",
+            "datasets__readouts__samples__treatment": "TRE > SAM",
+            "datasets__readouts__samples__individual": "IND",
         }
 
-        # 1. Get the study, dataset and experiments data
+        # 1. Get the study, dataset and readouts data
         if study_id is None:
             prop_name_to_id = get_property_map(key="name", value="id")
             study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
@@ -163,24 +163,24 @@ class DownloadExperiments(Resource):
         else:
             raise Exception(f"Dataset '{dataset_uuid}' not found in study '{study_id}'")
 
-        if not "experiments" in dataset:
+        if not "readouts" in dataset:
             raise Exception(f"Dataset '{dataset_uuid}' doesn't have exeperiments data")
 
         if not "samples" in study:
             raise Exception(f"The given study '{study_id}' doesn't have samples data")
 
-        # 2. Replace sample UUIDs in experiments by nested sample objects
+        # 2. Replace sample UUIDs in readouts by nested sample objects
         sam_uuid_to_obj = map_key_value_from_dict_list(study["samples"], key="uuid", value=None)
         try:
-            for experiment in dataset["experiments"]:
-                experiment["samples"] = [sam_uuid_to_obj[uuid] for uuid in experiment["samples"]]
+            for readout in dataset["readouts"]:
+                readout["samples"] = [sam_uuid_to_obj[uuid] for uuid in readout["samples"]]
         except:
-            message = "Experiments sample UUIDs did not match the samples of the study,"
-            message += " please update the experiments if the samples have been changed"
+            message = "Readouts sample UUIDs did not match the samples of the study,"
+            message += " please update the readouts if the samples have been changed"
             raise Exception(message)
 
         # 3. Removing data we don't want in the file
-        # 3.1. Relevant samples are in dataset > experiments
+        # 3.1. Relevant samples are in dataset > readouts
         del study["samples"]
 
         # 3.2. Removing processing event data to avoid too much denormalization and duplication of lines
@@ -191,20 +191,20 @@ class DownloadExperiments(Resource):
         study["datasets"] = dataset
 
         # 4. Convert to flat format (denormalized)
-        # 4.1. Experiments
-        converter = NormConverter(nested_data=study["datasets"]["experiments"])
+        # 4.1. Readouts
+        converter = NormConverter(nested_data=study["datasets"]["readouts"])
         data_flat = converter.get_denorm_data_2_from_nested(
             vars_to_denorm=["samples"],
             use_parent_key=True,
             sep=header_sep,
-            initial_parent_key="datasets__experiments",
+            initial_parent_key="datasets__readouts",
             missing_value="",
         )
 
         # 4.2. Add dataset data
         nb_lines = len(list(data_flat.values())[0])
         for dataset_prop, value in dataset.items():
-            if not dataset_prop in ["experiments"]:
+            if not dataset_prop in ["readouts"]:
                 data_flat[f"datasets__{dataset_prop}"] = [value] * nb_lines
 
         # 4.3. Add study data
@@ -216,7 +216,7 @@ class DownloadExperiments(Resource):
             request_args=args,
             data=data_flat,
             header_prefix_to_suffix=header_prefix_to_suffix,
-            file_name="experiments",
+            file_name="readouts",
         )
 
 
