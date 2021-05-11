@@ -6,7 +6,7 @@ from flask import after_this_request, Response, request, send_file
 from flask_restx import Namespace, reqparse, Resource, inputs
 
 from metadata_registration_lib.api_utils import map_key_value_from_dict_list
-from metadata_registration_lib.data_utils import NormConverter
+from metadata_registration_lib.data_utils import NormConverter, expand_json_strings
 from metadata_registration_lib.file_utils import write_file_from_denorm_data_2
 
 from metadata_registration_api.api.api_utils import (get_json, get_property_map,
@@ -101,7 +101,10 @@ class DownloadSamples(Resource):
         if "datasets" in study:
             study["datasets"] = len(study["datasets"])
 
-        # 3. Convert to flat format (denormalized)
+        # 3. Expand JSON string properties
+        study = expand_json_strings(study)
+
+        # 4. Convert to flat format (denormalized)
         converter = NormConverter(nested_data=study)
         data_flat = converter.get_denorm_data_2_from_nested(
             vars_to_denorm=["samples"],
@@ -190,8 +193,12 @@ class DownloadReadouts(Resource):
         # 3.3. Only interested in one dataset
         study["datasets"] = dataset
 
-        # 4. Convert to flat format (denormalized)
-        # 4.1. Readouts
+        # 4. Expand JSON string properties
+        dataset = expand_json_strings(dataset)
+        study = expand_json_strings(study)
+
+        # 5. Convert to flat format (denormalized)
+        # 5.1. Readouts
         converter = NormConverter(nested_data=study["datasets"]["readouts"])
         data_flat = converter.get_denorm_data_2_from_nested(
             vars_to_denorm=["samples"],
@@ -201,13 +208,13 @@ class DownloadReadouts(Resource):
             missing_value="",
         )
 
-        # 4.2. Add dataset data
+        # 5.2. Add dataset data
         nb_lines = len(list(data_flat.values())[0])
         for dataset_prop, value in dataset.items():
             if not dataset_prop in ["readouts"]:
                 data_flat[f"datasets__{dataset_prop}"] = [value] * nb_lines
 
-        # 4.3. Add study data
+        # 5.3. Add study data
         for study_prop, value in study.items():
             if not study_prop in ["datasets"]:
                 data_flat[study_prop] = [value] * nb_lines
@@ -267,9 +274,9 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
 
             for header, data_list in data.items():
                 property_name = header.split(header_sep)[-1]
-                prop_value_type = prop_name_to_data_type[property_name]
+                prop_value_type = prop_name_to_data_type.get(property_name, None)
 
-                if prop_value_type["data_type"] == "ctrl_voc":
+                if prop_value_type is not None and prop_value_type["data_type"] == "ctrl_voc":
                     cv_name = prop_value_type["controlled_vocabulary"]["name"]
                     cv_items_map = cv_items_name_to_label_map[cv_name]
                     new_data_list = []
@@ -296,7 +303,11 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
                 prop_name = (
                     split_header[1] if len(split_header) > 1 else split_header[0]
                 )
-                prop_label = prop_name_to_label[prop_name]
+                if prop_name in prop_name_to_label:
+                    prop_label = prop_name_to_label[prop_name]
+                else:
+                    prop_label = prop_name
+
                 if prefix in header_prefix_to_suffix:
                     suffix = header_prefix_to_suffix[prefix]
                     new_header = f"{prop_label} ({suffix})"
@@ -304,6 +315,7 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
                     new_header = f"{prop_label}"
 
                 data[new_header] = data_list
+
 
         # 6. Write file
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
@@ -322,6 +334,8 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
         return response
 
     except Exception as e:
+        from traceback import print_exc
+        print_exc()
         return Response(
             json.dumps({"error": str(e)}), status=500, mimetype="application/json"
         )
