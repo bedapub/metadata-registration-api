@@ -153,6 +153,9 @@ class ApiUserId(Resource):
         """ Update an entry given its unique identifier """
         entry = User.objects(id=id).get()
         entry.update(**api.payload)
+        # Needed to hash password
+        entry.clean()
+        entry.save()
         return {"message": f"Update entry '{entry.firstname}'"}
 
     @token_required
