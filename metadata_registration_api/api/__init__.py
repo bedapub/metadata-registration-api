@@ -31,6 +31,7 @@ from . import api_props
 from . import api_ctrl_voc
 from . import api_form
 from . import api_study
+from . import api_study_dataset
 from . import api_study_export
 from . import api_user
 
@@ -38,6 +39,7 @@ api.add_namespace(api_props.api, path=os.environ.get("API_EP_PROPERTY", "/proper
 api.add_namespace(api_ctrl_voc.api, path=os.environ.get("API_EP_CTRL_VOC", "/ctrl_voc"))
 api.add_namespace(api_form.api, path=os.environ.get("API_EP_FORM", "/forms"))
 api.add_namespace(api_study.api, path=os.environ.get("API_EP_STUDY", "/studies"))
+api.add_namespace(api_study_dataset.api, path=os.environ.get("API_EP_STUDY", "/studies"))
 api.add_namespace(api_study_export.api, path=os.environ.get("API_EP_STUDY", "/studies"))
 api.add_namespace(api_user.api, path=os.environ.get("API_EP_USER", '/users'))
 

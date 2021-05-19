@@ -11,7 +11,7 @@ from metadata_registration_lib.file_utils import write_file_from_denorm_data_2
 
 from metadata_registration_api.api.api_utils import (get_json, get_property_map,
     get_cv_items_name_to_label_map)
-from .api_study import find_study_id_from_dataset
+from .api_study_dataset import find_study_id_from_dataset
 from .decorators import token_required
 
 import tempfile
