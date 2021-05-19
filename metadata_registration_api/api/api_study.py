@@ -260,10 +260,10 @@ class ApiStudy(Resource):
         force_delete = args["complete"]
 
         entry = Study.objects().all()
-        # if not force_delete:
-        #     entry.update(deprecated=True)
-        #     return {"message": "Deprecate all entries"}
-        # else:
+        if not force_delete:
+            entry.update(deprecated=True)
+            return {"message": "Deprecate all entries"}
+        else:
         entry.delete()
         return {"message": "Delete all entries"}
 
