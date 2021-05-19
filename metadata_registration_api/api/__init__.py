@@ -27,25 +27,19 @@ with io.open(init_file, "rt", encoding="utf8") as f:
 
 api = Api(version=version, authorizations=authorizations)
 
-# noinspection PyPep8
-from .api_props import api as ns_1
-# noinspection PyPep8
-from .api_ctrl_voc import api as ns_2
-# noinspection PyPep8
-from .api_form import api as ns_3
-# noinspection PyPep8
-from .api_study import api as ns_4
-# noinspection PyPep8
-from .api_study_export import api as ns_4_export
-# noinspection PyPep8
-from .api_user import api as ns_5
+from . import api_props
+from . import api_ctrl_voc
+from . import api_form
+from . import api_study
+from . import api_study_export
+from . import api_user
 
-api.add_namespace(ns_1, path=os.environ.get("API_EP_PROPERTY", "/properties"))
-api.add_namespace(ns_2, path=os.environ.get("API_EP_CTRL_VOC", "/ctrl_voc"))
-api.add_namespace(ns_3, path=os.environ.get("API_EP_FORM", "/forms"))
-api.add_namespace(ns_4, path=os.environ.get("API_EP_STUDY", "/studies"))
-api.add_namespace(ns_4_export, path=os.environ.get("API_EP_STUDY", "/studies"))
-api.add_namespace(ns_5, path=os.environ.get("API_EP_USER", '/users'))
+api.add_namespace(api_props.api, path=os.environ.get("API_EP_PROPERTY", "/properties"))
+api.add_namespace(api_ctrl_voc.api, path=os.environ.get("API_EP_CTRL_VOC", "/ctrl_voc"))
+api.add_namespace(api_form.api, path=os.environ.get("API_EP_FORM", "/forms"))
+api.add_namespace(api_study.api, path=os.environ.get("API_EP_STUDY", "/studies"))
+api.add_namespace(api_study_export.api, path=os.environ.get("API_EP_STUDY", "/studies"))
+api.add_namespace(api_user.api, path=os.environ.get("API_EP_USER", '/users'))
 
 
 @api.errorhandler(TokenException)
