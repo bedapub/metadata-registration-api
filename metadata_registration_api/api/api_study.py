@@ -866,7 +866,7 @@ class ApiStudyPEId(Resource):
 
     @token_required
     def delete(self, pe_uuid, study_id=None, dataset_uuid=None, user=None):
-        """ Delete a dataset from a study given its unique identifier """
+        """ Delete a processing event given its unique identifier """
         prop_id_to_name = get_property_map(key="id", value="name")
         prop_name_to_id = reverse_map(prop_id_to_name)
 
