@@ -11,7 +11,7 @@ from metadata_registration_lib.file_utils import write_file_from_denorm_data_2
 
 from metadata_registration_api.api.api_utils import (get_json, get_property_map,
     get_cv_items_name_to_label_map)
-from .api_study_dataset import find_study_id_from_dataset
+from .api_study_dataset import find_study_id_from_lvl1_uuid
 from .decorators import token_required
 
 import tempfile
@@ -154,7 +154,7 @@ class DownloadReadouts(Resource):
         # 1. Get the study, dataset and readouts data
         if study_id is None:
             prop_name_to_id = get_property_map(key="name", value="id")
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
 
         study_url = f"{study_endpoint}/id/{study_id}?entry_format=form"
         study = get_json(study_url, headers=request.headers)["entries"]

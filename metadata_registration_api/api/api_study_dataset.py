@@ -135,7 +135,7 @@ class ApiStudyDatasetId(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -164,7 +164,7 @@ class ApiStudyDatasetId(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -220,7 +220,7 @@ class ApiStudyDatasetId(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -267,7 +267,7 @@ class ApiStudyPE(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -303,7 +303,7 @@ class ApiStudyPE(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -386,8 +386,10 @@ class ApiStudyPEId(Resource):
 
         # Used for helper route using only pe_uuid
         if dataset_uuid is None:
-            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(
-                pe_uuid = pe_uuid,
+            study_id, dataset_uuid = find_study_id_and_lvl1_entity_from_lvl2_uuid(
+                lvl1_prop = "dataset",
+                lvl2_prop = "process_event",
+                lvl2_uuid = pe_uuid,
                 prop_name_to_id = prop_name_to_id,
                 prop_id_to_name = prop_id_to_name
             )
@@ -396,7 +398,7 @@ class ApiStudyPEId(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -432,8 +434,10 @@ class ApiStudyPEId(Resource):
 
         # Used for helper route using only pe_uuid
         if dataset_uuid is None:
-            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(
-                pe_uuid = pe_uuid,
+            study_id, dataset_uuid = find_study_id_and_lvl1_entity_from_lvl2_uuid(
+                lvl1_prop = "dataset",
+                lvl2_prop = "process_event",
+                lvl2_uuid = pe_uuid,
                 prop_name_to_id = prop_name_to_id,
                 prop_id_to_name = prop_id_to_name
             )
@@ -442,7 +446,7 @@ class ApiStudyPEId(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -500,8 +504,10 @@ class ApiStudyPEId(Resource):
 
         # Used for helper route using only pe_uuid
         if dataset_uuid is None:
-            study_id, dataset_uuid = find_dataset_and_study_id_from_pe(
-                pe_uuid = pe_uuid,
+            study_id, dataset_uuid = find_study_id_and_lvl1_entity_from_lvl2_uuid(
+                lvl1_prop = "dataset",
+                lvl2_prop = "process_event",
+                lvl2_uuid = pe_uuid,
                 prop_name_to_id = prop_name_to_id,
                 prop_id_to_name = prop_id_to_name
             )
@@ -510,7 +516,7 @@ class ApiStudyPEId(Resource):
 
         # Used for helper route using only dataset_uuid
         if study_id is None:
-            study_id = find_study_id_from_dataset(dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
             if study_id is None:
                 raise Exception(f"Dataset not found in any study (uuid = {dataset_uuid})")
 
@@ -539,55 +545,56 @@ class ApiStudyPEId(Resource):
         return {"message": message}
 
 
-def find_study_id_from_dataset(dataset_uuid, prop_name_to_id):
+def find_study_id_from_lvl1_uuid(lvl1_prop, lvl1_uuid, prop_name_to_id):
     """ Find parent study given a dataset_uuid """
     study_id = None
 
     aggregated_studies = get_aggregated_studies(
         prop_map = prop_name_to_id,
-        level_1 = "dataset"
+        level_1 = lvl1_prop
     )
 
     for study in aggregated_studies:
-        if dataset_uuid in study["datasets_uuids"]:
+        if lvl1_uuid in study[f"{lvl1_prop}s_uuids"]:
             return study["id"]
 
     return study_id
 
 
-def find_dataset_and_study_id_from_pe(pe_uuid, prop_name_to_id, prop_id_to_name):
-    """ Find parent study and dataset given a pe_uuid """
+def find_study_id_and_lvl1_entity_from_lvl2_uuid(lvl1_prop, lvl2_prop, lvl2_uuid,
+    prop_name_to_id, prop_id_to_name):
+    """ Find parent study and lvl1 entity (ex: Dataset) given a lvl2 uuid (ex: Processing event) """
     study_id = None
-    dataset_uuid = None
+    lvl1_uuid = None
 
     aggregated_studies = get_aggregated_studies(
         prop_map = prop_name_to_id,
-        level_1 = "dataset",
-        level_2 = "process_event",
+        level_1 = lvl1_prop,
+        level_2 = lvl2_prop,
     )
 
     for potential_study in aggregated_studies:
-        if pe_uuid in potential_study["process_events_uuids"]:
+        if lvl2_uuid in potential_study[f"{lvl2_prop}s_uuids"]:
             study = potential_study
             study_id = study["id"]
             break
     else:
-        return study_id, dataset_uuid
+        return study_id, lvl1_uuid
 
-    datasets_list_entry = NestedListEntry(FormatConverter(prop_id_to_name))\
+    lvl1_list_entry = NestedListEntry(FormatConverter(prop_id_to_name))\
         .add_api_format(study["datasets"])
 
-    for dataset_nested_entry in datasets_list_entry.value:
-        dataset_uuid = dataset_nested_entry.get_entry_by_name("uuid").value
-        pes_entry = dataset_nested_entry.get_entry_by_name("process_events")
+    for lvl1_nested_entry in lvl1_list_entry.value:
+        lvl1_uuid = lvl1_nested_entry.get_entry_by_name("uuid").value
+        lvl1_entry = lvl1_nested_entry.get_entry_by_name(f"{lvl2_prop}s")
 
         try:
-            pes_entry.value.find_nested_entry("uuid", pe_uuid)
-            return study_id, dataset_uuid
+            lvl1_entry.value.find_nested_entry("uuid", lvl2_uuid)
+            return study_id, lvl1_uuid
         except:
-            pass # Processing event not in this dataset
+            pass # Lvl 2 entity not in this lvl 1 entity
 
-    return study_id, dataset_uuid
+    return study_id, lvl1_uuid
 
 def get_aggregated_studies(prop_map, level_1="dataset", level_2=None):
     """

@@ -100,6 +100,7 @@ complete_param = {
     "default": False,
     "help": "Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
 }
+
 properties_id_only_param = {
     "type": inputs.boolean,
     "location": "args",
