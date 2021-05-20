@@ -543,9 +543,9 @@ def find_study_id_from_dataset(dataset_uuid, prop_name_to_id):
     """ Find parent study given a dataset_uuid """
     study_id = None
 
-    aggregated_studies = get_aggregated_studies_and_datasets(
+    aggregated_studies = get_aggregated_studies(
         prop_map = prop_name_to_id,
-        pes = False
+        level_1 = "dataset"
     )
 
     for study in aggregated_studies:
@@ -560,13 +560,14 @@ def find_dataset_and_study_id_from_pe(pe_uuid, prop_name_to_id, prop_id_to_name)
     study_id = None
     dataset_uuid = None
 
-    aggregated_studies = get_aggregated_studies_and_datasets(
+    aggregated_studies = get_aggregated_studies(
         prop_map = prop_name_to_id,
-        pes = True
+        level_1 = "dataset",
+        level_2 = "process_event",
     )
 
     for potential_study in aggregated_studies:
-        if pe_uuid in potential_study["pes_uuids"]:
+        if pe_uuid in potential_study["process_events_uuids"]:
             study = potential_study
             study_id = study["id"]
             break
@@ -588,69 +589,71 @@ def find_dataset_and_study_id_from_pe(pe_uuid, prop_name_to_id, prop_id_to_name)
 
     return study_id, dataset_uuid
 
-def get_aggregated_studies_and_datasets(prop_map, pes=False):
+def get_aggregated_studies(prop_map, level_1="dataset", level_2=None):
     """
     Super messy and dirty mongoDB aggregation to save time finding a study
     from a dataset_uuid.
     Note to future self: so sorry about that but no worry, Elastic Search will replace that.
-    If pes = False, only datasets_uuids will be returned
-    If pes = True, only datasets with at least one pe will be returned
+    If level_2 = None, only prop1_uuids will be returned
+    If level_2 = True, only prop1 entities with at least one prop2 entity will be returned
     """
     # TODO: This should go away when we index all studies in form format with Elastic Search
+    prop1 = level_1
+    prop1_plur = f"{prop1}s"
 
-    pipeline_datasets = [
-        # Keep only datasets entry
+    pipeline_lvl1 = [
+        # Keep only prop1 entry
         {"$addFields": {
-            "datasets": {
+            prop1_plur: {
                 "$filter": {
                     "input":"$entries",
                     "as":"entry",
-                    "cond":{"$eq": [{"$toString": "$$entry.property"}, prop_map["datasets"]]}
+                    "cond":{"$eq": [{"$toString": "$$entry.property"}, prop_map[prop1_plur]]}
                 }
             }
         }},
 
-        # Keep studies with at least one dataset
-        {"$match": {"datasets.0" : {"$exists" : True}}},
+        # Keep studies with at least one prop1
+        {"$match": {f"{prop1_plur}.0" : {"$exists" : True}}},
 
         # Take first (and only) element of filtered entries
-        {"$addFields": {"datasets": {"$arrayElemAt": ["$datasets", 0]}}},
-        # Get the actual list of datasets from the datasets entry value
-        {"$addFields": {"datasets": "$datasets.value"}},
+        {"$addFields": {prop1_plur: {"$arrayElemAt": [f"${prop1_plur}", 0]}}},
+        # Get the actual list of lvl1 entities from the lvl1 entities entry value
+        {"$addFields": {prop1_plur: f"${prop1_plur}.value"}},
 
-        # Dataset UUIDs: Keep only dataset_uuid entries (exactly 1)
+        # Prop 1 UUIDs: Keep only prop1_uuid entries (exactly 1)
         {"$addFields": {
-            "datasets_uuids": {
+            f"{prop1_plur}_uuids": {
                 "$map": {
-                    "input": "$datasets",
-                    "as": "dataset",
+                    "input": f"${prop1_plur}",
+                    "as": prop1,
                     "in": {
                         "$filter": {
-                            "input": "$$dataset",
-                            "as": "dataset_entry",
-                            "cond":{"$eq": ["$$dataset_entry.property", prop_map["uuid"]]}
+                            "input": f"$${prop1}",
+                            "as": f"{prop1}_entry",
+                            "cond":{"$eq": [f"$${prop1}_entry.property", prop_map["uuid"]]}
                         }
                     }
                 }
             }
         }},
 
-        # Dataset UUIDs: Take first (and only) element of filtered entries
+        # prop1 UUIDs: Take first (and only) element of filtered entries
         {"$addFields": {
-            "datasets_uuids": {
+            f"{prop1_plur}_uuids": {
                 "$map": {
-                    "input": "$datasets_uuids",
-                    "as": "dataset",
-                    "in": {"$arrayElemAt": ["$$dataset", 0]}
+                    "input": f"${prop1_plur}_uuids",
+                    "as": prop1,
+                    "in": {"$arrayElemAt": [f"$${prop1}", 0]}
                 }
             }
         }},
 
-        # Dataset UUIDs: make a flat list of UUIDs
+        # Prop1 UUIDs: make a flat list of UUIDs
         {"$addFields": {
-            "datasets_uuids": {
+            f"{prop1_plur}_uuids": {
                 "$map": {
-                    "input": "$datasets_uuids",
+                    "input": f"${prop1_plur}_uuids",
                     "as": "uuid_entry",
                     "in": "$$uuid_entry.value"
                 }
@@ -658,72 +661,74 @@ def get_aggregated_studies_and_datasets(prop_map, pes=False):
         }}
     ]
 
-    if pes == False:
-        pipeline_datasets_format = [
+    if level_2 == None:
+        pipeline_lvl1_format = [
             # Clean, project only wanted fields
-            {"$project": {"id": {"$toString": "$_id"}, "datasets_uuids": 1, "datasets":1, "_id": 0}},
+            {"$project": {"id": {"$toString": "$_id"}, f"{prop1_plur}_uuids": 1, prop1_plur:1, "_id": 0}},
         ]
-        pipeline = pipeline_datasets + pipeline_datasets_format
+        pipeline = pipeline_lvl1 + pipeline_lvl1_format
         aggregated_studies = Study.objects().aggregate(pipeline)
 
         return aggregated_studies
 
     else:
-        pipeline_pes = [
-            # Processing envents UUIDs: Keep only process_events entries (exactly 1)
+        prop2 = level_2
+        prop2_plur = f"{prop2}s"
+        pipeline_lvl2 = [
+            # Prop 2 UUIDs: Keep only process_events entries (exactly 1)
             {"$addFields": {
-                "datasets_for_pe": {
+                f"{prop1_plur}_for_{prop2}": {
                     "$map": {
-                        "input": "$datasets",
-                        "as": "dataset",
+                        "input": f"${prop1_plur}",
+                        "as": prop1,
                         "in": {
                             "$filter": {
-                                "input": "$$dataset",
-                                "as": "dataset_entry",
-                                "cond":{"$eq": ["$$dataset_entry.property", prop_map["process_events"]]}
+                                "input": f"$${prop1}",
+                                "as": f"{prop1}_entry",
+                                "cond":{"$eq": [f"$${prop1}_entry.property", prop_map[prop2_plur]]}
                             }
                         }
                     }
                 }
             }},
 
-            # Processing envents UUIDs: Take first (and only) element of filtered dataset entries
+            # Prop 2 UUIDs: Take first (and only) element of filtered prop 1 entries
             {"$addFields": {
-                "datasets_for_pe": {
+                f"{prop1_plur}_for_{prop2}": {
                     "$map": {
-                        "input": "$datasets_for_pe",
-                        "as": "dataset",
-                        "in": {"$arrayElemAt": ["$$dataset", 0]}
+                        "input": f"${prop1_plur}_for_{prop2}",
+                        "as": prop1,
+                        "in": {"$arrayElemAt": [f"$${prop1}", 0]}
                     }
                 }
             }},
 
-            # Processing envents UUIDs: make a flat list of processing events
+            # Prop 2 UUIDs: make a flat list of processing events
             {"$addFields": {
-                "datasets_for_pe": {
+                f"{prop1_plur}_for_{prop2}": {
                     "$map": {
-                        "input": "$datasets_for_pe",
-                        "as": "dataset",
-                        "in": "$$dataset.value"
+                        "input": f"${prop1_plur}_for_{prop2}",
+                        "as": prop1,
+                        "in": f"$${prop1}.value"
                     }
                 }
             }},
 
-            # Processing envents UUIDs: Keep only uuid entries (exactly 1)
+            # Prop 2 UUIDs: Keep only uuid entries (exactly 1)
             {"$addFields": {
-                "datasets_for_pe": {
+                f"{prop1_plur}_for_{prop2}": {
                     "$map": {
-                        "input": "$datasets_for_pe",
-                        "as": "dataset",
+                        "input": f"${prop1_plur}_for_{prop2}",
+                        "as": prop1,
                         "in": {
                             "$map": {
-                                "input": "$$dataset",
-                                "as": "pe",
+                                "input": f"$${prop1}",
+                                "as": prop2,
                                 "in": {
                                     "$filter": {
-                                        "input": "$$pe",
-                                        "as": "pe_entry",
-                                        "cond":{"$eq": ["$$pe_entry.property", prop_map["uuid"]]}
+                                        "input": f"$${prop2}",
+                                        "as": f"{prop2}_entry",
+                                        "cond":{"$eq": [f"$${prop2}_entry.property", prop_map["uuid"]]}
                                     }
                                 }
                             }
@@ -732,58 +737,58 @@ def get_aggregated_studies_and_datasets(prop_map, pes=False):
                 }
             }},
 
-            # Processing envents UUIDs: Take first (and only) element of filtered entries
+            # Prop 2: Take first (and only) element of filtered entries
             {"$addFields": {
-                "datasets_for_pe": {
+                f"{prop1_plur}_for_{prop2}": {
                     "$map": {
-                        "input": "$datasets_for_pe",
-                        "as": "dataset",
+                        "input": f"${prop1_plur}_for_{prop2}",
+                        "as": prop1,
                         "in": {
                             "$map": {
-                                "input": "$$dataset",
-                                "as": "pe",
-                                "in": {"$arrayElemAt": ["$$pe", 0]}
+                                "input": f"$${prop1}",
+                                "as": prop2,
+                                "in": {"$arrayElemAt": [f"$${prop2}", 0]}
                             }
                         }
                     }
                 }
             }},
 
-            # Processing envents UUIDs: make a flat list of UUIDs (per dataset)
+            # Prop 2 UUIDs: make a flat list of UUIDs (per prop 1)
             {"$addFields": {
-                "pes_uuids": {
+                f"{prop2_plur}_uuids": {
                     "$map": {
-                        "input": "$datasets_for_pe",
-                        "as": "dataset",
+                        "input": f"${prop1_plur}_for_{prop2}",
+                        "as": prop1,
                         "in": {
                             "$map": {
-                                "input": "$$dataset",
-                                "as": "pe",
-                                "in": "$$pe.value"
+                                "input": f"$${prop1}",
+                                "as": prop2,
+                                "in": f"$${prop2}.value"
                             }
                         }
                     }
                 }
             }},
 
-            # Processing envents UUIDs: Flatten the UUID list (no separation per dataset)
+            # Prop 2 UUIDs: Flatten the UUID list (no separation per prop 1)
             # It also removes the None but I have no idea why
-            {"$unwind": "$pes_uuids"},
-            {"$unwind": "$pes_uuids"},
-            {"$unwind": "$datasets_uuids"},
-            {"$unwind": "$datasets_uuids"},
-            {"$unwind": "$datasets"},
+            {"$unwind": f"${prop2_plur}_uuids"},
+            {"$unwind": f"${prop2_plur}_uuids"},
+            {"$unwind": f"${prop1_plur}_uuids"},
+            {"$unwind": f"${prop1_plur}_uuids"},
+            {"$unwind": f"${prop1_plur}"},
             {"$group": {
                 "_id": "$_id",
-                "pes_uuids": {"$addToSet": "$pes_uuids"},
-                "datasets_uuids": {"$addToSet": "$datasets_uuids"},
-                "datasets": {"$addToSet": "$datasets"},
+                f"{prop2_plur}_uuids": {"$addToSet": f"${prop2_plur}_uuids"},
+                f"{prop1_plur}_uuids": {"$addToSet": f"${prop1_plur}_uuids"},
+                prop1_plur: {"$addToSet": f"${prop1_plur}"},
             }},
 
             # Clean, project only wanted fields
-            {"$project": {"id": {"$toString": "$_id"}, "datasets_uuids": 1, "pes_uuids": 1, "datasets":1, "_id": 0}},
+            {"$project": {"id": {"$toString": "$_id"}, f"{prop1_plur}_uuids": 1, f"{prop2_plur}_uuids": 1, f"{prop1_plur}":1, "_id": 0}},
         ]
-        pipeline = pipeline_datasets + pipeline_pes
+        pipeline = pipeline_lvl1 + pipeline_lvl2
         aggregated_studies = Study.objects().aggregate(pipeline)
 
         return aggregated_studies
