@@ -4,7 +4,7 @@ import logging
 from flask import Flask
 from mongoengine import connect
 
-from metadata_registration_api.my_utils import str_to_bool
+from metadata_registration_lib.other_utils import str_to_bool
 from metadata_registration_api.datastore_api import ApiDataStore
 from metadata_registration_api.api import api
 
