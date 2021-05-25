@@ -1,10 +1,9 @@
-import uuid
-
 from flask_restx import Namespace, Resource, marshal
 from flask_restx import reqparse
 
 from metadata_registration_lib.api_utils import (reverse_map, FormatConverter,
-    Entry, NestedEntry, NestedListEntry)
+    Entry, NestedEntry, NestedListEntry, add_uuid_entry_if_missing, get_entity_converter,
+    add_entity_to_study_nested_list)
 
 from metadata_registration_api.api.api_utils import get_property_map
 from .api_study import (entry_format_param, entry_model_prop_id, entry_model_form_format,
@@ -74,40 +73,20 @@ class ApiStudyDataset(Resource):
         study_converter = FormatConverter(mapper=prop_id_to_name)
         study_converter.add_api_format(study_json["entries"])
 
-        # 3. Format and clean dataset data
-        if entry_format == "api":
-            dataset_converter = FormatConverter(mapper=prop_id_to_name)
-            dataset_converter.add_api_format(entries)
-        elif entry_format == "form":
-            dataset_converter = FormatConverter(mapper=prop_name_to_id)
-            dataset_converter.add_form_format(entries)
-
-        dataset_converter.clean_data()
-
-        # 4. Generate UUID
-        dataset_uuid = str(uuid.uuid1())
-        dataset_converter.entries.insert(0,
-            Entry(FormatConverter(prop_name_to_id))\
-                .add_form_format("uuid", dataset_uuid)
+        # 3. Create dataset entry and append it to "datasets"
+        study_converter, dataset_converter, dataset_uuid = add_entity_to_study_nested_list(
+            study_converter=study_converter,
+            entries=entries,
+            entry_format=entry_format,
+            prop_id_to_name=prop_id_to_name,
+            prop_name_to_id=prop_name_to_id,
+            study_list_prop="datasets",
         )
 
-        dataset_nested_entry = NestedEntry(dataset_converter)
-        dataset_nested_entry.value = dataset_converter.entries
-
-        # 5. Check if "datasets" entry already exist study, creates it if it doesn't
-        datasets_entry = study_converter.get_entry_by_name("datasets")
-
-        if datasets_entry is not None:
-            datasets_entry.value.value.append(dataset_nested_entry)
-        else:
-            datasets_entry = Entry(FormatConverter(prop_name_to_id))\
-                .add_form_format("datasets", [dataset_nested_entry.get_form_format()])
-            study_converter.entries.append(datasets_entry)
-
-        # 6. Validate dataset data against form
+        # 4. Validate dataset data against form
         validate_form_format_against_form(form_name, dataset_converter.get_form_format())
 
-        # 7. Update study state, data and ulpoad on DB
+        # 5. Update study state, data and ulpoad on DB
         message = "Added dataset"
         update_study(study, study_converter, payload, message, user)
         return {"message": message, "uuid": dataset_uuid}, 201
@@ -189,12 +168,9 @@ class ApiStudyDatasetId(Resource):
         dataset_converter.entries = dataset_nested_entry.value
 
         # 4. Get new dataset data
-        if entry_format == "api":
-            new_dataset_converter = FormatConverter(mapper=prop_id_to_name)
-            new_dataset_converter.add_api_format(entries)
-        elif entry_format == "form":
-            new_dataset_converter = FormatConverter(mapper=prop_name_to_id)
-            new_dataset_converter.add_form_format(entries)
+        new_dataset_converter = get_entity_converter(
+            entries, entry_format, prop_id_to_name, prop_name_to_id
+        )
 
         # 5. Clean new data and get entries to remove
         entries_to_remove = new_dataset_converter.clean_data()
@@ -323,20 +299,11 @@ class ApiStudyPE(Resource):
         dataset_nested_entry, dataset_position = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)
 
         # 3. Format and clean processing event data
-        if entry_format == "api":
-            pe_converter = FormatConverter(mapper=prop_id_to_name)
-            pe_converter.add_api_format(entries)
-        elif entry_format == "form":
-            pe_converter = FormatConverter(mapper=prop_name_to_id)
-            pe_converter.add_form_format(entries)
-
-        pe_converter.clean_data()
+        pe_converter = get_entity_converter(entries, entry_format, prop_id_to_name, prop_name_to_id)
 
         # 4. Generate UUID
-        pe_uuid = str(uuid.uuid1())
-        pe_converter.entries.insert(0,
-            Entry(FormatConverter(prop_name_to_id))\
-                .add_form_format("uuid", pe_uuid)
+        pe_converter, pe_uuid = add_uuid_entry_if_missing(
+            pe_converter, prop_name_to_id, replace=False
         )
 
         pe_nested_entry = NestedEntry(pe_converter)
@@ -473,12 +440,9 @@ class ApiStudyPEId(Resource):
         pe_converter.entries = pe_nested_entry.value
 
         # 5. Get new processing event data
-        if entry_format == "api":
-            new_pe_converter = FormatConverter(mapper=prop_id_to_name)
-            new_pe_converter.add_api_format(entries)
-        elif entry_format == "form":
-            new_pe_converter = FormatConverter(mapper=prop_name_to_id)
-            new_pe_converter.add_form_format(entries)
+        new_pe_converter = get_entity_converter(
+            entries, entry_format, prop_id_to_name, prop_name_to_id
+        )
 
         # 6. Clean new data and get entries to remove
         entries_to_remove = new_pe_converter.clean_data()
