@@ -75,7 +75,7 @@ class ApiStudyDataset(Resource):
 
         # 3. Create dataset entry and append it to "datasets"
         # Format and clean entity
-        dataset_converter = get_entity_converter(
+        dataset_converter, _ = get_entity_converter(
             entries, entry_format, prop_id_to_name, prop_name_to_id
         )
         # Generate UUID
@@ -174,23 +174,20 @@ class ApiStudyDatasetId(Resource):
         dataset_converter = FormatConverter(mapper=prop_id_to_name)
         dataset_converter.entries = dataset_nested_entry.value
 
-        # 4. Get new dataset data
-        new_dataset_converter = get_entity_converter(
+        # 4. Get new dataset data and get entries to remove
+        new_dataset_converter, entries_to_remove = get_entity_converter(
             entries, entry_format, prop_id_to_name, prop_name_to_id
         )
 
-        # 5. Clean new data and get entries to remove
-        entries_to_remove = new_dataset_converter.clean_data()
-
-        # 6. Update current dataset by adding, updating and deleting entries
+        # 5. Update current dataset by adding, updating and deleting entries
         dataset_converter.add_or_update_entries(new_dataset_converter.entries)
         dataset_converter.remove_entries(entries=entries_to_remove)
         dataset_nested_entry.value = dataset_converter.entries
 
-        # 7. Validate dataset data against form
+        # 6. Validate dataset data against form
         validate_form_format_against_form(form_name, dataset_converter.get_form_format())
 
-        # 8. Update study state, data and ulpoad on DB
+        # 7. Update study state, data and ulpoad on DB
         message = "Updated dataset"
         update_study(study, study_converter, payload, message, user)
         return {"message": message}
@@ -306,7 +303,7 @@ class ApiStudyPE(Resource):
         dataset_nested_entry, dataset_position = datasets_entry.value.find_nested_entry("uuid", dataset_uuid)
 
         # 3. Format and clean processing event data
-        pe_converter = get_entity_converter(entries, entry_format, prop_id_to_name, prop_name_to_id)
+        pe_converter, _ = get_entity_converter(entries, entry_format, prop_id_to_name, prop_name_to_id)
 
         # 4. Generate UUID
         pe_converter, pe_uuid = add_uuid_entry_if_missing(
@@ -447,22 +444,19 @@ class ApiStudyPEId(Resource):
         pe_converter.entries = pe_nested_entry.value
 
         # 5. Get new processing event data
-        new_pe_converter = get_entity_converter(
+        new_pe_converter, entries_to_remove = get_entity_converter(
             entries, entry_format, prop_id_to_name, prop_name_to_id
         )
 
-        # 6. Clean new data and get entries to remove
-        entries_to_remove = new_pe_converter.clean_data()
-
-        # 7. Update current processing event by adding, updating and deleting entries
+        # 6. Update current processing event by adding, updating and deleting entries
         pe_converter.add_or_update_entries(new_pe_converter.entries)
         pe_converter.remove_entries(entries=entries_to_remove)
         pe_nested_entry.value = pe_converter.entries
 
-        # 8. Validate processing event data against form
+        # 7. Validate processing event data against form
         validate_form_format_against_form(form_name, pe_converter.get_form_format())
 
-        # 9. Update study state, data and ulpoad on DB
+        # 8. Update study state, data and ulpoad on DB
         message = "Updated processing event"
         update_study(study, study_converter, payload, message, user)
         return {"message": message}
