@@ -74,11 +74,18 @@ class ApiStudyDataset(Resource):
         study_converter.add_api_format(study_json["entries"])
 
         # 3. Create dataset entry and append it to "datasets"
-        study_converter, dataset_converter, dataset_uuid = add_entity_to_study_nested_list(
+        # Format and clean entity
+        dataset_converter = get_entity_converter(
+            entries, entry_format, prop_id_to_name, prop_name_to_id
+        )
+        # Generate UUID
+        dataset_converter, dataset_uuid = add_uuid_entry_if_missing(
+            dataset_converter, prop_name_to_id
+        )
+
+        study_converter = add_entity_to_study_nested_list(
             study_converter=study_converter,
-            entries=entries,
-            entry_format=entry_format,
-            prop_id_to_name=prop_id_to_name,
+            entity_converter=dataset_converter,
             prop_name_to_id=prop_name_to_id,
             study_list_prop="datasets",
         )
