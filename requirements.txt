@@ -4,6 +4,7 @@ dynamic-form==0.3.2
 Flask==1.1.1
 flask-restx==0.1.0
 Flask-WTF==0.14.2
+Flask-Cors==3.0.10
 gunicorn==20.0.4
 json-logging-py==0.2
 mongoengine==0.19.1

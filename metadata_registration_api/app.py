@@ -2,6 +2,7 @@ import os
 import logging
 
 from flask import Flask
+from flask_cors import CORS
 from mongoengine import connect
 
 from metadata_registration_lib.other_utils import str_to_bool
@@ -61,6 +62,7 @@ def config_app(app):
 
 def create_app():
     app = Flask(__name__)
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     config_app(app)
 
