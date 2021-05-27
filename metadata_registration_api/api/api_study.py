@@ -435,10 +435,15 @@ def update_study(study, study_converter, payload, message, user=None):
         change_log=study.meta_information.change_log
     )
 
+    if payload is not None:
+        manual_user = payload.get("manual_meta_information", {}).get("user", None)
+    else:
+        manual_user = None
+
     log = ChangeLog(action=message,
                     user_id=user.id if user else None,
                     timestamp=datetime.now(),
-                    manual_user=payload.get("manual_meta_information", {}).get("user", None))
+                    manual_user=manual_user)
     meta_info.state = str(new_state)
     meta_info.add_log(log)
 
@@ -457,7 +462,7 @@ def update_study(study, study_converter, payload, message, user=None):
 
 def check_alternate_pk_unicity(entries, pseudo_apks, prop_map):
     """
-    Another dirty mongoDB aggregation to enforce unicity of certain entry properties. 
+    Another dirty mongoDB aggregation to enforce unicity of certain entry properties.
     """
     for prop_name in pseudo_apks:
         prop_id = prop_map[prop_name]
