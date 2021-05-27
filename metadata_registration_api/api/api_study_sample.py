@@ -47,8 +47,9 @@ sample_model_payload = api.model("Add Sample", {
     "manual_meta_information": fields.Raw()
 })
 
-samples_model_payload = api.inherit("Add Samples", sample_model_payload, {
+samples_model_payload = api.inherit("Add/Replace Samples", sample_model_payload, {
     "entries": fields.List(sample_entries),
+    "replace": fields.Boolean(default=False, description=f"Replace existing samples"),
 })
 
 
@@ -73,6 +74,7 @@ class ApiStudySamples(Resource):
         form_names = payload.get("form_names", None)
         entries_list = payload["entries"]
         entry_format = payload.get("entry_format", "api")
+        replace = payload.get("replace", False)
 
         # 2. Get forms for validation
         forms = {}
@@ -101,9 +103,12 @@ class ApiStudySamples(Resource):
             new_samples=new_samples_form_format
         )
 
+        # 5. Append new samples to "samples" in study
+        if replace:
+            study_converter.remove_entries(prop_names=["samples"])
+
         sample_uuids = []
         for sample_form_format in new_samples_form_format:
-            # 5. Append new samples to "samples" in study
             # Format and clean entity
             sample_converter, _ = get_entity_converter(
                 entries=sample_form_format,
