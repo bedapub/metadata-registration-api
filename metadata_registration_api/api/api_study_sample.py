@@ -239,6 +239,27 @@ class ApiStudySample(Resource):
         update_study(study, study_converter, payload, message, user)
         return {"message": message, "uuid": sample_uuid}, 201
 
+    @token_required
+    def delete(self, study_id, user=None):
+        """ Delete all samples from a study given its unique identifier """
+        prop_id_to_name = get_property_map(key="id", value="name")
+
+        # 1. Get study data
+        study = Study.objects().get(id=study_id)
+        study_json = marshal(study, study_model)
+
+        study_converter = FormatConverter(mapper=prop_id_to_name)
+        study_converter.add_api_format(study_json["entries"])
+
+        # 2. Delete samples
+        study_converter.remove_entries(prop_names=["samples"])
+
+        # 3. Update study state, data and ulpoad on DB
+        message = "Deleted samples"
+        update_study(study, study_converter, api.payload, message, user)
+
+        return {"message": message}
+
 
 @api.route("/id/<study_id>/samples/id/<sample_uuid>", strict_slashes=False)
 @api.route("/samples/id/<sample_uuid>", strict_slashes=False,
@@ -344,13 +365,10 @@ class ApiStudySampleId(Resource):
             prop_name_to_id=prop_name_to_id,
         )
 
-        print(new_sample_converter.get_form_format())
         # 6. Update current sample by adding, updating and deleting entries
         sample_converter.add_or_update_entries(new_sample_converter.entries)
         sample_converter.remove_entries(entries=entries_to_remove)
         sample_nested_entry.value = sample_converter.entries
-
-        print(sample_converter.get_form_format())
 
         # 7. Validate data against form
         validate_sample_against_form(sample_converter.get_form_format(), validate_dict, forms)
