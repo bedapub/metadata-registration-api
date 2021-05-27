@@ -136,7 +136,7 @@ class ApiStudySamples(Resource):
 
 
         # 7. Update study state, data and ulpoad on DB
-        message = f"Added {len(sample_uuids)} samples"
+        message = f"Added {len(sample_uuids)} samples (replace = {replace})"
         update_study(study, study_converter, payload, message, user)
         return {"message": message, "uuids": sample_uuids}, 201
 
