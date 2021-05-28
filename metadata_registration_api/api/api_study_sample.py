@@ -371,6 +371,8 @@ class ApiStudySampleId(Resource):
         )
 
         # 6. Update current sample by adding, updating and deleting entries
+        # Nested entries not present in the original form are ignored
+        # won't be deleted if not present in the new data), it needs to be None or "" to be deleted
         sample_converter.add_or_update_entries(new_sample_converter.entries)
         sample_converter.remove_entries(entries=entries_to_remove)
         sample_nested_entry.value = sample_converter.entries

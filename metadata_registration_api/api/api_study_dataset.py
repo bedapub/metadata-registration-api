@@ -180,6 +180,8 @@ class ApiStudyDatasetId(Resource):
         )
 
         # 5. Update current dataset by adding, updating and deleting entries
+        # Nested entries not present in the original form are ignored (example: dataset["samples"])
+        # won't be deleted if not present in the new data), it needs to be None or "" to be deleted
         dataset_converter.add_or_update_entries(new_dataset_converter.entries)
         dataset_converter.remove_entries(entries=entries_to_remove)
         dataset_nested_entry.value = dataset_converter.entries
@@ -449,6 +451,8 @@ class ApiStudyPEId(Resource):
         )
 
         # 6. Update current processing event by adding, updating and deleting entries
+        # Nested entries not present in the original form are ignored (example: pe["results"])
+        # won't be deleted if not present in the new data), it needs to be None or "" to be deleted
         pe_converter.add_or_update_entries(new_pe_converter.entries)
         pe_converter.remove_entries(entries=entries_to_remove)
         pe_nested_entry.value = pe_converter.entries
