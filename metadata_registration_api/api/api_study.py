@@ -140,11 +140,11 @@ class ApiStudy(Resource):
         help="Number of results which should be returned"
     )
     _get_parser.add_argument(
-        "ids",
+        "study_ids",
         type=str,
         location="args",
         default="",
-        help="Filter specific study ids (comma separated)."
+        help="Filter specific study IDs (comma separated)."
     )
     _get_parser.add_argument("properties_id_only", **properties_id_only_param)
     _get_parser.add_argument("entry_format", **entry_format_param)
@@ -170,7 +170,7 @@ class ApiStudy(Resource):
 
         study_ids = [
             u.strip()
-            for u in re.split(r",|;", args["ids"])
+            for u in re.split(r",|;", args["study_ids"])
             if u.strip().lower() not in ["", "0", "none", "false"]
         ]
         if len(study_ids) > 0:
