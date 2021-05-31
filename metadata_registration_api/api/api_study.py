@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 
 from flask import current_app as app
 from flask_restx import Namespace, Resource, fields, marshal
@@ -138,6 +139,13 @@ class ApiStudy(Resource):
         default=100,
         help="Number of results which should be returned"
     )
+    _get_parser.add_argument(
+        "ids",
+        type=str,
+        location="args",
+        default="",
+        help="Filter specific study ids (comma separated)."
+    )
     _get_parser.add_argument("properties_id_only", **properties_id_only_param)
     _get_parser.add_argument("entry_format", **entry_format_param)
 
@@ -159,6 +167,14 @@ class ApiStudy(Resource):
 
         if not include_deprecate:
             res = res.filter(meta_information__deprecated=False)
+
+        study_ids = [
+            u.strip()
+            for u in re.split(r",|;", args["ids"])
+            if u.strip().lower() not in ["", "0", "none", "false"]
+        ]
+        if len(study_ids) > 0:
+            res = res.filter(id__in=study_ids)
 
         if args["properties_id_only"] or args["entry_format"] == "form":
             marchal_model = study_model_prop_id
