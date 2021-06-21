@@ -159,11 +159,7 @@ class ApiStudy(Resource):
         args = self._get_parser.parse_args()
         include_deprecate = args["deprecated"]
 
-        res = Study.objects.skip(args["skip"])
-
-        # Issue with limit(0) that returns 0 items instead of all of them
-        if args["limit"] != 0:
-            res = res.limit(args["limit"])
+        res = Study.objects()
 
         if not include_deprecate:
             res = res.filter(meta_information__deprecated=False)
@@ -175,6 +171,19 @@ class ApiStudy(Resource):
         ]
         if len(study_ids) > 0:
             res = res.filter(id__in=study_ids)
+            if res.count() < len(study_ids):
+                found_ids = [str(s.id) for s in res.only("id")]
+                return {
+                    "message": f"Some study ids were not found",
+                    "missing_study_ids": list(set(study_ids) - set(found_ids))
+                }, 404
+
+        # Limits and Skipping applied after main filters
+        res = res.all().skip(args["skip"])
+
+        # Issue with limit(0) that returns 0 items instead of all of them
+        if args["limit"] != 0:
+            res = res.limit(args["limit"])
 
         if args["properties_id_only"] or args["entry_format"] == "form":
             marchal_model = study_model_prop_id
