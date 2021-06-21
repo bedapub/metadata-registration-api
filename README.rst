@@ -1,3 +1,6 @@
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/bedapub/metadata-registration-lib
+
 Metadata Registration API
 =========================
 A flask microservice to register and manage Study metadata via an API.

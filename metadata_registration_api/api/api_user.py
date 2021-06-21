@@ -14,37 +14,49 @@ api = Namespace("Users", description="User related operations")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-user_model = api.model("User", {
-    "firstname": fields.String(),
-    "lastname": fields.String(),
-    "email": fields.String(),
-    "password": fields.String(),
-    "is_active": fields.Boolean(default=True)
-})
+user_model = api.model(
+    "User",
+    {
+        "firstname": fields.String(),
+        "lastname": fields.String(),
+        "email": fields.String(),
+        "password": fields.String(),
+        "is_active": fields.Boolean(default=True),
+    },
+)
 
-user_model_id = api.inherit("User with id", user_model, {
-    "id": fields.String(attribute="pk", description="Unique identifier of the entry"),
-})
+user_model_id = api.inherit(
+    "User with id",
+    user_model,
+    {
+        "id": fields.String(
+            attribute="pk", description="Unique identifier of the entry"
+        ),
+    },
+)
 
-post_response_model = api.model("Post response", {
-    "message": fields.String(),
-    "id": fields.String(description="Id of inserted entry")
-})
+post_response_model = api.model(
+    "Post response",
+    {
+        "message": fields.String(),
+        "id": fields.String(description="Id of inserted entry"),
+    },
+)
 
-login_model = api.model("Login", {
-    "email": fields.String(required=True),
-    "password": fields.String(required=True)
-})
+login_model = api.model(
+    "Login",
+    {"email": fields.String(required=True), "password": fields.String(required=True)},
+)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+
 @api.route("/login")
 class Login(Resource):
-
     @api.expect(login_model)
     def post(self):
-        """ Fetch an access token to perform requests which require elevated privileges
+        """Fetch an access token to perform requests which require elevated privileges
 
         Upon successful login, you receive an access token. Pass the token as value of 'x-access-token' in
         the header of every request that requires elevated privileges. The token is only valid for a certain time
@@ -57,13 +69,19 @@ class Login(Resource):
         user = User.objects(email=email).first()
 
         if not user or not check_password_hash(user.password, password):
-            raise Exception("The email does not exists or the email password combination is wrong")
+            raise Exception(
+                "The email does not exists or the email password combination is wrong"
+            )
 
         # Create token
-        token = jwt.encode({"user_id": str(user.id),
-                            "iat": datetime.datetime.utcnow(),
-                            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)},
-                           app.secret_key)
+        token = jwt.encode(
+            {
+                "user_id": str(user.id),
+                "iat": datetime.datetime.utcnow(),
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+            },
+            app.secret_key,
+        )
 
         return {"X-Access-Token": token.decode("UTF-8")}
 
@@ -71,19 +89,21 @@ class Login(Resource):
 @api.route("")
 class ApiUser(Resource):
     _delete_parser = reqparse.RequestParser()
-    _delete_parser.add_argument("complete",
-                                type=inputs.boolean,
-                                default=False,
-                                help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
-                                )
+    _delete_parser.add_argument(
+        "complete",
+        type=inputs.boolean,
+        default=False,
+        help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)",
+    )
 
     parser = reqparse.RequestParser()
-    parser.add_argument("deactivated",
-                        type=inputs.boolean,
-                        location="args",
-                        default=False,
-                        help="Boolean indicator which determines if deactivated users should be returned as well.",
-                        )
+    parser.add_argument(
+        "deactivated",
+        type=inputs.boolean,
+        location="args",
+        default=False,
+        help="Boolean indicator which determines if deactivated users should be returned as well.",
+    )
 
     # @token_required
     @api.doc(parser=parser)
@@ -109,8 +129,7 @@ class ApiUser(Resource):
         """ Add a new entry """
         entry = User(**api.payload)
         entry = entry.save()
-        return {"message": f"Add user '{entry.firstname}'",
-                "id": str(entry.id)}, 201
+        return {"message": f"Add user '{entry.firstname}'", "id": str(entry.id)}, 201
 
     @token_required
     @api.doc(parser=_delete_parser)
@@ -134,12 +153,13 @@ class ApiUser(Resource):
 @api.param("id", "The property identifier")
 class ApiUserId(Resource):
     _delete_parser = reqparse.RequestParser()
-    _delete_parser.add_argument("complete",
-                               type=inputs.boolean,
-                               default=False,
-                               help="Boolean indicator to remove an entry instead of inactivating it (cannot be "
-                                    "undone).",
-                               )
+    _delete_parser.add_argument(
+        "complete",
+        type=inputs.boolean,
+        default=False,
+        help="Boolean indicator to remove an entry instead of inactivating it (cannot be "
+        "undone).",
+    )
 
     # @token_required
     @api.marshal_with(user_model_id)
