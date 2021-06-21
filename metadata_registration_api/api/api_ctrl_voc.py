@@ -4,55 +4,85 @@ from flask_restx import reqparse, inputs
 from metadata_registration_api.model import ControlledVocabulary
 from .decorators import token_required
 
-api = Namespace("Controlled Vocabularies", description="Controlled vocabulary related operations")
+api = Namespace(
+    "Controlled Vocabularies", description="Controlled vocabulary related operations"
+)
 
 # Model definition
 # ----------------------------------------------------------------------------------------------------------------------
 
-cv_item_model = api.model("CV item", {
-    "label": fields.String(description="Human readable name of the entry"),
-    "name": fields.String(description="Internal representation of the entry (in snake_case)"),
-    "description": fields.String(description="Detailed explanation of the intended use"),
-    "synonyms": fields.List(fields.String())
-})
+cv_item_model = api.model(
+    "CV item",
+    {
+        "label": fields.String(description="Human readable name of the entry"),
+        "name": fields.String(
+            description="Internal representation of the entry (in snake_case)"
+        ),
+        "description": fields.String(
+            description="Detailed explanation of the intended use"
+        ),
+        "synonyms": fields.List(fields.String()),
+    },
+)
 
-ctrl_voc_model = api.model("Controlled Vocabulary", {
-    "label": fields.String(description="Human readable name of the entry"),
-    "name": fields.String(description="Internal representation of the entry (in snake_case)"),
-    "description": fields.String(description="Detailed description of the intended use", default=""),
-    "items": fields.List(fields.Nested(cv_item_model, skip_none=True)),
-    "deprecated": fields.Boolean(description="Indicator, if the entry is no longer used.", default=False)
-})
+ctrl_voc_model = api.model(
+    "Controlled Vocabulary",
+    {
+        "label": fields.String(description="Human readable name of the entry"),
+        "name": fields.String(
+            description="Internal representation of the entry (in snake_case)"
+        ),
+        "description": fields.String(
+            description="Detailed description of the intended use", default=""
+        ),
+        "items": fields.List(fields.Nested(cv_item_model, skip_none=True)),
+        "deprecated": fields.Boolean(
+            description="Indicator, if the entry is no longer used.", default=False
+        ),
+    },
+)
 
-ctrl_voc_model_id = api.inherit("Controlled Vocabulary with id", ctrl_voc_model, {
-    "id": fields.String(attribute="pk", description="Unique identifier of the entry"),
-})
+ctrl_voc_model_id = api.inherit(
+    "Controlled Vocabulary with id",
+    ctrl_voc_model,
+    {
+        "id": fields.String(
+            attribute="pk", description="Unique identifier of the entry"
+        ),
+    },
+)
 
-post_response_model = api.model("Post response", {
-    "message": fields.String(),
-    "id": fields.String(description="Id of inserted entry")
-})
+post_response_model = api.model(
+    "Post response",
+    {
+        "message": fields.String(),
+        "id": fields.String(description="Id of inserted entry"),
+    },
+)
 
 
 # Routes
 # ----------------------------------------------------------------------------------------------------------------------
 
+
 @api.route("")
 class ApiControlledVocabulary(Resource):
     _delete_parser = reqparse.RequestParser()
-    _delete_parser.add_argument("complete",
-                               type=inputs.boolean,
-                               default=False,
-                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
-                               )
+    _delete_parser.add_argument(
+        "complete",
+        type=inputs.boolean,
+        default=False,
+        help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)",
+    )
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument("deprecated",
-                            type=inputs.boolean,
-                            location="args",
-                            default=False,
-                            help="Boolean indicator which determines if deprecated entries should be returned as well",
-                            )
+    get_parser.add_argument(
+        "deprecated",
+        type=inputs.boolean,
+        location="args",
+        default=False,
+        help="Boolean indicator which determines if deprecated entries should be returned as well",
+    )
 
     @api.marshal_with(ctrl_voc_model_id)
     @api.doc(parser=get_parser)
@@ -78,8 +108,7 @@ class ApiControlledVocabulary(Resource):
         """ Add a new entry """
         entry = ControlledVocabulary(**api.payload)
         entry = entry.save()
-        return {"message": f"Add entry '{entry.name}'",
-                "id": str(entry.id)}, 201
+        return {"message": f"Add entry '{entry.name}'", "id": str(entry.id)}, 201
 
     @token_required
     @api.doc(parser=_delete_parser)
@@ -103,11 +132,12 @@ class ApiControlledVocabulary(Resource):
 @api.param("id", "The property identifier")
 class ApiControlledVocabularyId(Resource):
     _delete_parser = reqparse.RequestParser()
-    _delete_parser.add_argument("complete",
-                               type=inputs.boolean,
-                               default=False,
-                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
-                               )
+    _delete_parser.add_argument(
+        "complete",
+        type=inputs.boolean,
+        default=False,
+        help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)",
+    )
 
     @api.marshal_with(ctrl_voc_model_id)
     def get(self, id):

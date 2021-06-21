@@ -12,6 +12,7 @@ def insert(url=None, data=None):
 
     return res
 
+
 import logging
 import os
 from threading import Thread
@@ -22,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 class ServerThread(Thread):
-
     def __init__(self, config="TESTING"):
         super(ServerThread, self).__init__()
 
@@ -44,7 +44,7 @@ class ServerThread(Thread):
         logger.info("Stop API Server")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     server = ServerThread()
     server.run()

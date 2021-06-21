@@ -10,7 +10,6 @@ from dynamic_form.template_builder import UserTemplate
 
 # @unittest.skip
 class MyTestCase(BaseTestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         super(MyTestCase, cls).setUpClass()
@@ -46,10 +45,7 @@ class MyTestCase(BaseTestCase):
     def test_login(self):
         self.insert_one()
 
-        data = {
-            "email": "jane.doe@email.com",
-            "password": "unhashed"
-        }
+        data = {"email": "jane.doe@email.com", "password": "unhashed"}
 
         res = requests.post(url=urljoin(self.url, "users/login"), json=data)
 
@@ -60,7 +56,12 @@ class MyTestCase(BaseTestCase):
     # Helper function
 
     def insert_one(self):
-        firstname, lastname, email, password = "Jane", "Doe", "jane.doe@email.com", "unhashed"
+        firstname, lastname, email, password = (
+            "Jane",
+            "Doe",
+            "jane.doe@email.com",
+            "unhashed",
+        )
 
         data = UserTemplate(firstname, lastname, email, password)
         res = requests.post(url=self.url, json=data.to_dict())
@@ -82,13 +83,20 @@ class AuthorizationTest(BaseTestCase):
 
     def test_post_without_token(self):
 
-        for endpoint in [self.ctrl_voc_endpoint, self.property_endpoint, self.form_endpoint, self.study_endpoint,
-                         self.user_endpoint]:
+        for endpoint in [
+            self.ctrl_voc_endpoint,
+            self.property_endpoint,
+            self.form_endpoint,
+            self.study_endpoint,
+            self.user_endpoint,
+        ]:
 
             res = requests.post(endpoint)
 
             self.assertEqual(res.status_code, 401, f"Fail {endpoint}")
-            self.assertEqual(res.json()['error type'], TokenException.__name__, f"Fail {endpoint}")
+            self.assertEqual(
+                res.json()["error type"], TokenException.__name__, f"Fail {endpoint}"
+            )
 
     def test_post_invalid_token(self):
 
@@ -100,20 +108,34 @@ class AuthorizationTest(BaseTestCase):
 
     def test_delete_without_token(self):
 
-        for endpoint in [self.ctrl_voc_endpoint, self.property_endpoint, self.form_endpoint, self.study_endpoint,
-                         self.user_endpoint]:
+        for endpoint in [
+            self.ctrl_voc_endpoint,
+            self.property_endpoint,
+            self.form_endpoint,
+            self.study_endpoint,
+            self.user_endpoint,
+        ]:
 
             res = requests.delete(endpoint)
 
             self.assertEqual(res.status_code, 401, f"Fail {endpoint}")
-            self.assertEqual("TokenException", res.json()['error type'], f"Fail {endpoint}")
+            self.assertEqual(
+                "TokenException", res.json()["error type"], f"Fail {endpoint}"
+            )
 
     def test_put_without_token(self):
 
-        for endpoint in [self.ctrl_voc_endpoint, self.property_endpoint, self.form_endpoint, self.study_endpoint,
-                         self.user_endpoint]:
+        for endpoint in [
+            self.ctrl_voc_endpoint,
+            self.property_endpoint,
+            self.form_endpoint,
+            self.study_endpoint,
+            self.user_endpoint,
+        ]:
 
             res = requests.put(endpoint + "/id/1")
 
             self.assertEqual(res.status_code, 401, f"Fail {endpoint}")
-            self.assertEqual("TokenException", res.json()['error type'], f"Fail {endpoint}")
+            self.assertEqual(
+                "TokenException", res.json()["error type"], f"Fail {endpoint}"
+            )

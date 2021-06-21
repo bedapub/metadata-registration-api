@@ -22,7 +22,6 @@ class ChangeLog:
 
 
 class MetaInformation:
-
     def __init__(self, state: str, change_log=None):
 
         if change_log and not isinstance(change_log, list):
@@ -35,10 +34,7 @@ class MetaInformation:
         self.change_log.append(log.to_dict())
 
     def to_json(self):
-        return {
-            "state": self.state,
-            "change_log": self.change_log
-        }
+        return {"state": self.state, "change_log": self.change_log}
 
 
 def get_json(url, headers={}):
@@ -53,7 +49,9 @@ def get_json(url, headers={}):
 def get_property_map(key, value):
     """ Helper to get property mapper """
     property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
-    property_map = map_key_value(url=f"{property_url}?deprecated=true", key=key, value=value)
+    property_map = map_key_value(
+        url=f"{property_url}?deprecated=true", key=key, value=value
+    )
     return property_map
 
 

@@ -2,15 +2,26 @@ from flask import current_app as app
 from flask_restx import Namespace, Resource, marshal, fields
 from flask_restx import reqparse
 
-from metadata_registration_lib.api_utils import (reverse_map, FormatConverter,
-    add_uuid_entry_if_missing, get_entity_converter, add_entity_to_study_nested_list)
+from metadata_registration_lib.api_utils import (
+    reverse_map,
+    FormatConverter,
+    add_uuid_entry_if_missing,
+    get_entity_converter,
+    add_entity_to_study_nested_list,
+)
 
-from metadata_registration_lib.sample_utils import (unify_sample_entities_uuids,
-    validate_sample_against_form)
+from metadata_registration_lib.sample_utils import (
+    unify_sample_entities_uuids,
+    validate_sample_against_form,
+)
 
 from metadata_registration_api.api.api_utils import get_property_map
-from .api_study import (entry_format_param, entry_model_prop_id, entry_model_form_format,
-    study_model)
+from .api_study import (
+    entry_format_param,
+    entry_model_prop_id,
+    entry_model_form_format,
+    study_model,
+)
 from .api_study import update_study
 from .api_study_dataset import find_study_id_from_lvl1_uuid
 from .decorators import token_required
@@ -23,39 +34,68 @@ api = Namespace("Samples", description="Sample related operations")
 def get_validate_field(text):
     return fields.Boolean(default=False, description=f"Validate {text}")
 
+
 def get_form_name_field(default, text):
-    return fields.String(default=default, description=f"Form used for {text} validation")
+    return fields.String(
+        default=default, description=f"Form used for {text} validation"
+    )
+
 
 sample_entries = fields.List(fields.Nested(entry_model_prop_id))
 
 # form_names and validate keys need to match step names in LIB
-sample_model_payload = api.model("Add Sample", {
-    "entries": sample_entries,
-    "entry_format": fields.String(example="api", description="Format used for entries (api or form)"),
-    "validate": fields.Nested(api.model("Validate flags", {
-        "treatment_ind": get_validate_field("Treatments on Individuals"),
-        "individual": get_validate_field("Individuals"),
-        "treatment_sam": get_validate_field("Treatments on Samples"),
-        "sample": get_validate_field("Samples"),
-    })),
-    "form_names": fields.Nested(api.model("Form names", {
-        "treatment_ind": get_form_name_field("treatment", "Treatments on Individuals"),
-        "individual": get_form_name_field("individual", "Individuals"),
-        "treatment_sam": get_form_name_field("treatment", "Treatments on Samples"),
-        "sample": get_form_name_field("sample", "Samples"),
-    })),
-    "manual_meta_information": fields.Raw()
-})
+sample_model_payload = api.model(
+    "Add Sample",
+    {
+        "entries": sample_entries,
+        "entry_format": fields.String(
+            example="api", description="Format used for entries (api or form)"
+        ),
+        "validate": fields.Nested(
+            api.model(
+                "Validate flags",
+                {
+                    "treatment_ind": get_validate_field("Treatments on Individuals"),
+                    "individual": get_validate_field("Individuals"),
+                    "treatment_sam": get_validate_field("Treatments on Samples"),
+                    "sample": get_validate_field("Samples"),
+                },
+            )
+        ),
+        "form_names": fields.Nested(
+            api.model(
+                "Form names",
+                {
+                    "treatment_ind": get_form_name_field(
+                        "treatment", "Treatments on Individuals"
+                    ),
+                    "individual": get_form_name_field("individual", "Individuals"),
+                    "treatment_sam": get_form_name_field(
+                        "treatment", "Treatments on Samples"
+                    ),
+                    "sample": get_form_name_field("sample", "Samples"),
+                },
+            )
+        ),
+        "manual_meta_information": fields.Raw(),
+    },
+)
 
-samples_model_payload = api.inherit("Add/Replace Samples", sample_model_payload, {
-    "entries": fields.List(sample_entries),
-    "replace": fields.Boolean(default=False, description=f"Replace existing samples"),
-})
-
+samples_model_payload = api.inherit(
+    "Add/Replace Samples",
+    sample_model_payload,
+    {
+        "entries": fields.List(sample_entries),
+        "replace": fields.Boolean(
+            default=False, description=f"Replace existing samples"
+        ),
+    },
+)
 
 
 # Routes
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 @api.route("/id/<study_id>/samples/multiple")
 @api.param("study_id", "The study identifier")
@@ -80,7 +120,9 @@ class ApiStudySamples(Resource):
         forms = {}
         for key, validate in validate_dict.items():
             if validate:
-                forms[key] = app.form_manager.get_form_by_name(form_name=form_names[key])
+                forms[key] = app.form_manager.get_form_by_name(
+                    form_name=form_names[key]
+                )
 
         # 3. Get study data
         study = Study.objects().get(id=study_id)
@@ -100,7 +142,7 @@ class ApiStudySamples(Resource):
 
         new_samples_form_format = unify_sample_entities_uuids(
             existing_samples=study_converter.get_form_format().get("samples", []),
-            new_samples=new_samples_form_format
+            new_samples=new_samples_form_format,
         )
 
         # 5. Append new samples to "samples" in study
@@ -132,8 +174,9 @@ class ApiStudySamples(Resource):
             sample_uuids.append(sample_uuid)
 
             # 6. Validate data against form
-            validate_sample_against_form(sample_converter.get_form_format(), validate_dict, forms)
-
+            validate_sample_against_form(
+                sample_converter.get_form_format(), validate_dict, forms
+            )
 
         # 7. Update study state, data and ulpoad on DB
         message = f"Added {len(sample_uuids)} samples (replace = {replace})"
@@ -194,7 +237,9 @@ class ApiStudySample(Resource):
         forms = {}
         for key, validate in validate_dict.items():
             if validate:
-                forms[key] = app.form_manager.get_form_by_name(form_name=form_names[key])
+                forms[key] = app.form_manager.get_form_by_name(
+                    form_name=form_names[key]
+                )
 
         # 3. Get study data
         study = Study.objects().get(id=study_id)
@@ -212,7 +257,7 @@ class ApiStudySample(Resource):
 
         [new_sample_form_format] = unify_sample_entities_uuids(
             existing_samples=study_converter.get_form_format().get("samples", []),
-            new_samples=[new_sample_form_format]
+            new_samples=[new_sample_form_format],
         )
 
         # 5. Append new samples to "samples" in study
@@ -237,7 +282,9 @@ class ApiStudySample(Resource):
         )
 
         # 6. Validate data against form
-        validate_sample_against_form(sample_converter.get_form_format(), validate_dict, forms)
+        validate_sample_against_form(
+            sample_converter.get_form_format(), validate_dict, forms
+        )
 
         # 7. Update study state, data and ulpoad on DB
         message = "Added sample"
@@ -267,8 +314,11 @@ class ApiStudySample(Resource):
 
 
 @api.route("/id/<study_id>/samples/id/<sample_uuid>", strict_slashes=False)
-@api.route("/samples/id/<sample_uuid>", strict_slashes=False,
-    doc={"description": "Alias route for a specific sample without study_id"})
+@api.route(
+    "/samples/id/<sample_uuid>",
+    strict_slashes=False,
+    doc={"description": "Alias route for a specific sample without study_id"},
+)
 @api.param("study_id", "The study identifier")
 @api.param("sample_uuid", "The sample identifier")
 class ApiStudySampleId(Resource):
@@ -288,7 +338,9 @@ class ApiStudySampleId(Resource):
 
         # Used for helper route using only sample_uuid
         if study_id is None:
-            study_id = find_study_id_from_lvl1_uuid("sample", sample_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid(
+                "sample", sample_uuid, prop_name_to_id
+            )
             if study_id is None:
                 raise Exception(f"Sample not found in any study (uuid = {sample_uuid})")
 
@@ -300,7 +352,9 @@ class ApiStudySampleId(Resource):
         study_converter.add_api_format(study_json["entries"])
 
         samples_entry = study_converter.get_entry_by_name("samples")
-        sample_nested_entry = samples_entry.value.find_nested_entry("uuid", sample_uuid)[0]
+        sample_nested_entry = samples_entry.value.find_nested_entry(
+            "uuid", sample_uuid
+        )[0]
 
         # The "sample_nested_entry" entry is a NestedEntry (return list of dict)
         if args["entry_format"] == "api":
@@ -317,7 +371,9 @@ class ApiStudySampleId(Resource):
 
         # Used for helper route using only sample_uuid
         if study_id is None:
-            study_id = find_study_id_from_lvl1_uuid("sample", sample_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid(
+                "sample", sample_uuid, prop_name_to_id
+            )
             if study_id is None:
                 raise Exception(f"Sample not found in any study (uuid = {sample_uuid})")
 
@@ -333,7 +389,9 @@ class ApiStudySampleId(Resource):
         forms = {}
         for key, validate in validate_dict.items():
             if validate:
-                forms[key] = app.form_manager.get_form_by_name(form_name=form_names[key])
+                forms[key] = app.form_manager.get_form_by_name(
+                    form_name=form_names[key]
+                )
 
         # 3. Get study data
         study = Study.objects().get(id=study_id)
@@ -344,7 +402,9 @@ class ApiStudySampleId(Resource):
 
         # 3. Get current sample data
         samples_entry = study_converter.get_entry_by_name("samples")
-        sample_nested_entry = samples_entry.value.find_nested_entry("uuid", sample_uuid)[0]
+        sample_nested_entry = samples_entry.value.find_nested_entry(
+            "uuid", sample_uuid
+        )[0]
         sample_converter = FormatConverter(mapper=prop_id_to_name)
         sample_converter.entries = sample_nested_entry.value
 
@@ -358,7 +418,7 @@ class ApiStudySampleId(Resource):
 
         [new_sample_form_format] = unify_sample_entities_uuids(
             existing_samples=study_converter.get_form_format().get("samples", []),
-            new_samples=[new_sample_form_format]
+            new_samples=[new_sample_form_format],
         )
 
         # 5. Clean new data and get entries to remove
@@ -378,7 +438,9 @@ class ApiStudySampleId(Resource):
         sample_nested_entry.value = sample_converter.entries
 
         # 7. Validate data against form
-        validate_sample_against_form(sample_converter.get_form_format(), validate_dict, forms)
+        validate_sample_against_form(
+            sample_converter.get_form_format(), validate_dict, forms
+        )
 
         # 8. Update study state, data and ulpoad on DB
         message = "Updated sample"
@@ -393,7 +455,9 @@ class ApiStudySampleId(Resource):
 
         # Used for helper route using only sample_uuid
         if study_id is None:
-            study_id = find_study_id_from_lvl1_uuid("sample", sample_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid(
+                "sample", sample_uuid, prop_name_to_id
+            )
             if study_id is None:
                 raise Exception(f"Sample not found in any study (uuid = {sample_uuid})")
 
@@ -416,4 +480,3 @@ class ApiStudySampleId(Resource):
         update_study(study, study_converter, api.payload, message, user)
 
         return {"message": message}
-

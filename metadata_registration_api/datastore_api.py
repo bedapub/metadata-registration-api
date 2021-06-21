@@ -37,7 +37,9 @@ class ApiDataStore(IDataStore):
             raise DataStoreException(error_msg)
 
         try:
-            form_entry = next(filter(lambda entry: entry["name"] == name, result.json()))
+            form_entry = next(
+                filter(lambda entry: entry["name"] == name, result.json())
+            )
             res = requests.get(f"{self.form_endpoint}/id/{form_entry['id']}")
             return self._process_results(res, f"Fail to load form (name:{name})")
 
@@ -59,7 +61,9 @@ class ApiDataStore(IDataStore):
 
     def deprecate_form(self, identifier):
         result = requests.delete(f"{self.form_endpoint}/id/{identifier}")
-        return self._process_results(result, f"Fail to deprecated form (id:{identifier}")
+        return self._process_results(
+            result, f"Fail to deprecated form (id:{identifier}"
+        )
 
     @staticmethod
     def _process_results(results, error_message="Fail to get results", status_code=200):
@@ -70,4 +74,3 @@ class ApiDataStore(IDataStore):
             raise DataStoreException(error_message)
 
         return results.json()
-

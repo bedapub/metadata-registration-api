@@ -8,64 +8,106 @@ from .decorators import token_required
 api = Namespace("Properties", description="Property related operations")
 
 # ----------------------------------------------------------------------------------------------------------------------
-cv_model_add = api.model("Add Vocabulary Type", {
-    "data_type": fields.String(description="The data type of the entry"),
-    "controlled_vocabulary": fields.String(example='Controlled Vocabulary ObjectId')
-})
+cv_model_add = api.model(
+    "Add Vocabulary Type",
+    {
+        "data_type": fields.String(description="The data type of the entry"),
+        "controlled_vocabulary": fields.String(
+            example="Controlled Vocabulary ObjectId"
+        ),
+    },
+)
 
-property_add_model = api.model("Add Property", {
-    "label": fields.String(description="A human readable description of the entry"),
-    "name": fields.String(description="The unique name of the entry (in snake_case)"),
-    "level": fields.String(description="The level the property is associated with (e.g. Study, Sample, ...)"),
-    "value_type": fields.Nested(cv_model_add),
-    "synonyms": fields.List(fields.String(description="Alternatives to the primary name")),
-    "description": fields.String(description="A detailed description of the intended use", default=""),
-    "deprecated": fields.Boolean(default=False)
-})
+property_add_model = api.model(
+    "Add Property",
+    {
+        "label": fields.String(description="A human readable description of the entry"),
+        "name": fields.String(
+            description="The unique name of the entry (in snake_case)"
+        ),
+        "level": fields.String(
+            description="The level the property is associated with (e.g. Study, Sample, ...)"
+        ),
+        "value_type": fields.Nested(cv_model_add),
+        "synonyms": fields.List(
+            fields.String(description="Alternatives to the primary name")
+        ),
+        "description": fields.String(
+            description="A detailed description of the intended use", default=""
+        ),
+        "deprecated": fields.Boolean(default=False),
+    },
+)
 
-cv_model = api.model("Vocabulary Type", {
-    "data_type": fields.String(description="The data type of the entry"),
-    "controlled_vocabulary": fields.Nested(ctrl_voc_model_id)
-})
+cv_model = api.model(
+    "Vocabulary Type",
+    {
+        "data_type": fields.String(description="The data type of the entry"),
+        "controlled_vocabulary": fields.Nested(ctrl_voc_model_id),
+    },
+)
 
-property_model = api.model("Property", {
-    "label": fields.String(description="A human readable description of the entry"),
-    "name": fields.String(description="The unique name of the entry (in snake_case)"),
-    "level": fields.String(description="The level the property is associated with (e.g. Study, Sample, ...)"),
-    "value_type": fields.Nested(cv_model),
-    "synonyms": fields.List(fields.String(description="Alternatives to the primary name")),
-    "description": fields.String(description="A detailed description of the intended use", default=""),
-    "deprecated": fields.Boolean(default=False)
-})
+property_model = api.model(
+    "Property",
+    {
+        "label": fields.String(description="A human readable description of the entry"),
+        "name": fields.String(
+            description="The unique name of the entry (in snake_case)"
+        ),
+        "level": fields.String(
+            description="The level the property is associated with (e.g. Study, Sample, ...)"
+        ),
+        "value_type": fields.Nested(cv_model),
+        "synonyms": fields.List(
+            fields.String(description="Alternatives to the primary name")
+        ),
+        "description": fields.String(
+            description="A detailed description of the intended use", default=""
+        ),
+        "deprecated": fields.Boolean(default=False),
+    },
+)
 
-property_model_id = api.inherit("Property with id", property_model, {
-    "id": fields.String(attribute="id", description="The unique identifier of the entry"),
-})
+property_model_id = api.inherit(
+    "Property with id",
+    property_model,
+    {
+        "id": fields.String(
+            attribute="id", description="The unique identifier of the entry"
+        ),
+    },
+)
 
-post_response_model = api.model("Post response", {
-    "message": fields.String(),
-    "id": fields.String(description="Id of inserted entry")
-})
+post_response_model = api.model(
+    "Post response",
+    {
+        "message": fields.String(),
+        "id": fields.String(description="Id of inserted entry"),
+    },
+)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+
 @api.route("")
 class ApiProperties(Resource):
     _delete_parser = reqparse.RequestParser()
-    _delete_parser.add_argument("complete",
-                               type=inputs.boolean,
-                               default=False,
-                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
-                               )
+    _delete_parser.add_argument(
+        "complete",
+        type=inputs.boolean,
+        default=False,
+        help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)",
+    )
 
     get_parser = reqparse.RequestParser()
-    get_parser.add_argument("deprecated",
-                            type=inputs.boolean,
-                            location="args",
-                            default=False,
-                            help="Boolean indicator which determines if deprecated entries should be returned as well",
-                            )
+    get_parser.add_argument(
+        "deprecated",
+        type=inputs.boolean,
+        location="args",
+        default=False,
+        help="Boolean indicator which determines if deprecated entries should be returned as well",
+    )
 
     @api.marshal_with(property_model_id)
     @api.doc(parser=get_parser)
@@ -87,20 +129,20 @@ class ApiProperties(Resource):
     @api.expect(property_add_model)
     @api.response(201, "Success", post_response_model)
     def post(self, user=None):
-        """ Add a new entry
+        """Add a new entry
 
-            The name has to be unique and is internally used as a variable name. The passed string is
-            preprocessed before it is inserted into the database. Preprocessing: All characters are converted to
-            lower case, the leading and trailing white spaces are removed, and intermediate white spaces are replaced
-            with underscores ("_").
+        The name has to be unique and is internally used as a variable name. The passed string is
+        preprocessed before it is inserted into the database. Preprocessing: All characters are converted to
+        lower case, the leading and trailing white spaces are removed, and intermediate white spaces are replaced
+        with underscores ("_").
 
-            Do not pass a unique identifier since it is generated internally.
+        Do not pass a unique identifier since it is generated internally.
 
-            synonyms (optional)
+        synonyms (optional)
 
-            deprecated (default=False)
+        deprecated (default=False)
 
-            If a data type other than "cv" is added, the controlled_vocabullary is not considered.
+        If a data type other than "cv" is added, the controlled_vocabullary is not considered.
         """
 
         entry = Property(**api.payload)
@@ -109,8 +151,7 @@ class ApiProperties(Resource):
         validate_controlled_vocabulary(entry)
 
         entry = entry.save()
-        return {"message": f"Add entry '{entry.name}'",
-                "id": str(entry.id)}, 201
+        return {"message": f"Add entry '{entry.name}'", "id": str(entry.id)}, 201
 
     @token_required
     @api.doc(parser=_delete_parser)
@@ -136,11 +177,12 @@ class ApiProperties(Resource):
 @api.param("id", "The property identifier")
 class ApiPropertyId(Resource):
     _delete_parser = reqparse.RequestParser()
-    _delete_parser.add_argument("complete",
-                               type=inputs.boolean,
-                               default=False,
-                               help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
-                               )
+    _delete_parser.add_argument(
+        "complete",
+        type=inputs.boolean,
+        default=False,
+        help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)",
+    )
 
     @api.marshal_with(property_model_id)
     def get(self, id):

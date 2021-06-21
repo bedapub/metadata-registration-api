@@ -17,11 +17,26 @@ logger = logging.getLogger(__name__)
 
 def config_app(app):
 
-    required_env_variables = ["APP_SECRET", "PORT", "API_HOST", "API_EP_CTRL_VOC",
-        "API_EP_PROPERTY", "API_EP_FORM", "API_EP_STUDY", "API_EP_USER", "MONGODB_DB",
-        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_USERNAME", "MONGODB_PASSWORD",
-        "MONGODB_COL_PROPERTY", "MONGODB_COL_CTRL_VOC", "MONGODB_COL_FORM",
-        "MONGODB_COL_USER", "MONGODB_COL_STUDY"]
+    required_env_variables = [
+        "APP_SECRET",
+        "PORT",
+        "API_HOST",
+        "API_EP_CTRL_VOC",
+        "API_EP_PROPERTY",
+        "API_EP_FORM",
+        "API_EP_STUDY",
+        "API_EP_USER",
+        "MONGODB_DB",
+        "MONGODB_HOST",
+        "MONGODB_PORT",
+        "MONGODB_USERNAME",
+        "MONGODB_PASSWORD",
+        "MONGODB_COL_PROPERTY",
+        "MONGODB_COL_CTRL_VOC",
+        "MONGODB_COL_FORM",
+        "MONGODB_COL_USER",
+        "MONGODB_COL_STUDY",
+    ]
 
     for env_variable in required_env_variables:
         if not env_variable in os.environ:
@@ -29,10 +44,12 @@ def config_app(app):
 
     # Load app secret and convert to byte string
     app.secret_key = os.environ["APP_SECRET"].encode()
-    app.config['WTF_CSRF_ENABLED'] = False
+    app.config["WTF_CSRF_ENABLED"] = False
 
     # Disable checking access token
-    app.config["CHECK_ACCESS_TOKEN"] = str_to_bool(os.getenv("CHECK_ACCESS_TOKEN", "true"))
+    app.config["CHECK_ACCESS_TOKEN"] = str_to_bool(
+        os.getenv("CHECK_ACCESS_TOKEN", "true")
+    )
 
     # Load mongo database credentials
     app.config["MONGODB_DB"] = os.environ["MONGODB_DB"]
@@ -60,6 +77,7 @@ def config_app(app):
         "USE": os.environ.get("ES_USE"),
     }
 
+
 def create_app():
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
@@ -69,15 +87,23 @@ def create_app():
     # Restplus API
     app.config["ERROR_404_HELP"] = False
 
-    con = connect(app.config["MONGODB_DB"],
-                  host=app.config["MONGODB_HOST"],
-                  port=app.config["MONGODB_PORT"],
-                  username=app.config["MONGODB_USERNAME"],
-                  password=app.config["MONGODB_PASSWORD"],
-                  )
+    con = connect(
+        app.config["MONGODB_DB"],
+        host=app.config["MONGODB_HOST"],
+        port=app.config["MONGODB_PORT"],
+        username=app.config["MONGODB_USERNAME"],
+        password=app.config["MONGODB_PASSWORD"],
+    )
 
     # TODO: Find a better way to set the collection names
-    from metadata_registration_api.model import Property, ControlledVocabulary, Form, User, Study
+    from metadata_registration_api.model import (
+        Property,
+        ControlledVocabulary,
+        Form,
+        User,
+        Study,
+    )
+
     # noinspection PyProtectedMember
     Property._meta["collection"] = app.config["MONGODB_COL_PROPERTY"]
     # noinspection PyProtectedMember
@@ -89,15 +115,16 @@ def create_app():
     # noinspection PyProtectedMember
     Study._meta["collection"] = app.config["MONGODB_COL_STUDY"]
 
-    api.init_app(app,
-                 title="Metadata Registration API",
-                 contact="Rafael Müller",
-                 contact_email="rafa.molitoris@gmail.com",
-                 description="An API to register and manage study related metadata."
-                             "\n\n"
-                             "The code is available here: https://github.com/BEDApub/metadata-registration-api. "
-                             "Any issue reports or feature requests are appreciated.",
-                 )
+    api.init_app(
+        app,
+        title="Metadata Registration API",
+        contact="Rafael Müller",
+        contact_email="rafa.molitoris@gmail.com",
+        description="An API to register and manage study related metadata."
+        "\n\n"
+        "The code is available here: https://github.com/BEDApub/metadata-registration-api. "
+        "Any issue reports or feature requests are appreciated.",
+    )
 
     # Initialize FormManager
     url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])

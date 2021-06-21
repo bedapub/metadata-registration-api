@@ -6,17 +6,16 @@ from scripts import setup
 
 # @unittest.skip
 class TestCtrlVocStatic(BaseTestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         super(TestCtrlVocStatic, cls).setUpClass()
 
-        cls.ctrl_voc_map, \
-        cls.prop_map, \
-        cls.form_map = setup.minimal_setup(cls.ctrl_voc_endpoint,
-                                           cls.property_endpoint,
-                                           cls.form_endpoint,
-                                           cls.study_endpoint)
+        cls.ctrl_voc_map, cls.prop_map, cls.form_map = setup.minimal_setup(
+            cls.ctrl_voc_endpoint,
+            cls.property_endpoint,
+            cls.form_endpoint,
+            cls.study_endpoint,
+        )
 
     # ------------------------------------------------------------------------------------------------------------------
     # GET
@@ -29,6 +28,7 @@ class TestCtrlVocStatic(BaseTestCase):
 
     def test_get_all_ctrl_voc(self):
         for deprecated in [True, False]:
-            res = requests.get(url=self.ctrl_voc_endpoint, params={"deprecated": deprecated})
+            res = requests.get(
+                url=self.ctrl_voc_endpoint, params={"deprecated": deprecated}
+            )
             self.assertEqual(res.status_code, 200, f"Fail deprecated : {deprecated}")
-

@@ -64,12 +64,10 @@ class BaseTestCase(unittest.TestCase):
         def run_api(app):
             app.run(threaded=True, port=os.environ["PORT"])
 
-        cls.thread = Thread(target=run_api, args=(cls.app, ), daemon=cls).start()
+        cls.thread = Thread(target=run_api, args=(cls.app,), daemon=cls).start()
         time.sleep(0.5)
-
 
     @classmethod
     def tearDownClass(cls) -> None:
         requests.get(cls.shutdown_endpoint)
         time.sleep(0.5)
-

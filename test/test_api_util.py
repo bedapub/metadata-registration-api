@@ -4,7 +4,6 @@ from metadata_registration_api.api.api_utils import MetaInformation
 
 
 class TestAPIUtil(unittest.TestCase):
-
     def test_meta_information_empty_change_log(self):
         state = "Initial test state"
 

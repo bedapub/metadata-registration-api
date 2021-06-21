@@ -9,8 +9,11 @@ from metadata_registration_lib.api_utils import map_key_value_from_dict_list
 from metadata_registration_lib.data_utils import NormConverter, expand_json_strings
 from metadata_registration_lib.file_utils import write_file_from_denorm_data_2
 
-from metadata_registration_api.api.api_utils import (get_json, get_property_map,
-    get_cv_items_name_to_label_map)
+from metadata_registration_api.api.api_utils import (
+    get_json,
+    get_property_map,
+    get_cv_items_name_to_label_map,
+)
 from .api_study_dataset import find_study_id_from_lvl1_uuid
 from .decorators import token_required
 
@@ -122,10 +125,11 @@ class DownloadSamples(Resource):
         )
 
 
-
 @api.route("/id/<study_id>/datasets/id/<dataset_uuid>/rdt/download")
-@api.route("/datasets/<dataset_uuid>/rdt/download",
-    doc={"description": "Alias route for a getting samples without study_id"})
+@api.route(
+    "/datasets/<dataset_uuid>/rdt/download",
+    doc={"description": "Alias route for a getting samples without study_id"},
+)
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 class DownloadReadouts(Resource):
@@ -154,7 +158,9 @@ class DownloadReadouts(Resource):
         # 1. Get the study, dataset and readouts data
         if study_id is None:
             prop_name_to_id = get_property_map(key="name", value="id")
-            study_id = find_study_id_from_lvl1_uuid("dataset", dataset_uuid, prop_name_to_id)
+            study_id = find_study_id_from_lvl1_uuid(
+                "dataset", dataset_uuid, prop_name_to_id
+            )
 
         study_url = f"{study_endpoint}/id/{study_id}?entry_format=form"
         study = get_json(study_url, headers=request.headers)["entries"]
@@ -173,10 +179,14 @@ class DownloadReadouts(Resource):
             raise Exception(f"The given study '{study_id}' doesn't have samples data")
 
         # 2. Replace sample UUIDs in readouts by nested sample objects
-        sam_uuid_to_obj = map_key_value_from_dict_list(study["samples"], key="uuid", value=None)
+        sam_uuid_to_obj = map_key_value_from_dict_list(
+            study["samples"], key="uuid", value=None
+        )
         try:
             for readout in dataset["readouts"]:
-                readout["samples"] = [sam_uuid_to_obj[uuid] for uuid in readout["samples"]]
+                readout["samples"] = [
+                    sam_uuid_to_obj[uuid] for uuid in readout["samples"]
+                ]
         except:
             message = "Readouts sample UUIDs did not match the samples of the study,"
             message += " please update the readouts if the samples have been changed"
@@ -276,13 +286,18 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
                 property_name = header.split(header_sep)[-1]
                 prop_value_type = prop_name_to_data_type.get(property_name, None)
 
-                if prop_value_type is not None and prop_value_type["data_type"] == "ctrl_voc":
+                if (
+                    prop_value_type is not None
+                    and prop_value_type["data_type"] == "ctrl_voc"
+                ):
                     cv_name = prop_value_type["controlled_vocabulary"]["name"]
                     cv_items_map = cv_items_name_to_label_map[cv_name]
                     new_data_list = []
                     for value in data_list:
                         if type(value) == list:
-                            new_data_list.append([cv_items_map.get(v, v) for v in value])
+                            new_data_list.append(
+                                [cv_items_map.get(v, v) for v in value]
+                            )
                         else:
                             new_data_list.append(cv_items_map.get(value, value))
                     data[header] = new_data_list
@@ -316,7 +331,6 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
 
                 data[new_header] = data_list
 
-
         # 6. Write file
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         write_file_from_denorm_data_2(f, data, file_format)
@@ -335,6 +349,7 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
 
     except Exception as e:
         from traceback import print_exc
+
         print_exc()
         return Response(
             json.dumps({"error": str(e)}), status=500, mimetype="application/json"

@@ -9,7 +9,6 @@ from dynamic_form.errors import DataStoreException
 
 
 class MyTestCase(BaseTestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         super(MyTestCase, cls).setUpClass()
@@ -17,12 +16,12 @@ class MyTestCase(BaseTestCase):
         cls.data_store = ApiDataStore(url=cls.form_endpoint)
 
     def setUp(self) -> None:
-        self.ctrl_voc_map, \
-        self.prop_map, \
-        self.form_map = setup.minimal_setup(self.ctrl_voc_endpoint,
-                                            self.property_endpoint,
-                                            self.form_endpoint,
-                                            self.study_endpoint)
+        self.ctrl_voc_map, self.prop_map, self.form_map = setup.minimal_setup(
+            self.ctrl_voc_endpoint,
+            self.property_endpoint,
+            self.form_endpoint,
+            self.study_endpoint,
+        )
 
     def test_load_form(self):
         self.data_store.load_forms()
@@ -47,5 +46,3 @@ class MyTestCase(BaseTestCase):
     def test_deprecate_form(self):
         res = self.data_store.deprecate_form(self.form_map["user_login"])
         self.assertEqual(len(res), 1)
-
-

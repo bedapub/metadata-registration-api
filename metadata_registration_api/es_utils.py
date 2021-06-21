@@ -18,7 +18,7 @@ def index_study(config, study_data, action):
             es_auth=es_utils.get_es_auth(config["ES"]),
             study_data=study_data,
             action=action,
-            cv_url=urljoin(config["URL"], os.environ["API_EP_CTRL_VOC"])
+            cv_url=urljoin(config["URL"], os.environ["API_EP_CTRL_VOC"]),
         )
     except:
         pass

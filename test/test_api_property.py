@@ -4,16 +4,16 @@ import unittest
 from scripts import setup
 from test_api_base import BaseTestCase
 
-from dynamic_form.template_builder import \
-    ControlledVocabularyTemplate,\
-    ValueTypeTemplate, \
-    ItemTemplate, \
-    PropertyTemplate
+from dynamic_form.template_builder import (
+    ControlledVocabularyTemplate,
+    ValueTypeTemplate,
+    ItemTemplate,
+    PropertyTemplate,
+)
 
 
 # @unittest.skip
 class PropertyGetTestCase(BaseTestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         super(PropertyGetTestCase, cls).setUpClass()
@@ -53,7 +53,6 @@ class PropertyGetTestCase(BaseTestCase):
 
 
 class PropertyTestCase(BaseTestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         super(PropertyTestCase, cls).setUpClass()
@@ -67,7 +66,11 @@ class PropertyTestCase(BaseTestCase):
         """ Update by passing the entire dataset to the API"""
 
         data = PropertyTemplate(
-            "First Name", "firstname", "administrative","The first name of a person", synonyms=["forename"]
+            "First Name",
+            "firstname",
+            "administrative",
+            "The first name of a person",
+            synonyms=["forename"],
         )
 
         res = requests.post(url=self.url, json=data.to_dict())
@@ -90,7 +93,11 @@ class PropertyTestCase(BaseTestCase):
         """ Updating by just passing the key-value pair which changed"""
 
         data = PropertyTemplate(
-            "First Name", "firstname", "administrative","The first name of a person", synonyms=["forename"]
+            "First Name",
+            "firstname",
+            "administrative",
+            "The first name of a person",
+            synonyms=["forename"],
         )
 
         res = requests.post(url=self.url, json=data.to_dict())
@@ -115,7 +122,7 @@ class PropertyTestCase(BaseTestCase):
     def test_post_property_cv(self):
         """ Insert property with vocabulary other than cv"""
 
-        data = PropertyTemplate("string", "string", "string",  "string")
+        data = PropertyTemplate("string", "string", "string", "string")
 
         res = requests.post(url=self.url, json=data.to_dict())
         self.assertEqual(res.status_code, 201)
@@ -124,14 +131,17 @@ class PropertyTestCase(BaseTestCase):
     def test_post_property_cv_error(self):
         """ Insert property with vocabulary other than cv"""
 
-        data = {"label": "string",
-                "name": "string",
-                "level": "string",
-                "value_type": {"data_type": "text", "controlled_vocabulary": "String"},
-                "synonyms": ["string", ],
-                "description": "string",
-                "deprecated": False
-                }
+        data = {
+            "label": "string",
+            "name": "string",
+            "level": "string",
+            "value_type": {"data_type": "text", "controlled_vocabulary": "String"},
+            "synonyms": [
+                "string",
+            ],
+            "description": "string",
+            "deprecated": False,
+        }
 
         res = self.insert(data, check_status=False)
 
@@ -140,11 +150,18 @@ class PropertyTestCase(BaseTestCase):
     def test_post_property_cv_reference(self):
         """ Insert property with correct cv """
 
-        data = PropertyTemplate("string", "string", "string", "string",
-                                ValueTypeTemplate("ctrl_voc",
-                                                  ControlledVocabularyTemplate("Test CV", "Test CV", "Test CV")
-                                                  .add_item(ItemTemplate("test 1", "test 1", "First item"))
-                                                  .add_item(ItemTemplate("test 2", "test 2", "First item"))))
+        data = PropertyTemplate(
+            "string",
+            "string",
+            "string",
+            "string",
+            ValueTypeTemplate(
+                "ctrl_voc",
+                ControlledVocabularyTemplate("Test CV", "Test CV", "Test CV")
+                .add_item(ItemTemplate("test 1", "test 1", "First item"))
+                .add_item(ItemTemplate("test 2", "test 2", "First item")),
+            ),
+        )
 
         res = requests.post(url=self.url, json=data.to_dict())
         self.assertEqual(res.status_code, 201)
@@ -158,7 +175,7 @@ class PropertyTestCase(BaseTestCase):
 
             for res in results_2:
                 self.assertEqual(res.status_code, 409)
-                self.assertTrue("The entry already exists." in res.json()['message'])
+                self.assertTrue("The entry already exists." in res.json()["message"])
 
     # def test_post_property_cv_not_id_error(self):
     #     """ Insert property with id in wrong format"""
@@ -214,10 +231,15 @@ class PropertyTestCase(BaseTestCase):
             results = insert_two(self)
 
             for i, res in enumerate(results):
-                res_delete = requests.delete(url=self.url + f"/id/{res.json()['id']}", params={"complete": complete})
+                res_delete = requests.delete(
+                    url=self.url + f"/id/{res.json()['id']}",
+                    params={"complete": complete},
+                )
                 if res_delete.status_code != 200:
-                    raise Exception(f"Deletion of {results[i].json()['id']} was not successful. "
-                                    f"{res_delete.json()['id']}")
+                    raise Exception(
+                        f"Deletion of {results[i].json()['id']} was not successful. "
+                        f"{res_delete.json()['id']}"
+                    )
 
             res_deprecate = requests.get(url=self.url, params={"deprecated": True})
 
@@ -255,7 +277,9 @@ def insert_two(self):
 
     props = [
         PropertyTemplate("label1", "name1", "level_1", "description 1"),
-        PropertyTemplate("label2", "name2", "level_2", "description 2", deprecated=True),
+        PropertyTemplate(
+            "label2", "name2", "level_2", "description 2", deprecated=True
+        ),
     ]
 
     results = [requests.post(self.url, json=prop.to_dict()) for prop in props]
@@ -265,5 +289,3 @@ def insert_two(self):
             raise Exception(f"Could not insert {props[index]}. {res.json()}")
 
     return results
-
-

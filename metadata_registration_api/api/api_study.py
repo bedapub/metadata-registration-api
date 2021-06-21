@@ -10,8 +10,11 @@ from metadata_registration_api.es_utils import (
     index_study,
     remove_study_from_index,
 )
-from metadata_registration_api.api.api_utils import (MetaInformation, ChangeLog,
-    get_property_map)
+from metadata_registration_api.api.api_utils import (
+    MetaInformation,
+    ChangeLog,
+    get_property_map,
+)
 from .api_props import property_model_id
 from .decorators import token_required
 from ..errors import IdenticalPropertyException, RequestBodyException
@@ -22,69 +25,107 @@ api = Namespace("Studies", description="Study related operations")
 # Model definition
 # ----------------------------------------------------------------------------------------------------------------------
 
-entry_model = api.model("Entry", {
-    "property": fields.Nested(property_model_id),
-    "value": fields.Raw()
-})
+entry_model = api.model(
+    "Entry", {"property": fields.Nested(property_model_id), "value": fields.Raw()}
+)
 
-entry_model_prop_id = api.model("Entry (property collapsed)", {
-    "property": fields.String(attribute='property.id', example="Property Object Id"),
-    "value": fields.Raw()
-})
+entry_model_prop_id = api.model(
+    "Entry (property collapsed)",
+    {
+        "property": fields.String(
+            attribute="property.id", example="Property Object Id"
+        ),
+        "value": fields.Raw(),
+    },
+)
 
-entry_model_form_format = api.model("Entry (form format)", {
-    "property_name_1": fields.Raw(example="Some value"),
-    "property_name_2": fields.Raw(example="Some value")
-})
+entry_model_form_format = api.model(
+    "Entry (form format)",
+    {
+        "property_name_1": fields.Raw(example="Some value"),
+        "property_name_2": fields.Raw(example="Some value"),
+    },
+)
 
-change_log = api.model("Change Log", {
-    "user_id": fields.String(),
-    "manual_user": fields.String(),
-    "action": fields.String(),
-    "timestamp": fields.DateTime()
-})
+change_log = api.model(
+    "Change Log",
+    {
+        "user_id": fields.String(),
+        "manual_user": fields.String(),
+        "action": fields.String(),
+        "timestamp": fields.DateTime(),
+    },
+)
 
-meta_information_model = api.model("Metadata Information", {
-    "state": fields.String(),
-    "deprecated": fields.Boolean(),
-    "change_log": fields.List(fields.Nested(change_log))
-})
+meta_information_model = api.model(
+    "Metadata Information",
+    {
+        "state": fields.String(),
+        "deprecated": fields.Boolean(),
+        "change_log": fields.List(fields.Nested(change_log)),
+    },
+)
 
-study_model = api.model("Study", {
-    "entries": fields.List(fields.Nested(entry_model)),
-    "meta_information": fields.Nested(meta_information_model),
-    "id": fields.String()
-})
+study_model = api.model(
+    "Study",
+    {
+        "entries": fields.List(fields.Nested(entry_model)),
+        "meta_information": fields.Nested(meta_information_model),
+        "id": fields.String(),
+    },
+)
 
-study_model_prop_id = api.model("Study (prop id)", {
-    "entries": fields.List(fields.Nested(entry_model_prop_id)),
-    "meta_information": fields.Nested(meta_information_model),
-    "id": fields.String()
-})
+study_model_prop_id = api.model(
+    "Study (prop id)",
+    {
+        "entries": fields.List(fields.Nested(entry_model_prop_id)),
+        "meta_information": fields.Nested(meta_information_model),
+        "id": fields.String(),
+    },
+)
 
-study_model_form_format = api.model("Study (form format)", {
-    "entries": fields.Nested(entry_model_form_format),
-    "meta_information": fields.Nested(meta_information_model),
-    "id": fields.String()
-})
+study_model_form_format = api.model(
+    "Study (form format)",
+    {
+        "entries": fields.Nested(entry_model_form_format),
+        "meta_information": fields.Nested(meta_information_model),
+        "id": fields.String(),
+    },
+)
 
-nested_study_entry_model = api.model("Nested study entry", {
-    "entries": fields.List(fields.Nested(entry_model)),
-    "entry_format": fields.String(example="api", description="Format used for entries (api or form)"),
-    "form_name": fields.String(example="form_name", required=True),
-    "manual_meta_information": fields.Raw()
-})
+nested_study_entry_model = api.model(
+    "Nested study entry",
+    {
+        "entries": fields.List(fields.Nested(entry_model)),
+        "entry_format": fields.String(
+            example="api", description="Format used for entries (api or form)"
+        ),
+        "form_name": fields.String(example="form_name", required=True),
+        "manual_meta_information": fields.Raw(),
+    },
+)
 
-nested_study_entry_model_prop_id = api.model("Nested study entry (prop id)", {
-    "entries": fields.List(fields.Nested(entry_model_prop_id)),
-    "entry_format": fields.String(example="api", description="Format used for entries (api or form)"),
-    "form_name": fields.String(example="form_name", required=True),
-    "manual_meta_information": fields.Raw()
-})
+nested_study_entry_model_prop_id = api.model(
+    "Nested study entry (prop id)",
+    {
+        "entries": fields.List(fields.Nested(entry_model_prop_id)),
+        "entry_format": fields.String(
+            example="api", description="Format used for entries (api or form)"
+        ),
+        "form_name": fields.String(example="form_name", required=True),
+        "manual_meta_information": fields.Raw(),
+    },
+)
 
-study_add_model = api.inherit("Add Study", nested_study_entry_model, {
-    "initial_state": fields.String(default="GenericState", required=True, description="The initial state name"),
-})
+study_add_model = api.inherit(
+    "Add Study",
+    nested_study_entry_model,
+    {
+        "initial_state": fields.String(
+            default="GenericState", required=True, description="The initial state name"
+        ),
+    },
+)
 
 # Common parser params
 # ----------------------------------------------------------------------------------------------------------------------
@@ -93,24 +134,25 @@ entry_format_param = {
     "location": "args",
     "choices": ("api", "form"),
     "default": "api",
-    "help": "Format used for entries (api or form)"
+    "help": "Format used for entries (api or form)",
 }
 
 complete_param = {
     "type": inputs.boolean,
     "default": False,
-    "help": "Boolean indicator to remove an entry instead of deprecating it (cannot be undone)"
+    "help": "Boolean indicator to remove an entry instead of deprecating it (cannot be undone)",
 }
 
 properties_id_only_param = {
     "type": inputs.boolean,
     "location": "args",
     "default": False,
-    "help": "Boolean indicator which determines if the entries properties need to be reduced to their id"
+    "help": "Boolean indicator which determines if the entries properties need to be reduced to their id",
 }
 
 # Routes
 # ----------------------------------------------------------------------------------------------------------------------
+
 
 @api.route("")
 class ApiStudy(Resource):
@@ -130,21 +172,21 @@ class ApiStudy(Resource):
         type=int,
         location="args",
         default=0,
-        help="Number of results which should be skipped"
+        help="Number of results which should be skipped",
     )
     _get_parser.add_argument(
         "limit",
         type=int,
         location="args",
         default=100,
-        help="Number of results which should be returned"
+        help="Number of results which should be returned",
     )
     _get_parser.add_argument(
         "study_ids",
         type=str,
         location="args",
         default="",
-        help="Filter specific study IDs (comma separated)."
+        help="Filter specific study IDs (comma separated).",
     )
     _get_parser.add_argument("properties_id_only", **properties_id_only_param)
     _get_parser.add_argument("entry_format", **entry_format_param)
@@ -175,7 +217,7 @@ class ApiStudy(Resource):
                 found_ids = [str(s.id) for s in res.only("id")]
                 return {
                     "message": f"Some study ids were not found",
-                    "missing_study_ids": list(set(study_ids) - set(found_ids))
+                    "missing_study_ids": list(set(study_ids) - set(found_ids)),
                 }, 404
 
         # Limits and Skipping applied after main filters
@@ -199,7 +241,9 @@ class ApiStudy(Resource):
         elif args["entry_format"] == "form":
             prop_map = get_property_map(key="id", value="name")
             for study_json in study_json_list:
-                study_converter = FormatConverter(prop_map).add_api_format(study_json["entries"])
+                study_converter = FormatConverter(prop_map).add_api_format(
+                    study_json["entries"]
+                )
                 study_json["entries"] = study_converter.get_form_format()
 
             return study_json_list
@@ -230,37 +274,48 @@ class ApiStudy(Resource):
         if entry_format == "api":
             try:
                 if len(entries) != len({prop["property"] for prop in entries}):
-                    raise IdenticalPropertyException("The entries cannot have several identical property values.")
+                    raise IdenticalPropertyException(
+                        "The entries cannot have several identical property values."
+                    )
             except TypeError as e:
                 raise RequestBodyException("Entries has wrong format.") from e
 
             entries = {
                 "api_format": entries,
-                "form_format": validate_against_form(form_cls, form_name, entries)
+                "form_format": validate_against_form(form_cls, form_name, entries),
             }
 
         else:
             validate_form_format_against_form(form_name, entries)
             entries = {
-                "api_format": FormatConverter(prop_map).add_form_format(entries).get_api_format(),
-                "form_format": entries
+                "api_format": FormatConverter(prop_map)
+                .add_form_format(entries)
+                .get_api_format(),
+                "form_format": entries,
             }
 
         # 3. Check unicity of pseudo alternate pk in entries
-        check_alternate_pk_unicity(entries=entries["form_format"], pseudo_apks=["study_id"], prop_map=prop_map)
+        check_alternate_pk_unicity(
+            entries=entries["form_format"], pseudo_apks=["study_id"], prop_map=prop_map
+        )
 
         # 4. Evaluate new state of study by passing form data
         app.study_state_machine.create_study(**entries["form_format"])
         state = app.study_state_machine.current_state
 
         meta_info = MetaInformation(state=str(state))
-        log = ChangeLog(user_id=user.id if user else None,
-                        action="Created study",
-                        timestamp=datetime.now(),
-                        manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        log = ChangeLog(
+            user_id=user.id if user else None,
+            action="Created study",
+            timestamp=datetime.now(),
+            manual_user=payload.get("manual_meta_information", {}).get("user", None),
+        )
         meta_info.add_log(log)
 
-        study_data = {"entries": entries["api_format"], "meta_information": meta_info.to_json()}
+        study_data = {
+            "entries": entries["api_format"],
+            "meta_information": meta_info.to_json(),
+        }
 
         # 5. Insert data into database
         study = Study(**study_data)
@@ -270,7 +325,6 @@ class ApiStudy(Resource):
         index_study_if_es(study, entries["form_format"], "add")
 
         return {"message": f"Study added", "id": str(study.id)}, 201
-
 
     @token_required
     @api.doc(parser=_delete_parser)
@@ -322,7 +376,9 @@ class ApiStudyId(Resource):
 
         elif args["entry_format"] == "form":
             prop_map = get_property_map(key="id", value="name")
-            study_converter = FormatConverter(prop_map).add_api_format(study_json["entries"])
+            study_converter = FormatConverter(prop_map).add_api_format(
+                study_json["entries"]
+            )
             study_json["entries"] = study_converter.get_form_format()
             return study_json
 
@@ -350,14 +406,16 @@ class ApiStudyId(Resource):
         if entry_format == "api":
             entries = {
                 "api_format": entries,
-                "form_format": validate_against_form(form_cls, form_name, entries)
+                "form_format": validate_against_form(form_cls, form_name, entries),
             }
 
         else:
             validate_form_format_against_form(form_name, entries)
             entries = {
-                "api_format": FormatConverter(prop_map).add_form_format(entries).get_api_format(),
-                "form_format": entries
+                "api_format": FormatConverter(prop_map)
+                .add_form_format(entries)
+                .get_api_format(),
+                "form_format": entries,
             }
 
         # 3. Check unicity of pseudo alternate pk in entries
@@ -375,18 +433,22 @@ class ApiStudyId(Resource):
 
         # 5. Create and append meta information to the study
         meta_info = MetaInformation(
-            state=state_name,
-            change_log=study.meta_information.change_log
+            state=state_name, change_log=study.meta_information.change_log
         )
 
-        log = ChangeLog(action="Updated study",
-                        user_id=user.id if user else None,
-                        timestamp=datetime.now(),
-                        manual_user=payload.get("manual_meta_information", {}).get("user", None))
+        log = ChangeLog(
+            action="Updated study",
+            user_id=user.id if user else None,
+            timestamp=datetime.now(),
+            manual_user=payload.get("manual_meta_information", {}).get("user", None),
+        )
         meta_info.state = str(new_state)
         meta_info.add_log(log)
 
-        study_data = {"entries": entries["api_format"], "meta_information": meta_info.to_json()}
+        study_data = {
+            "entries": entries["api_format"],
+            "meta_information": meta_info.to_json(),
+        }
 
         # 6. Update data in database
         study.update(**study_data)
@@ -425,9 +487,12 @@ def validate_against_form(form_cls, form_name, entries):
     form_instance.process(data=form_data_json)
 
     if not form_instance.validate():
-        raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+        raise RequestBodyException(
+            f"Passed data did not validate with the form {form_name}: {form_instance.errors}"
+        )
 
     return form_data_json
+
 
 def validate_form_format_against_form(form_name, form_data):
     form_cls = app.form_manager.get_form_by_name(form_name=form_name)
@@ -435,7 +500,9 @@ def validate_form_format_against_form(form_name, form_data):
     form_instance.process(data=form_data)
 
     if not form_instance.validate():
-        raise RequestBodyException(f"Passed data did not validate with the form {form_name}: {form_instance.errors}")
+        raise RequestBodyException(
+            f"Passed data did not validate with the form {form_name}: {form_instance.errors}"
+        )
 
 
 def index_study_if_es(study, entries, action):
@@ -456,8 +523,7 @@ def update_study(study, study_converter, payload, message, user=None):
 
     # 2. Update metadata / Create and append meta information to the study
     meta_info = MetaInformation(
-        state=state_name,
-        change_log=study.meta_information.change_log
+        state=state_name, change_log=study.meta_information.change_log
     )
 
     if payload is not None:
@@ -465,16 +531,18 @@ def update_study(study, study_converter, payload, message, user=None):
     else:
         manual_user = None
 
-    log = ChangeLog(action=message,
-                    user_id=user.id if user else None,
-                    timestamp=datetime.now(),
-                    manual_user=manual_user)
+    log = ChangeLog(
+        action=message,
+        user_id=user.id if user else None,
+        timestamp=datetime.now(),
+        manual_user=manual_user,
+    )
     meta_info.state = str(new_state)
     meta_info.add_log(log)
 
     study_data = {
         "entries": study_converter.get_api_format(),
-        "meta_information": meta_info.to_json()
+        "meta_information": meta_info.to_json(),
     }
 
     # 3. Update data in database
@@ -482,7 +550,6 @@ def update_study(study, study_converter, payload, message, user=None):
 
     # Index study on ES
     index_study_if_es(study, study_converter.get_form_format(), "update")
-
 
 
 def check_alternate_pk_unicity(entries, pseudo_apks, prop_map):
@@ -493,23 +560,29 @@ def check_alternate_pk_unicity(entries, pseudo_apks, prop_map):
         prop_id = prop_map[prop_name]
         pipeline = [
             # Keep the wanted field
-            {"$addFields": {
-                prop_name: {
-                    "$filter": {
-                        "input":"$entries",
-                        "as":"entry",
-                        "cond":{"$eq": [{"$toString": "$$entry.property"}, prop_id]}
+            {
+                "$addFields": {
+                    prop_name: {
+                        "$filter": {
+                            "input": "$entries",
+                            "as": "entry",
+                            "cond": {
+                                "$eq": [{"$toString": "$$entry.property"}, prop_id]
+                            },
+                        }
                     }
                 }
-            }},
+            },
             # Take first (and only) element of filtered entries
             {"$addFields": {prop_name: {"$arrayElemAt": [f"${prop_name}", 0]}}},
             # Get the actual entry value
             {"$addFields": {prop_name: f"${prop_name}.value"}},
             {"$group": {"_id": 1, prop_name: {"$addToSet": f"${prop_name}"}}},
-            {"$project": {prop_name: 1, "_id": 0}}
+            {"$project": {prop_name: 1, "_id": 0}},
         ]
 
         existing_list = Study.objects().aggregate(pipeline).next()[prop_name]
         if entries[prop_name] in existing_list:
-            raise Exception(f"The property '{prop_name}' needs to be unique across all studies")
+            raise Exception(
+                f"The property '{prop_name}' needs to be unique across all studies"
+            )

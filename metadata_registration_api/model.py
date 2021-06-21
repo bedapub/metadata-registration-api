@@ -13,7 +13,7 @@ labels can be used to customize the external representation.
 
 
 def to_snake_case(name):
-    """ Convert a string into an internal representation (no leading and trailing whitespace, and intermediate
+    """Convert a string into an internal representation (no leading and trailing whitespace, and intermediate
     whitespace replaced with underscore)
 
     :param name: a given name
@@ -25,6 +25,7 @@ def to_snake_case(name):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+
 class TopLevelDocument(Document):
     """Base class for all top level documents
 
@@ -33,6 +34,7 @@ class TopLevelDocument(Document):
     expected to be unique for the model. To ensures that the `name` is converted to snake case before it is inserted
     into the database. The `deprecated` flag indicates if a document is no longer needed (alternative to delete it)
     """
+
     label = StringField(required=True)
     name = StringField(required=True, unique=True)
     deprecated = BooleanField(default=False)
@@ -40,13 +42,15 @@ class TopLevelDocument(Document):
     def clean(self):
         self.name = to_snake_case(self.name)
 
-    meta = {'allow_inheritance': True, 'abstract': True}
+    meta = {"allow_inheritance": True, "abstract": True}
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 class CvItem(EmbeddedDocument):
     """An item in the list of controlled vocabularies"""
+
     label = StringField(required=True)
     name = StringField(required=True)
     description = StringField()
@@ -58,27 +62,31 @@ class ControlledVocabulary(TopLevelDocument):
 
     A controlled vocabulary contains a list of possible items. See :class:`Property`.
     """
+
     description = StringField(required=True)
     items = ListField(EmbeddedDocumentField(CvItem), required=True)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 class VocabularyType(EmbeddedDocument):
-    """ Model which defines the allowed vocabulary.
+    """Model which defines the allowed vocabulary.
 
     It is used to validate user input. If the data type is `ctrl_voc`, only the items of :class:`ControlledVocabulary`
     are allowed.
     """
+
     data_type = StringField(required=True)
     controlled_vocabulary = ReferenceField(ControlledVocabulary)
 
 
 class Property(TopLevelDocument):
-    """ Model for a property
+    """Model for a property
 
     A property is assigned to a level.
     """
+
     synonyms = ListField(field=StringField())
 
     level = StringField(required=True)
@@ -129,8 +137,10 @@ class Form(TopLevelDocument):
 
     The form contains multiple fields.
     """
+
     fields = EmbeddedDocumentListField(FormField)
     description = StringField(required=True)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -153,6 +163,7 @@ class User(Document):
         # Hash password if it is not already hashed.
         if not is_hashed(self.password):
             self.password = generate_password_hash(self.password)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -179,5 +190,3 @@ class MetaInformation(EmbeddedDocument):
 class Study(Document):
     entries = EmbeddedDocumentListField(StudyEntry)
     meta_information = EmbeddedDocumentField(MetaInformation)
-
-
