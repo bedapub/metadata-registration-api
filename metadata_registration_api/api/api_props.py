@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
 
 from metadata_registration_api.model import Property
-from .api_ctrl_voc import ctrl_voc_model_id
+from .api_ctrl_voc import ctrl_voc_model_id, ctrl_voc_model_id_no_items
 from .decorators import token_required
 
 api = Namespace("Properties", description="Property related operations")
@@ -47,6 +47,15 @@ cv_model = api.model(
     },
 )
 
+cv_model_ni = api.model(
+    "Vocabulary Type",
+    {
+        "data_type": fields.String(description="The data type of the entry"),
+        "controlled_vocabulary": fields.Nested(ctrl_voc_model_id_no_items),
+    },
+)
+
+
 property_model = api.model(
     "Property",
     {
@@ -68,9 +77,27 @@ property_model = api.model(
     },
 )
 
+property_model_ni = api.clone(
+    "Property (no cv items)",
+    property_model,
+    {
+        "value_type": fields.Nested(cv_model_ni),
+    },
+)
+
 property_model_id = api.inherit(
     "Property with id",
     property_model,
+    {
+        "id": fields.String(
+            attribute="id", description="The unique identifier of the entry"
+        ),
+    },
+)
+
+property_model_ni_id = api.inherit(
+    "Property with id (no cv items)",
+    property_model_ni,
     {
         "id": fields.String(
             attribute="id", description="The unique identifier of the entry"

@@ -25,8 +25,8 @@ cv_item_model = api.model(
     },
 )
 
-ctrl_voc_model = api.model(
-    "Controlled Vocabulary",
+ctrl_voc_model_no_items = api.model(
+    "Controlled Vocabulary (no items)",
     {
         "label": fields.String(description="Human readable name of the entry"),
         "name": fields.String(
@@ -35,9 +35,26 @@ ctrl_voc_model = api.model(
         "description": fields.String(
             description="Detailed description of the intended use", default=""
         ),
-        "items": fields.List(fields.Nested(cv_item_model, skip_none=True)),
         "deprecated": fields.Boolean(
             description="Indicator, if the entry is no longer used.", default=False
+        ),
+    },
+)
+
+ctrl_voc_model = api.inherit(
+    "Controlled Vocabulary",
+    ctrl_voc_model_no_items,
+    {
+        "items": fields.List(fields.Nested(cv_item_model, skip_none=True)),
+    },
+)
+
+ctrl_voc_model_id_no_items = api.inherit(
+    "Controlled Vocabulary (no items) with id",
+    ctrl_voc_model_no_items,
+    {
+        "id": fields.String(
+            attribute="pk", description="Unique identifier of the entry"
         ),
     },
 )

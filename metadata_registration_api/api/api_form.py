@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs, marshal
 
 from metadata_registration_api.model import Form, DataObjects
-from .api_props import property_model_id
+from .api_props import property_model_id, property_model_ni_id
 from .decorators import token_required
 
 api = Namespace("Forms", description="Form related operations")
@@ -117,6 +117,14 @@ field_model = api.model(
     },
 )
 
+field_model_ni = api.clone(
+    "Field (no cv items)",
+    field_model,
+    {
+        "property": fields.Nested(property_model_ni_id),
+    },
+)
+
 form_model = api.model(
     "Forms",
     {
@@ -134,9 +142,28 @@ form_model = api.model(
     },
 )
 
+form_model_ni = api.clone(
+    "Forms (no cv items)",
+    form_model,
+    {
+        "fields": fields.List(fields.Nested(field_model_ni)),
+    },
+)
+
+
 form_model_id = api.inherit(
     "Form with id",
     form_model,
+    {
+        "id": fields.String(
+            attribute="pk", description="Unique identifier of the entry"
+        ),
+    },
+)
+
+form_model_ni_id = api.inherit(
+    "Form with id (no cv items)",
+    form_model_ni,
     {
         "id": fields.String(
             attribute="pk", description="Unique identifier of the entry"
@@ -155,6 +182,13 @@ class ApiForm(Resource):
         default=False,
         help="Boolean indicator which determines if deprecated entries should be returned as well",
     )
+    get_parser.add_argument(
+        "cv_items",
+        type=inputs.boolean,
+        location="args",
+        default=True,
+        help="Should the controlled vocabulary items be present in form (needed to generate actual forms)",
+    )
 
     _delete_parser = reqparse.RequestParser()
     _delete_parser.add_argument(
@@ -164,7 +198,8 @@ class ApiForm(Resource):
         help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)",
     )
 
-    @api.marshal_list_with(form_model_id)
+    @api.response("200 - CV items", "Success (CV items)", [form_model_id])
+    @api.response("200 - no CV items", "Success (no CV items)", [form_model_ni_id])
     @api.doc(parser=get_parser)
     def get(self):
         """ Fetch a list with all entries """
@@ -177,7 +212,13 @@ class ApiForm(Resource):
         else:
             # Include entries which are deprecated
             res = Form.objects().all()
-        return list(res)
+
+        res.select_related()
+
+        if args["cv_items"]:
+            return marshal(list(res), form_model_id)
+        else:
+            return marshal(list(res), form_model_ni_id)
 
     @token_required
     @api.expect(form_add_model)
@@ -205,7 +246,20 @@ class ApiForm(Resource):
 
 @api.route("/id/<id>", strict_slashes=False)
 @api.param("id", "The property identifier")
+@api.param(
+    "cv_items",
+    "Should the controlled vocabulary items be present in form (needed to generate actual forms)",
+)
 class ApiFormId(Resource):
+    get_parser = reqparse.RequestParser()
+    get_parser.add_argument(
+        "cv_items",
+        type=inputs.boolean,
+        location="args",
+        default=True,
+        help="Should the controlled vocabulary items be present in form (needed to generate actual forms)",
+    )
+
     _delete_parser = reqparse.RequestParser()
     _delete_parser.add_argument(
         "complete",
@@ -214,11 +268,18 @@ class ApiFormId(Resource):
         help="Boolean indicator to remove an entry instead of deprecating it (cannot be undone)",
     )
 
-    @api.marshal_with(form_model_id)
+    @api.response("200 - CV items", "Success (CV items)", form_model_id)
+    @api.response("200 - no CV items", "Success (no CV items)", form_model_ni_id)
+    @api.doc(parser=get_parser)
     def get(self, id):
         """Fetch an entry given its unique identifier"""
+        args = self.get_parser.parse_args()
         res = Form.objects(id=id).get()
-        return res
+
+        if args["cv_items"]:
+            return marshal(res, form_model_id)
+        else:
+            return marshal(res, form_model_ni_id)
 
     @token_required
     @api.expect(form_model)
