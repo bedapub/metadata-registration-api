@@ -279,6 +279,11 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
 
         # 3. Convert CV item names to labels
         if use_cv_labels:
+            prop_name_to_data_type = get_property_map(
+                key="name",
+                value="value_type",
+                mask="name, value_type{data_type, controlled_vocabulary{name}}",
+            )
             cv_items_name_to_label_map = get_cv_items_map(key="name", value="label")
 
             for header, data_list in data.items():

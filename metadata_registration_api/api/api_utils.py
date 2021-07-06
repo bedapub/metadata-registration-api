@@ -46,11 +46,11 @@ def get_json(url, headers={}):
     return res.json()
 
 
-def get_property_map(key, value):
+def get_property_map(key, value, mask=None):
     """ Helper to get property mapper """
     property_url = urljoin(app.config["URL"], os.environ["API_EP_PROPERTY"])
     property_map = map_key_value(
-        url=f"{property_url}?deprecated=true", key=key, value=value
+        url=f"{property_url}?deprecated=true", key=key, value=value, mask=mask
     )
     return property_map
 
