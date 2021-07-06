@@ -12,7 +12,7 @@ from metadata_registration_lib.file_utils import write_file_from_denorm_data_2
 from metadata_registration_api.api.api_utils import (
     get_json,
     get_property_map,
-    get_cv_items_name_to_label_map,
+    get_cv_items_map,
 )
 from .api_study_dataset import find_study_id_from_lvl1_uuid
 from .decorators import token_required
@@ -279,8 +279,7 @@ def download_denorm_file(request_args, data, header_prefix_to_suffix, file_name)
 
         # 3. Convert CV item names to labels
         if use_cv_labels:
-            prop_name_to_data_type = get_property_map(key="name", value="value_type")
-            cv_items_name_to_label_map = get_cv_items_name_to_label_map()
+            cv_items_name_to_label_map = get_cv_items_map(key="name", value="label")
 
             for header, data_list in data.items():
                 property_name = header.split(header_sep)[-1]

@@ -55,15 +55,18 @@ def get_property_map(key, value):
     return property_map
 
 
-def get_cv_items_name_to_label_map():
+def get_cv_items_map(key="name", value="label"):
     """
     Returns a map to find the CV item labels in this format:
     {cv_name: {item_name: item_label}}
     """
     cv_url = urljoin(app.config["URL"], os.environ["API_EP_CTRL_VOC"])
-    cv_map = map_key_value(cv_url, key="name", value="items")
-    cv_items_map = {}
-    for cv_name, cv_items in cv_map.items():
-        cv_items_map[cv_name] = {item["name"]: item["label"] for item in cv_items}
 
-    return cv_items_map
+    res = requests.get(f"{cv_url}/map_items")
+
+    if res.status_code != 200:
+        raise Exception(
+            f"Request to {cv_url} failed with key: {key} and value: {value}. {res.json()}"
+        )
+
+    return res.json()

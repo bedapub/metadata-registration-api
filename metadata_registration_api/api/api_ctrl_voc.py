@@ -185,3 +185,40 @@ class ApiControlledVocabularyId(Resource):
         else:
             entry.delete()
             return {"message": f"Delete entry '{entry.name}'"}
+
+
+@api.route("/map_items")
+class ApiControlledVocabularyItemsMap(Resource):
+    _get_parser = reqparse.RequestParser()
+    _get_parser.add_argument(
+        "key",
+        type=str,
+        location="args",
+        default="name",
+        help="Key of the map.",
+    )
+    _get_parser.add_argument(
+        "value",
+        type=str,
+        location="args",
+        default="label",
+        help="Value of the map.",
+    )
+
+    @api.doc(parser=_get_parser)
+    def get(self):
+        """ Get a map for CV items: cv_name: {item_key; item_value} """
+        args = self._get_parser.parse_args()
+
+        key = args["key"]
+        value = args["value"]
+
+        cv_entries = ControlledVocabulary.objects(deprecated=False).only(
+            "name", "items__name", "items__label"
+        )
+
+        cv_items_map = {}
+        for cv in cv_entries:
+            cv_items_map[cv["name"]] = {item[key]: item[value] for item in cv["items"]}
+
+        return cv_items_map
