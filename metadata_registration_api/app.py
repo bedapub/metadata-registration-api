@@ -87,7 +87,7 @@ def create_app():
     # Restplus API
     app.config["ERROR_404_HELP"] = False
 
-    con = connect(
+    connect(
         app.config["MONGODB_DB"],
         host=app.config["MONGODB_HOST"],
         port=app.config["MONGODB_PORT"],
@@ -95,7 +95,9 @@ def create_app():
         password=app.config["MONGODB_PASSWORD"],
     )
 
-    # TODO: Find a better way to set the collection names
+    # There might be a better way to set the collection names
+    # Either do this or read ENV  variables in models definition in "meta" dict
+    # Another option would be to use factories: https://github.com/MongoEngine/mongoengine/issues/2065
     from metadata_registration_api.model import (
         Property,
         ControlledVocabulary,
