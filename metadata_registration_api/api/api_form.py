@@ -1,9 +1,11 @@
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs, marshal
+from flask import request
 
 from metadata_registration_api.model import Form, DataObjects
 from .api_props import property_model_id, property_model_ni_id
 from .decorators import token_required
+from .api_utils import get_mask
 
 api = Namespace("Forms", description="Form related operations")
 
@@ -214,11 +216,10 @@ class ApiForm(Resource):
             res = Form.objects().all()
 
         res.select_related()
-
         if args["cv_items"]:
-            return marshal(list(res), form_model_id)
+            return marshal(list(res), form_model_id, mask=get_mask(request))
         else:
-            return marshal(list(res), form_model_ni_id)
+            return marshal(list(res), form_model_ni_id, mask=get_mask(request))
 
     @token_required
     @api.expect(form_add_model)
@@ -277,9 +278,9 @@ class ApiFormId(Resource):
         res = Form.objects(id=id).get()
 
         if args["cv_items"]:
-            return marshal(res, form_model_id)
+            return marshal(res, form_model_id, mask=get_mask(request))
         else:
-            return marshal(res, form_model_ni_id)
+            return marshal(res, form_model_ni_id, mask=get_mask(request))
 
     @token_required
     @api.expect(form_model)

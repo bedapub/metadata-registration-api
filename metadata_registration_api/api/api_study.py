@@ -2,6 +2,7 @@ from datetime import datetime
 import re
 
 from flask import current_app as app
+from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_restx import reqparse, inputs
 
@@ -14,6 +15,7 @@ from metadata_registration_api.api.api_utils import (
     MetaInformation,
     ChangeLog,
     get_property_map,
+    get_mask,
 )
 from .api_props import property_model_id
 from .decorators import token_required
@@ -233,9 +235,11 @@ class ApiStudy(Resource):
             marchal_model = study_model
 
         # Marshal studies
-        study_json_list = marshal(list(res.select_related()), marchal_model)
+        study_json_list = marshal(
+            list(res.select_related()), marchal_model, mask=get_mask(request)
+        )
 
-        if args["entry_format"] == "api":
+        if args["entry_format"] == "api" or "entries" not in study_json_list[0]:
             return study_json_list
 
         elif args["entry_format"] == "form":
@@ -369,9 +373,11 @@ class ApiStudyId(Resource):
         else:
             marchal_model = study_model
 
-        study_json = marshal(Study.objects(id=id).get(), marchal_model)
+        study_json = marshal(
+            Study.objects(id=id).get(), marchal_model, mask=get_mask(request)
+        )
 
-        if args["entry_format"] == "api":
+        if args["entry_format"] == "api" or "entries" not in study_json:
             return study_json
 
         elif args["entry_format"] == "form":
