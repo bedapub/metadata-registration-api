@@ -290,7 +290,7 @@ class ApiStudy(Resource):
             }
 
         else:
-            validate_form_format_against_form(form_name, entries)
+            validate_form_format_against_form(form_name, entries, form_cls=form_cls)
             entries = {
                 "api_format": FormatConverter(prop_map)
                 .add_form_format(entries)
@@ -416,7 +416,7 @@ class ApiStudyId(Resource):
             }
 
         else:
-            validate_form_format_against_form(form_name, entries)
+            validate_form_format_against_form(form_name, entries, form_cls=form_cls)
             entries = {
                 "api_format": FormatConverter(prop_map)
                 .add_form_format(entries)
@@ -488,7 +488,7 @@ def validate_against_form(form_cls, form_name, entries):
 
     form_data_json = FormatConverter(prop_map).add_api_format(entries).get_form_format()
 
-    # 3. Validate data against form
+    # Validate data against form
     form_instance = form_cls()
     form_instance.process(data=form_data_json)
 
@@ -500,8 +500,9 @@ def validate_against_form(form_cls, form_name, entries):
     return form_data_json
 
 
-def validate_form_format_against_form(form_name, form_data):
-    form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+def validate_form_format_against_form(form_name, form_data, form_cls=None):
+    if form_cls is None:
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
     form_instance = form_cls()
     form_instance.process(data=form_data)
 
