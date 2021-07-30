@@ -6,7 +6,11 @@ from flask import request
 from flask_restx import Namespace, Resource, fields, marshal
 from flask_restx import reqparse, inputs
 
-from metadata_registration_lib.api_utils import FormatConverter
+from metadata_registration_lib.api_utils import (
+    FormatConverter,
+    reverse_map,
+    get_entity_converter,
+)
 from metadata_registration_api.es_utils import (
     index_study,
     remove_study_from_index,
@@ -265,16 +269,15 @@ class ApiStudy(Resource):
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
 
-        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
-
         if initial_state == "rna_sequencing_biokit":
             initial_state = "BiokitUploadState"
 
         app.study_state_machine.load_state(name=initial_state)
 
-        prop_map = get_property_map(key="name", value="id")
+        prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
-        # 2. Make sure to have both API and form format
+        # 2. Get both API and form format
         if entry_format == "api":
             try:
                 if len(entries) != len({prop["property"] for prop in entries}):
@@ -284,23 +287,28 @@ class ApiStudy(Resource):
             except TypeError as e:
                 raise RequestBodyException("Entries has wrong format.") from e
 
-            entries = {
-                "api_format": entries,
-                "form_format": validate_against_form(form_cls, form_name, entries),
-            }
+        study_converter, _ = get_entity_converter(
+            entries, entry_format, prop_id_to_name, prop_name_to_id
+        )
 
-        else:
-            validate_form_format_against_form(form_name, entries, form_cls=form_cls)
-            entries = {
-                "api_format": FormatConverter(prop_map)
-                .add_form_format(entries)
-                .get_api_format(),
-                "form_format": entries,
-            }
+        # Validate and sort entries according to form
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        study_converter.sort_from_form(form_cls())
+
+        entries = {
+            "api_format": study_converter.get_api_format(),
+            "form_format": study_converter.get_form_format(),
+        }
+
+        validate_form_format_against_form(
+            form_name, entries["form_format"], form_cls=form_cls
+        )
 
         # 3. Check unicity of pseudo alternate pk in entries
         check_alternate_pk_unicity(
-            entries=entries["form_format"], pseudo_apks=["study_id"], prop_map=prop_map
+            entries=entries["form_format"],
+            pseudo_apks=["study_id"],
+            prop_map=prop_name_to_id,
         )
 
         # 4. Evaluate new state of study by passing form data
@@ -403,26 +411,26 @@ class ApiStudyId(Resource):
 
         study = Study.objects(id=study_id).first()
 
-        prop_map = get_property_map(key="name", value="id")
+        prop_id_to_name = get_property_map(key="id", value="name")
+        prop_name_to_id = reverse_map(prop_id_to_name)
 
-        # 1. Extract form name and create form from FormManager
+        # 2. Get both API and form format
+        study_converter, _ = get_entity_converter(
+            entries, entry_format, prop_id_to_name, prop_name_to_id
+        )
+
+        # Validate and sort entries according to form
         form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        study_converter.sort_from_form(form_cls())
 
-        # 2. Make sure to have both API and form format
-        if entry_format == "api":
-            entries = {
-                "api_format": entries,
-                "form_format": validate_against_form(form_cls, form_name, entries),
-            }
+        entries = {
+            "api_format": study_converter.get_api_format(),
+            "form_format": study_converter.get_form_format(),
+        }
 
-        else:
-            validate_form_format_against_form(form_name, entries, form_cls=form_cls)
-            entries = {
-                "api_format": FormatConverter(prop_map)
-                .add_form_format(entries)
-                .get_api_format(),
-                "form_format": entries,
-            }
+        validate_form_format_against_form(
+            form_name, entries["form_format"], form_cls=form_cls
+        )
 
         # 3. Check unicity of pseudo alternate pk in entries
         # check_alternate_pk_unicity(entries=entries["form_format"], pseudo_apks=["study_id"], prop_map=prop_map)
@@ -481,23 +489,6 @@ class ApiStudyId(Resource):
             if app.config["ES"]["USE"]:
                 remove_study_from_index(app.config, id)
             return {"message": "Delete entry"}
-
-
-def validate_against_form(form_cls, form_name, entries):
-    prop_map = get_property_map(key="id", value="name")
-
-    form_data_json = FormatConverter(prop_map).add_api_format(entries).get_form_format()
-
-    # Validate data against form
-    form_instance = form_cls()
-    form_instance.process(data=form_data_json)
-
-    if not form_instance.validate():
-        raise RequestBodyException(
-            f"Passed data did not validate with the form {form_name}: {form_instance.errors}"
-        )
-
-    return form_data_json
 
 
 def validate_form_format_against_form(form_name, form_data, form_cls=None):

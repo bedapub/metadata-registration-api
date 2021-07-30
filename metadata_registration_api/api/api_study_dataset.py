@@ -1,3 +1,4 @@
+from flask import current_app as app
 from flask_restx import Namespace, Resource, marshal
 from flask_restx import reqparse
 
@@ -96,6 +97,10 @@ class ApiStudyDataset(Resource):
             dataset_converter, prop_name_to_id
         )
 
+        # Sort entries according to form
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        dataset_converter.sort_from_form(form_cls())
+
         study_converter = add_entity_to_study_nested_list(
             study_converter=study_converter,
             entity_converter=dataset_converter,
@@ -105,7 +110,7 @@ class ApiStudyDataset(Resource):
 
         # 4. Validate dataset data against form
         validate_form_format_against_form(
-            form_name, dataset_converter.get_form_format()
+            form_name, dataset_converter.get_form_format(), form_cls=form_cls
         )
 
         # 5. Update study state, data and ulpoad on DB
@@ -214,12 +219,17 @@ class ApiStudyDatasetId(Resource):
         # won't be deleted if not present in the new data), it needs to be None or "" to be deleted
         dataset_converter.add_or_update_entries(new_dataset_converter.entries)
         dataset_converter.remove_entries(entries=entries_to_remove)
-        dataset_nested_entry.value = dataset_converter.entries
+
+        # Sort entries according to form
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        dataset_converter.sort_from_form(form_cls())
 
         # 6. Validate dataset data against form
         validate_form_format_against_form(
-            form_name, dataset_converter.get_form_format()
+            form_name, dataset_converter.get_form_format(), form_cls=form_cls
         )
+
+        dataset_nested_entry.value = dataset_converter.entries
 
         # 7. Update study state, data and ulpoad on DB
         message = "Updated dataset"
@@ -364,6 +374,10 @@ class ApiStudyPE(Resource):
             pe_converter, prop_name_to_id, replace=False
         )
 
+        # Sort entries according to form
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        pe_converter.sort_from_form(form_cls())
+
         pe_nested_entry = NestedEntry(pe_converter)
         pe_nested_entry.value = pe_converter.entries
 
@@ -381,7 +395,9 @@ class ApiStudyPE(Resource):
         datasets_entry.value.value[dataset_position] = dataset_nested_entry
 
         # 6. Validate processing data against form
-        validate_form_format_against_form(form_name, pe_converter.get_form_format())
+        validate_form_format_against_form(
+            form_name, pe_converter.get_form_format(), form_cls=form_cls
+        )
 
         # 7. Update study state, data and ulpoad on DB
         message = "Added processing event"
@@ -531,10 +547,17 @@ class ApiStudyPEId(Resource):
         # won't be deleted if not present in the new data), it needs to be None or "" to be deleted
         pe_converter.add_or_update_entries(new_pe_converter.entries)
         pe_converter.remove_entries(entries=entries_to_remove)
+
+        # Sort entries according to form
+        form_cls = app.form_manager.get_form_by_name(form_name=form_name)
+        pe_converter.sort_from_form(form_cls())
+
         pe_nested_entry.value = pe_converter.entries
 
         # 7. Validate processing event data against form
-        validate_form_format_against_form(form_name, pe_converter.get_form_format())
+        validate_form_format_against_form(
+            form_name, pe_converter.get_form_format(), form_cls=form_cls
+        )
 
         # 8. Update study state, data and ulpoad on DB
         message = "Updated processing event"
