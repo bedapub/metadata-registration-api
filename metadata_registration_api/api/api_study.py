@@ -269,9 +269,6 @@ class ApiStudy(Resource):
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
 
-        if initial_state == "rna_sequencing_biokit":
-            initial_state = "BiokitUploadState"
-
         app.study_state_machine.load_state(name=initial_state)
 
         prop_id_to_name = get_property_map(key="id", value="name")
@@ -437,9 +434,6 @@ class ApiStudyId(Resource):
 
         # 4. Determine current state and evaluate next state
         state_name = str(study.meta_information.state)
-
-        if state_name == "rna_sequencing_biokit":
-            state_name = "BiokitUploadState"
 
         app.study_state_machine.load_state(name=state_name)
         app.study_state_machine.change_state(**entries["form_format"])
