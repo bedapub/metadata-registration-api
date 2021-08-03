@@ -14,7 +14,7 @@ PyYAML==5.3
 requests==2.22.0
 Sphinx==2.3.1
 #study-state-machine==0.2.3
--e git+https://github.com/bedapub/study-state-machine.git@add_states#egg=study-state-machine
+-e git+https://github.com/bedapub/study-state-machine.git@master#egg=study-state-machine
 # -e /home/cyrlop/Roche/study-state-machine/
 -e git+https://github.com/bedapub/metadata-registration-lib.git@master#egg=metadata-registration-lib
 #-e /home/cyrlop/Roche/metadata-registration-lib
