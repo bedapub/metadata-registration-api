@@ -22,7 +22,7 @@ metadata\_registration\_api.app module
 metadata\_registration\_api.datastore\_api module
 -------------------------------------------------
 
-.. automodule:: metadata_registration_api.datastore_api
+.. automodule:: metadata_registration_api.datastores
    :members:
    :undoc-members:
    :show-inheritance:

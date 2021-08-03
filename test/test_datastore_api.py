@@ -3,7 +3,7 @@ import time
 from test_api_base import BaseTestCase
 
 from scripts import setup
-from metadata_registration_api.datastore_api import ApiDataStore
+from metadata_registration_api.datastores import ApiDataStore
 
 from dynamic_form.errors import DataStoreException
 

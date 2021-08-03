@@ -3,6 +3,7 @@ import os
 from urllib.parse import urljoin
 
 import requests
+from flask_restx import marshal
 
 
 from dynamic_form import IDataStore
@@ -74,3 +75,43 @@ class ApiDataStore(IDataStore):
             raise DataStoreException(error_message)
 
         return results.json()
+
+
+class MongoEngineDataStore(IDataStore):
+    """Concrete implementation for a data store that uses an mongoengine"""
+
+    def __init__(self, form_model=None, marshal_model=None):
+        self.form_model = form_model
+
+        if marshal_model is None:
+            from metadata_registration_api.api.api_form import form_model_id
+
+            self.marshal_model = form_model_id
+
+    def load_form(self, identifier):
+        res = self.form_model.objects.get(id=identifier)
+        return marshal(res, self.marshal_model)
+
+    def load_form_by_name(self, name):
+        try:
+            res = self.form_model.objects.get(name=name)
+            return marshal(res, self.marshal_model)
+
+        except Exception as e:
+            error_msg = f"Fail to find form in database (name:{name}, data store: {self.__class__.__name__})"
+            logger.error(error_msg)
+            raise DataStoreException(error_msg) from e
+
+    def load_forms(self):
+        """Load all forms"""
+        res = self.form_model.objects(deprecated=False)
+        return marshal(list(res), self.marshal_model)
+
+    def insert_form(self, form_template):
+        raise NotImplementedError
+
+    def find_form(self, *args, id=None, **kwargs):
+        raise NotImplementedError
+
+    def deprecate_form(self, identifier):
+        raise NotImplementedError

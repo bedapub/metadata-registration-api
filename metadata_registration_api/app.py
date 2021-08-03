@@ -6,7 +6,7 @@ from flask_cors import CORS
 from mongoengine import connect
 
 from metadata_registration_lib.other_utils import str_to_bool
-from metadata_registration_api.datastore_api import ApiDataStore
+from metadata_registration_api.datastores import MongoEngineDataStore
 from metadata_registration_api.api import api
 
 from dynamic_form import FormManager
@@ -131,7 +131,8 @@ def create_app():
     # Initialize FormManager
     url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
     app.config["URL"] = url
-    data_store = ApiDataStore()
+    # data_store = ApiDataStore()
+    data_store = MongoEngineDataStore(form_model=Form)
     app.form_manager = FormManager(data_store=data_store, initial_load=False)
 
     app.study_state_machine = context.Context()
