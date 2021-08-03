@@ -47,7 +47,7 @@ class StudyExceptionTestCase(BaseTestCase):
 
             study_data = {
                 "form_name": "user_login",
-                "initial_state": "BiokitUploadState",
+                "initial_state": "RegisteredState",
                 "entries": entries,
             }
 
@@ -58,7 +58,7 @@ class StudyExceptionTestCase(BaseTestCase):
     def test_post_identical_properties_exception(self):
         study_data = {
             "form_name": "user_login",
-            "initial_state": "BiokitUploadState",
+            "initial_state": "RegisteredState",
             "entries": [{"property": "Test 1"}, {"property": "Test 1"}],
         }
 
