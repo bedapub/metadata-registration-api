@@ -269,7 +269,7 @@ class ApiStudy(Resource):
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
 
-        app.study_state_machine.load_state(name=initial_state)
+        app.study_state_machine.load_state(state_name=initial_state)
 
         prop_id_to_name = get_property_map(key="id", value="name")
         prop_name_to_id = reverse_map(prop_id_to_name)
@@ -435,7 +435,7 @@ class ApiStudyId(Resource):
         # 4. Determine current state and evaluate next state
         state_name = str(study.meta_information.state)
 
-        app.study_state_machine.load_state(name=state_name)
+        app.study_state_machine.load_state(state_name=state_name)
         app.study_state_machine.change_state(**entries["form_format"])
         new_state = app.study_state_machine.current_state
 
@@ -509,7 +509,7 @@ def update_study(study, study_converter, payload, message, user=None):
     # 1. Determine current state and evaluate next state
     state_name = str(study.meta_information.state)
 
-    app.study_state_machine.load_state(name=state_name)
+    app.study_state_machine.load_state(state_name=state_name)
     app.study_state_machine.change_state(**study_converter.get_form_format())
     new_state = app.study_state_machine.current_state
 

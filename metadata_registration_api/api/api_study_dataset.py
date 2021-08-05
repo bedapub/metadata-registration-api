@@ -113,7 +113,7 @@ class ApiStudyDataset(Resource):
             form_name, dataset_converter.get_form_format(), form_cls=form_cls
         )
 
-        # 5. Update study state, data and ulpoad on DB
+        # 5. Update study state, data and upload on DB
         message = "Added dataset"
         update_study(study, study_converter, payload, message, user)
         return {"message": message, "uuid": dataset_uuid}, 201
@@ -231,7 +231,7 @@ class ApiStudyDatasetId(Resource):
 
         dataset_nested_entry.value = dataset_converter.entries
 
-        # 7. Update study state, data and ulpoad on DB
+        # 7. Update study state, data and upload on DB
         message = "Updated dataset"
         update_study(study, study_converter, payload, message, user)
         return {"message": message}
@@ -266,7 +266,7 @@ class ApiStudyDatasetId(Resource):
         if len(datasets_entry.value.value) == 0:
             study_converter.remove_entries(prop_names=["datasets"])
 
-        # 3. Update study state, data and ulpoad on DB
+        # 3. Update study state, data and upload on DB
         message = f"Deleted dataset"
         update_study(study, study_converter, api.payload, message, user)
 
@@ -399,7 +399,7 @@ class ApiStudyPE(Resource):
             form_name, pe_converter.get_form_format(), form_cls=form_cls
         )
 
-        # 7. Update study state, data and ulpoad on DB
+        # 7. Update study state, data and upload on DB
         message = "Added processing event"
         update_study(study, study_converter, payload, message, user)
         return {"message": message, "uuid": pe_uuid}, 201
@@ -559,7 +559,7 @@ class ApiStudyPEId(Resource):
             form_name, pe_converter.get_form_format(), form_cls=form_cls
         )
 
-        # 8. Update study state, data and ulpoad on DB
+        # 8. Update study state, data and upload on DB
         message = "Updated processing event"
         update_study(study, study_converter, payload, message, user)
         return {"message": message}
@@ -614,7 +614,7 @@ class ApiStudyPEId(Resource):
         if len(pes_entry.value.value) == 0:
             dataset_nested_entry.remove_entries(prop_names=["process_events"])
 
-        # 4. Update study state, data and ulpoad on DB
+        # 4. Update study state, data and upload on DB
         message = f"Deleted processing event"
         update_study(study, study_converter, api.payload, message, user)
 

@@ -7,6 +7,7 @@ from mongoengine import connect
 
 from metadata_registration_lib.other_utils import str_to_bool
 from metadata_registration_api.datastores import MongoEngineDataStore
+from metadata_registration_api.mongo_utils import get_states
 from metadata_registration_api.api import api
 
 from dynamic_form import FormManager
@@ -36,6 +37,7 @@ def config_app(app):
         "MONGODB_COL_FORM",
         "MONGODB_COL_USER",
         "MONGODB_COL_STUDY",
+        "MONGODB_COL_STATE",
     ]
 
     for env_variable in required_env_variables:
@@ -65,6 +67,7 @@ def config_app(app):
     app.config["MONGODB_COL_FORM"] = os.environ["MONGODB_COL_FORM"]
     app.config["MONGODB_COL_USER"] = os.environ["MONGODB_COL_USER"]
     app.config["MONGODB_COL_STUDY"] = os.environ["MONGODB_COL_STUDY"]
+    app.config["MONGODB_COL_STATE"] = os.environ["MONGODB_COL_STATE"]
 
     # Elastic search
     app.config["ES"] = {
@@ -87,7 +90,7 @@ def create_app():
     # Restplus API
     app.config["ERROR_404_HELP"] = False
 
-    connect(
+    app.mongo_client = connect(
         app.config["MONGODB_DB"],
         host=app.config["MONGODB_HOST"],
         port=app.config["MONGODB_PORT"],
@@ -135,7 +138,8 @@ def create_app():
     data_store = MongoEngineDataStore(form_model=Form)
     app.form_manager = FormManager(data_store=data_store, initial_load=False)
 
-    app.study_state_machine = context.Context()
+    available_states = get_states(app=app, q={})
+    app.study_state_machine = context.Context(available_states=available_states)
 
     logger.info(f"Created Flask API and exposed {url}")
 

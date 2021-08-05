@@ -178,7 +178,7 @@ class ApiStudySamples(Resource):
                 sample_converter.get_form_format(), validate_dict, forms
             )
 
-        # 7. Update study state, data and ulpoad on DB
+        # 7. Update study state, data and upload on DB
         message = f"Added {len(sample_uuids)} samples (replace = {replace})"
         update_study(study, study_converter, payload, message, user)
         return {"message": message, "uuids": sample_uuids}, 201
@@ -286,7 +286,7 @@ class ApiStudySample(Resource):
             sample_converter.get_form_format(), validate_dict, forms
         )
 
-        # 7. Update study state, data and ulpoad on DB
+        # 7. Update study state, data and upload on DB
         message = "Added sample"
         update_study(study, study_converter, payload, message, user)
         return {"message": message, "uuid": sample_uuid}, 201
@@ -306,7 +306,7 @@ class ApiStudySample(Resource):
         # 2. Delete samples
         study_converter.remove_entries(prop_names=["samples"])
 
-        # 3. Update study state, data and ulpoad on DB
+        # 3. Update study state, data and upload on DB
         message = "Deleted samples"
         update_study(study, study_converter, api.payload, message, user)
 
@@ -442,7 +442,7 @@ class ApiStudySampleId(Resource):
             sample_converter.get_form_format(), validate_dict, forms
         )
 
-        # 8. Update study state, data and ulpoad on DB
+        # 8. Update study state, data and upload on DB
         message = "Updated sample"
         update_study(study, study_converter, payload, message, user)
         return {"message": message}
@@ -475,7 +475,7 @@ class ApiStudySampleId(Resource):
         if len(samples_entry.value.value) == 0:
             study_converter.remove_entries(prop_names=["samples"])
 
-        # 3. Update study state, data and ulpoad on DB
+        # 3. Update study state, data and upload on DB
         message = f"Deleted sample"
         update_study(study, study_converter, api.payload, message, user)
 
