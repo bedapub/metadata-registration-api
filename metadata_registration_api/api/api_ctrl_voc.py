@@ -1,5 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
+from mongoengine.errors import ValidationError
 
 from metadata_registration_api.model import ControlledVocabulary
 from .decorators import token_required
@@ -166,7 +167,17 @@ class ApiControlledVocabularyId(Resource):
     def put(self, id, user=None):
         """ Update an entry given its unique identifier """
         entry = ControlledVocabulary.objects(id=id).get()
-        entry.update(**api.payload)
+        entry_old_json = api.marshal(entry, ctrl_voc_model_id)
+
+        entry.modify(**api.payload)
+        try:
+            entry.validate()
+        except ValidationError as error:
+            # TODO: Dirty, need a better way to validate BEFORE uploading to DB
+            # Currently upload to DB, validate, re-upload old if validation fails
+            entry_old = ControlledVocabulary(**entry_old_json)
+            entry_old.save(validate=False)
+            raise error
         return {"message": f"Update entry '{entry.name}'"}
 
     @token_required

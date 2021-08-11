@@ -2,6 +2,7 @@ from werkzeug.security import generate_password_hash
 
 from mongoengine import Document, EmbeddedDocument
 from mongoengine.fields import *
+from mongoengine.errors import ValidationError
 
 
 """
@@ -65,6 +66,18 @@ class ControlledVocabulary(TopLevelDocument):
 
     description = StringField(required=True)
     items = ListField(EmbeddedDocumentField(CvItem), required=True)
+
+    def validate(self, *args, **kwargs):
+        """Enforce unicity of CV item synonyms"""
+        unique_terms = set()
+        for item in self.items:
+            for term in [item.name] + item.synonyms:
+                if term in unique_terms:
+                    raise ValidationError(
+                        f"The term '{term}' is not unique among all CV items including synonyms"
+                    )
+                unique_terms.add(term)
+        super().validate(*args, **kwargs)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
