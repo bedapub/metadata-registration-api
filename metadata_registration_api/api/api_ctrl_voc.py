@@ -213,23 +213,33 @@ class ApiControlledVocabularyItemsMap(Resource):
         type=str,
         location="args",
         default="label",
-        help="Value of the map.",
+        help="Value of the map. Multiple values allowed (comma separated)."
+        " The output is different if using multiple values (dict instead of single value)",
     )
 
     @api.doc(parser=_get_parser)
     def get(self):
-        """ Get a map for CV items: cv_name: {item_key; item_value} """
+        """ Get a map for CV items: cv_name: {item_key: item_value} """
         args = self._get_parser.parse_args()
 
         key = args["key"]
-        value = args["value"]
+        values = [v.strip() for v in args["value"].split(",")]
 
         cv_entries = ControlledVocabulary.objects(deprecated=False).only(
-            "name", f"items__{key}", f"items__{value}"
+            "name", f"items__{key}", *[f"items__{v}" for v in values]
         )
 
         cv_items_map = {}
         for cv in cv_entries:
-            cv_items_map[cv["name"]] = {item[key]: item[value] for item in cv["items"]}
+            if len(values) == 1:
+                value = values[0]
+                cv_items_map[cv["name"]] = {
+                    item[key]: item[value] for item in cv["items"]
+                }
+            else:
+                cv_items_map[cv["name"]] = {
+                    item[key]: {value: item[value] for value in values}
+                    for item in cv["items"]
+                }
 
         return cv_items_map
