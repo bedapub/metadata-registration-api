@@ -1,5 +1,5 @@
-dynamic-form==0.3.2
-# -e git+https://github.com/bedapub/dynamic-form.git@master#egg=dynamic-form
+# dynamic-form==0.3.2
+-e git+https://github.com/bedapub/dynamic-form.git@master#egg=dynamic-form
 # -e /home/cyrlop/Roche/dynamic-form/
 Flask==1.1.1
 flask-restx==0.1.0
