@@ -225,7 +225,7 @@ class ApiControlledVocabularyItemsMap(Resource):
         value = args["value"]
 
         cv_entries = ControlledVocabulary.objects(deprecated=False).only(
-            "name", "items__name", "items__label"
+            "name", f"items__{key}", f"items__{value}"
         )
 
         cv_items_map = {}
