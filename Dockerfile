@@ -24,6 +24,7 @@ EXPOSE 8000
 CMD ["gunicorn", \
         "--workers", "4", \
         "--bind", "0.0.0.0", \
+        "--timeout", "300", \
         "--log-config", "/logging.conf", \
         "metadata_registration_api.app:create_app()"]
 
