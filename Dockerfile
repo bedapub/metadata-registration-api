@@ -22,9 +22,11 @@ WORKDIR /
 EXPOSE 8000
 
 CMD ["gunicorn", \
-        "--workers", "4", \
+        "--workers", "8", \
+        "--worker-class", "gevent", \
+        "--worker-connections", "1000", \
         "--bind", "0.0.0.0", \
-        "--timeout", "90", \
+        "--timeout", "240", \
         "--preload", \
         "--log-config", "/logging.conf", \
         "metadata_registration_api.app:create_app()"]
