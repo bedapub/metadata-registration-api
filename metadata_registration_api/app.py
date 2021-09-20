@@ -1,6 +1,6 @@
-from gevent import monkey
+# from gevent import monkey
 
-monkey.patch_all()
+# monkey.patch_all()
 import os
 import logging
 
@@ -135,7 +135,7 @@ def create_app():
     )
 
     # Initialize FormManager
-    url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
+    url = "https://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
     app.config["URL"] = url
     # data_store = ApiDataStore()
     data_store = MongoEngineDataStore(form_model=Form)
