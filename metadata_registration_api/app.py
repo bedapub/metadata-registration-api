@@ -3,8 +3,9 @@ from gevent import monkey
 monkey.patch_all()
 import os
 import logging
+import time
 
-from flask import Flask
+from flask import Flask, request, g
 from flask_cors import CORS
 from mongoengine import connect
 
@@ -46,6 +47,8 @@ def config_app(app):
     for env_variable in required_env_variables:
         if not env_variable in os.environ:
             raise Exception(f"The environment variable {env_variable} is required")
+
+    app.config["LOG_ALL_REQUESTS"] = str_to_bool(os.getenv("LOG_ALL_REQUESTS", "false"))
 
     # Load app secret and convert to byte string
     app.secret_key = os.environ["APP_SECRET"].encode()
@@ -133,6 +136,30 @@ def create_app():
         "The code is available here: https://github.com/BEDApub/metadata-registration-api. "
         "Any issue reports or feature requests are appreciated.",
     )
+
+    # Log each request
+    if app.config["LOG_ALL_REQUESTS"]:
+        # pylint: disable=unused-variable
+        @app.before_request
+        def before_request():
+            g.start = time.time()
+
+        # pylint: disable=unused-variable
+        @app.after_request
+        def log_request(response):
+            exec_time = round(time.time() - g.start, 3)
+            log_message = "{} {} {} {} {}".format(
+                request.method,
+                request.full_path,
+                request.scheme,
+                response.status,
+                f"({exec_time} secs)",
+            )
+            if response.status_code >= 400 and response.status_code < 600:
+                logger.error(log_message)
+            else:
+                logger.info(log_message)
+            return response
 
     # Initialize FormManager
     url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
