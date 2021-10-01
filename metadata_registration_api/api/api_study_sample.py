@@ -178,6 +178,9 @@ class ApiStudySamples(Resource):
                 sample_converter.get_form_format(), validate_dict, forms
             )
 
+        # Check unicity of specified properties
+        check_samples_unicity(study_converter.get_form_format()["samples"])
+
         # 7. Update study state, data and upload on DB
         message = f"Added {len(sample_uuids)} samples (replace = {replace})"
         update_study(study, study_converter, payload, message, user)
@@ -480,3 +483,34 @@ class ApiStudySampleId(Resource):
         update_study(study, study_converter, api.payload, message, user)
 
         return {"message": message}
+
+
+def check_samples_unicity(samples_form_format):
+    """
+    Check if unicity constraints of certain properties are met
+    These can be define in ENV variables: UNIQUE_SAMPLE_PROPS, ...
+    Format: "a,b;c,d" = the combinations a,b and c,d must me unique for each entity
+    """
+
+    if not app.config["UNIQUE_SAMPLE_PROPS"]:
+        return
+
+    props_groups_to_check = app.config["UNIQUE_SAMPLE_PROPS"].split(";")
+
+    for props_group in props_groups_to_check:
+        props = props_group.split(",")
+        unique_values = []
+
+        for sample in samples_form_format:
+            value = [sample.get(p) for p in props]
+            if None in value:
+                continue
+
+            if value in unique_values:
+                raise Exception(
+                    f"Samples must have unique combination of {props} (sample {sample['sample_id']} failed"
+                )
+            else:
+                unique_values.append(value)
+
+    raise Exception("STOP")

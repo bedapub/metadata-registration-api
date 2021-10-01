@@ -86,6 +86,9 @@ def config_app(app):
         "USE": os.environ.get("ES_USE"),
     }
 
+    # UNICITY CHECKS (format = "a,b;c,d" meaning the combinations a,b and c,d must me unique)
+    app.config["UNIQUE_SAMPLE_PROPS"] = os.environ.get("UNIQUE_SAMPLE_PROPS")
+
 
 def create_app():
     app = Flask(__name__)
