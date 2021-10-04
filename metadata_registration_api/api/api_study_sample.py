@@ -512,5 +512,3 @@ def check_samples_unicity(samples_form_format):
                 )
             else:
                 unique_values.append(value)
-
-    raise Exception("STOP")
