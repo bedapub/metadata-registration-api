@@ -1,6 +1,7 @@
 # Project specific
 start_up.sh
 scripts
+src/
 
 # Credentials
 .credentials.yaml
@@ -18,6 +19,7 @@ __pycharch__
 # IDE
 .idea
 .vscode
+.ipynb_checkpoints
 
 # Flask
 instance/
