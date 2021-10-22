@@ -38,7 +38,11 @@ def token_required(f):
                 f"generated through log in."
             )
         try:
-            payload = jwt.decode(token, app.secret_key)
+            payload = jwt.decode(
+                token,
+                app.secret_key,
+                algorithms="HS256",
+            )
         except InvalidSignatureError and DecodeError as e:
             raise TokenException(
                 f"Your given token is invalid. Your can receive a valid token bt login."
