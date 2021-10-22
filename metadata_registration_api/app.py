@@ -59,6 +59,8 @@ def config_app(app):
         os.getenv("CHECK_ACCESS_TOKEN", "true")
     )
 
+    app.config["SSL"] = str_to_bool(os.environ.get("SSL", "false"))
+
     # Load mongo database credentials
     app.config["MONGODB_DB"] = os.environ["MONGODB_DB"]
     app.config["MONGODB_HOST"] = os.environ["MONGODB_HOST"]
@@ -165,7 +167,11 @@ def create_app():
             return response
 
     # Initialize FormManager
-    url = "http://" + os.environ["API_HOST"] + ":" + str(os.environ["PORT"])
+    if app.config["SSL"]:
+        http_prefix = "https"
+    else:
+        http_prefix = "http"
+    url = f"{http_prefix}://{os.environ['API_HOST']}:{os.environ['PORT']}"
     app.config["URL"] = url
     # data_store = ApiDataStore()
     data_store = MongoEngineDataStore(form_model=Form)
