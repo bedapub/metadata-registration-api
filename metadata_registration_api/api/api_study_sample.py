@@ -103,7 +103,7 @@ class ApiStudySamples(Resource):
     @token_required
     @api.expect(samples_model_payload)
     def post(self, study_id, user=None):
-        """ Add multiple new samples for a given study """
+        """Add multiple new samples for a given study"""
         payload = api.payload
 
         prop_id_to_name = get_property_map(key="id", value="name")
@@ -193,12 +193,19 @@ class ApiStudySample(Resource):
     _get_parser = reqparse.RequestParser()
     _get_parser.add_argument("entry_format", **entry_format_param)
 
+    _delete_parser = reqparse.RequestParser()
+    _delete_parser.add_argument(
+        "sample_uuids",
+        action="append",
+        help="Sample UUIDs to be deleted",
+    )
+
     @token_required
     @api.response("200 - api", "Success (API format)", [[entry_model_prop_id]])
     @api.response("200 - form", "Success (form format)", [entry_model_form_format])
     @api.doc(parser=_get_parser)
     def get(self, study_id, user=None):
-        """ Fetch a list of all samples for a given study """
+        """Fetch a list of all samples for a given study"""
         args = self._get_parser.parse_args()
 
         study = Study.objects().get(id=study_id)
@@ -224,7 +231,7 @@ class ApiStudySample(Resource):
     @token_required
     @api.expect(sample_model_payload)
     def post(self, study_id, user=None):
-        """ Add a new sample for a given study """
+        """Add a new sample for a given study"""
         payload = api.payload
 
         prop_id_to_name = get_property_map(key="id", value="name")
@@ -295,8 +302,12 @@ class ApiStudySample(Resource):
         return {"message": message, "uuid": sample_uuid}, 201
 
     @token_required
+    @api.doc(parser=_delete_parser)
     def delete(self, study_id, user=None):
-        """ Delete all samples from a study given its unique identifier """
+        """Delete all samples from a study given its unique identifier"""
+        args = self._delete_parser.parse_args()
+        sample_uuids = args["sample_uuids"]
+
         prop_id_to_name = get_property_map(key="id", value="name")
 
         # 1. Get study data
@@ -307,7 +318,15 @@ class ApiStudySample(Resource):
         study_converter.add_api_format(study_json["entries"])
 
         # 2. Delete samples
-        study_converter.remove_entries(prop_names=["samples"])
+        if sample_uuids is None:
+            study_converter.remove_entries(prop_names=["samples"])
+        else:
+            samples_entry = study_converter.get_entry_by_name("samples")
+            for sample_uuid in sample_uuids:
+                samples_entry.value.delete_nested_entry("uuid", sample_uuid)
+
+            if len(samples_entry.value.value) == 0:
+                study_converter.remove_entries(prop_names=["samples"])
 
         # 3. Update study state, data and upload on DB
         message = "Deleted samples"
@@ -333,7 +352,7 @@ class ApiStudySampleId(Resource):
     @api.response("200 - form", "Success (form format)", entry_model_form_format)
     @api.doc(parser=_get_parser)
     def get(self, sample_uuid, study_id=None, user=None):
-        """ Fetch a specific sample for a given study """
+        """Fetch a specific sample for a given study"""
         args = self._get_parser.parse_args()
 
         prop_id_to_name = get_property_map(key="id", value="name")
@@ -368,7 +387,7 @@ class ApiStudySampleId(Resource):
     @token_required
     @api.expect(sample_model_payload)
     def put(self, sample_uuid, study_id=None, user=None):
-        """ Update a sample for a given study """
+        """Update a sample for a given study"""
         prop_id_to_name = get_property_map(key="id", value="name")
         prop_name_to_id = reverse_map(prop_id_to_name)
 
@@ -452,7 +471,7 @@ class ApiStudySampleId(Resource):
 
     @token_required
     def delete(self, sample_uuid, study_id=None, user=None):
-        """ Delete a sample from a study given its unique identifier """
+        """Delete a sample from a study given its unique identifier"""
         prop_id_to_name = get_property_map(key="id", value="name")
         prop_name_to_id = reverse_map(prop_id_to_name)
 
