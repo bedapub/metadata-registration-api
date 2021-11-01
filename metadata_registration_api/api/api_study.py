@@ -273,6 +273,10 @@ class ApiStudy(Resource):
 
         prop_id_to_name = get_property_map(key="id", value="name")
         prop_name_to_id = reverse_map(prop_id_to_name)
+        if entry_format == "form":
+            prop_name_to_syns = get_property_map(key="name", value="synonyms")
+        else:
+            prop_name_to_syns = None
 
         # 2. Get both API and form format
         if entry_format == "api":
@@ -285,7 +289,12 @@ class ApiStudy(Resource):
                 raise RequestBodyException("Entries has wrong format.") from e
 
         study_converter, _ = get_entity_converter(
-            entries, entry_format, prop_id_to_name, prop_name_to_id
+            entries,
+            entry_format,
+            prop_id_to_name,
+            prop_name_to_id,
+            replace_synonyms=True,
+            prop_name_to_syns=prop_name_to_syns,
         )
 
         # Validate and sort entries according to form
@@ -410,10 +419,19 @@ class ApiStudyId(Resource):
 
         prop_id_to_name = get_property_map(key="id", value="name")
         prop_name_to_id = reverse_map(prop_id_to_name)
+        if entry_format == "form":
+            prop_name_to_syns = get_property_map(key="name", value="synonyms")
+        else:
+            prop_name_to_syns = None
 
         # 2. Get both API and form format
         study_converter, _ = get_entity_converter(
-            entries, entry_format, prop_id_to_name, prop_name_to_id
+            entries,
+            entry_format,
+            prop_id_to_name,
+            prop_name_to_id,
+            replace_synonyms=True,
+            prop_name_to_syns=prop_name_to_syns,
         )
 
         # Validate and sort entries according to form

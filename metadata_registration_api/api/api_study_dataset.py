@@ -80,6 +80,11 @@ class ApiStudyDataset(Resource):
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
 
+        if entry_format == "form":
+            prop_name_to_syns = get_property_map(key="name", value="synonyms")
+        else:
+            prop_name_to_syns = None
+
         # 2. Get study data
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
@@ -90,7 +95,12 @@ class ApiStudyDataset(Resource):
         # 3. Create dataset entry and append it to "datasets"
         # Format and clean entity
         dataset_converter, _ = get_entity_converter(
-            entries, entry_format, prop_id_to_name, prop_name_to_id
+            entries,
+            entry_format,
+            prop_id_to_name,
+            prop_name_to_id,
+            replace_synonyms=True,
+            prop_name_to_syns=prop_name_to_syns,
         )
         # Generate UUID
         dataset_converter, dataset_uuid = add_uuid_entry_if_missing(
@@ -194,6 +204,11 @@ class ApiStudyDatasetId(Resource):
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
 
+        if entry_format == "form":
+            prop_name_to_syns = get_property_map(key="name", value="synonyms")
+        else:
+            prop_name_to_syns = None
+
         # 2. Get study data
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
@@ -211,7 +226,12 @@ class ApiStudyDatasetId(Resource):
 
         # 4. Get new dataset data and get entries to remove
         new_dataset_converter, entries_to_remove = get_entity_converter(
-            entries, entry_format, prop_id_to_name, prop_name_to_id
+            entries,
+            entry_format,
+            prop_id_to_name,
+            prop_name_to_id,
+            replace_synonyms=True,
+            prop_name_to_syns=prop_name_to_syns,
         )
 
         # 5. Update current dataset by adding, updating and deleting entries
@@ -354,6 +374,11 @@ class ApiStudyPE(Resource):
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
 
+        if entry_format == "form":
+            prop_name_to_syns = get_property_map(key="name", value="synonyms")
+        else:
+            prop_name_to_syns = None
+
         # 2. Get study and dataset data
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
@@ -366,7 +391,12 @@ class ApiStudyPE(Resource):
 
         # 3. Format and clean processing event data
         pe_converter, _ = get_entity_converter(
-            entries, entry_format, prop_id_to_name, prop_name_to_id
+            entries,
+            entry_format,
+            prop_id_to_name,
+            prop_name_to_id,
+            replace_synonyms=True,
+            prop_name_to_syns=prop_name_to_syns,
         )
 
         # 4. Generate UUID
@@ -518,6 +548,11 @@ class ApiStudyPEId(Resource):
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
 
+        if entry_format == "form":
+            prop_name_to_syns = get_property_map(key="name", value="synonyms")
+        else:
+            prop_name_to_syns = None
+
         # 2. Get study data
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
@@ -539,7 +574,12 @@ class ApiStudyPEId(Resource):
 
         # 5. Get new processing event data
         new_pe_converter, entries_to_remove = get_entity_converter(
-            entries, entry_format, prop_id_to_name, prop_name_to_id
+            entries,
+            entry_format,
+            prop_id_to_name,
+            prop_name_to_id,
+            replace_synonyms=True,
+            prop_name_to_syns=prop_name_to_syns,
         )
 
         # 6. Update current processing event by adding, updating and deleting entries
