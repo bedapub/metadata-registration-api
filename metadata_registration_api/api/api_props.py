@@ -171,6 +171,8 @@ class ApiProperties(Resource):
 
         If a data type other than "cv" is added, the controlled_vocabullary is not considered.
         """
+        # Check synonyms unicity
+        check_synonyms_unicity(api.payload)
 
         entry = Property(**api.payload)
 
@@ -220,6 +222,9 @@ class ApiPropertyId(Resource):
     @api.expect(property_model)
     def put(self, id, user=None):
         """ Update entry given its unique identifier """
+        # Check synonyms unicity
+        check_synonyms_unicity(api.payload, exclude_id=id)
+
         entry = Property.objects(id=id).first()
         entry.update(**api.payload)
         return {"message": f"Update entry '{entry.name}'"}
@@ -247,3 +252,21 @@ class ApiPropertyId(Resource):
 def validate_controlled_vocabulary(entry):
     if entry.value_type and entry.value_type.data_type != "ctrl_voc":
         entry.value_type.controlled_vocabulary = None
+
+
+def check_synonyms_unicity(new_property_payload, exclude_id=None):
+    if exclude_id is not None:
+        props_to_check = Property.objects(id__ne=exclude_id).only("name", "synonyms")
+    else:
+        props_to_check = Property.objects().all().only("name", "synonyms")
+
+    props_name_to_synonyms = {p["name"]: p["synonyms"] for p in props_to_check}
+    for synonym in new_property_payload.get("synonyms", []):
+        for prop_name, synonyms in props_name_to_synonyms.items():
+            if synonym.lower() == prop_name or synonym.lower() in [
+                s.lower() for s in synonyms
+            ]:
+                raise Exception(
+                    f"Synonym '{synonym}' is already used as name or synonym "
+                    f"for the property: '{prop_name}'. Synonyms must be unique."
+                )
