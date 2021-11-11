@@ -110,33 +110,24 @@ class ApiStudySamples(Resource):
         prop_name_to_id = reverse_map(prop_id_to_name)
 
         # 1. Split payload
-        validate_dict = payload.get("validate", None)
-        form_names = payload.get("form_names", None)
         entries_list = payload["entries"]
         entry_format = payload.get("entry_format", "api")
         replace = payload.get("replace", False)
+        validate_dict, forms = get_samples_validation_forms(payload)
 
         if entry_format == "form":
             prop_name_to_syns = get_property_map(key="name", value="synonyms")
         else:
             prop_name_to_syns = None
 
-        # 2. Get forms for validation
-        forms = {}
-        for key, validate in validate_dict.items():
-            if validate:
-                forms[key] = app.form_manager.get_form_by_name(
-                    form_name=form_names[key]
-                )
-
-        # 3. Get study data
+        # 2. Get study data
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
 
         study_converter = FormatConverter(mapper=prop_id_to_name)
         study_converter.add_api_format(study_json["entries"])
 
-        # 4. Unify UUIDs with existing entities (including nested ones)
+        # 3. Unify UUIDs with existing entities (including nested ones)
         new_samples_form_format = []
         for entries in entries_list:
             # Format and clean entity
@@ -155,7 +146,7 @@ class ApiStudySamples(Resource):
             new_samples=new_samples_form_format,
         )
 
-        # 5. Append new samples to "samples" in study
+        # 4. Append new samples to "samples" in study
         if replace:
             study_converter.remove_entries(prop_names=["samples"])
 
@@ -184,12 +175,12 @@ class ApiStudySamples(Resource):
 
             sample_uuids.append(sample_uuid)
 
-            # 6. Validate data against form
+            # 5. Validate data against form
             validate_sample_against_form(
                 sample_converter.get_form_format(), validate_dict, forms
             )
 
-        # Check unicity of specified properties
+        # 6. Check unicity of specified properties
         check_samples_unicity(study_converter.get_form_format()["samples"])
 
         # 7. Update study state, data and upload on DB
@@ -249,32 +240,23 @@ class ApiStudySample(Resource):
         prop_name_to_id = reverse_map(prop_id_to_name)
 
         # 1. Split payload
-        validate_dict = payload.get("validate", None)
-        form_names = payload.get("form_names", None)
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
+        validate_dict, forms = get_samples_validation_forms(payload)
 
         if entry_format == "form":
             prop_name_to_syns = get_property_map(key="name", value="synonyms")
         else:
             prop_name_to_syns = None
 
-        # 2. Get forms for validation
-        forms = {}
-        for key, validate in validate_dict.items():
-            if validate:
-                forms[key] = app.form_manager.get_form_by_name(
-                    form_name=form_names[key]
-                )
-
-        # 3. Get study data
+        # 2. Get study data
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
 
         study_converter = FormatConverter(mapper=prop_id_to_name)
         study_converter.add_api_format(study_json["entries"])
 
-        # 4. Unify UUIDs with existing entities (including nested ones)
+        # 3. Unify UUIDs with existing entities (including nested ones)
         # Format and clean entity
         sample_converter, _ = get_entity_converter(
             entries,
@@ -291,7 +273,7 @@ class ApiStudySample(Resource):
             new_samples=[new_sample_form_format],
         )
 
-        # 5. Append new samples to "samples" in study
+        # 4. Append new samples to "samples" in study
         # Format and clean entity
         sample_converter, _ = get_entity_converter(
             entries=new_sample_form_format,
@@ -313,14 +295,14 @@ class ApiStudySample(Resource):
             study_list_prop="samples",
         )
 
-        # 6. Validate data against form + unicity
+        # 5. Validate data against form + unicity
         validate_sample_against_form(
             sample_converter.get_form_format(), validate_dict, forms
         )
 
         check_samples_unicity(study_converter.get_form_format()["samples"])
 
-        # 7. Update study state, data and upload on DB
+        # 6. Update study state, data and upload on DB
         message = "Added sample"
         update_study(study, study_converter, payload, message, user)
         return {"message": message, "uuid": sample_uuid}, 201
@@ -426,25 +408,16 @@ class ApiStudySampleId(Resource):
         payload = api.payload
 
         # 1. Split payload
-        validate_dict = payload.get("validate", None)
-        form_names = payload.get("form_names", None)
         entries = payload["entries"]
         entry_format = payload.get("entry_format", "api")
+        validate_dict, forms = get_samples_validation_forms(payload)
 
         if entry_format == "form":
             prop_name_to_syns = get_property_map(key="name", value="synonyms")
         else:
             prop_name_to_syns = None
 
-        # 2. Get forms for validation
-        forms = {}
-        for key, validate in validate_dict.items():
-            if validate:
-                forms[key] = app.form_manager.get_form_by_name(
-                    form_name=form_names[key]
-                )
-
-        # 3. Get study data
+        # 2. Get study data
         study = Study.objects().get(id=study_id)
         study_json = marshal(study, study_model)
 
@@ -539,6 +512,33 @@ class ApiStudySampleId(Resource):
         update_study(study, study_converter, api.payload, message, user)
 
         return {"message": message}
+
+
+def get_samples_validation_forms(payload):
+    """
+    Args:
+        payload (dict): API Payload with "validate" and "form_names"
+
+    Returns:
+        [dict]: validate_dict (which entities should be validated)
+        [dict]: forms used for validation
+    """
+    validate_dict = payload.get("validate", None)
+    form_names = payload.get("form_names", None)
+
+    forms = {}
+    for entity_name, validate in validate_dict.items():
+        if validate:
+            if not entity_name in forms.keys():
+                raise Exception(
+                    f"The validation of '{entity_name}' is set to True but the"
+                    " corresponding form name is missing from 'form_names'."
+                )
+            forms[entity_name] = app.form_manager.get_form_by_name(
+                form_name=form_names[entity_name]
+            )
+
+    return validate_dict, forms
 
 
 def check_samples_unicity(samples_form_format):
