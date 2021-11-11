@@ -313,10 +313,12 @@ class ApiStudySample(Resource):
             study_list_prop="samples",
         )
 
-        # 6. Validate data against form
+        # 6. Validate data against form + unicity
         validate_sample_against_form(
             sample_converter.get_form_format(), validate_dict, forms
         )
+
+        check_samples_unicity(study_converter.get_form_format()["samples"])
 
         # 7. Update study state, data and upload on DB
         message = "Added sample"
@@ -492,10 +494,12 @@ class ApiStudySampleId(Resource):
         sample_converter.remove_entries(entries=entries_to_remove)
         sample_nested_entry.value = sample_converter.entries
 
-        # 7. Validate data against form
+        # 7. Validate data against form + unicity
         validate_sample_against_form(
             sample_converter.get_form_format(), validate_dict, forms
         )
+
+        check_samples_unicity(study_converter.get_form_format()["samples"])
 
         # 8. Update study state, data and upload on DB
         message = "Updated sample"
@@ -560,7 +564,7 @@ def check_samples_unicity(samples_form_format):
 
             if value in unique_values:
                 raise Exception(
-                    f"Samples must have unique combination of {props} (sample {sample['sample_id']} failed"
+                    f"Samples must have unique combination of {props} (sample {sample['sample_id']} failed)"
                 )
             else:
                 unique_values.append(value)
