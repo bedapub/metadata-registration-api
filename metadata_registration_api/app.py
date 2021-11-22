@@ -167,10 +167,7 @@ def create_app():
             return response
 
     # Initialize FormManager
-    if app.config["SSL"]:
-        http_prefix = "https"
-    else:
-        http_prefix = "http"
+    http_prefix = "https" if app.config["SSL"] else "http"
     url = f"{http_prefix}://{os.environ['API_HOST']}:{os.environ['PORT']}"
     app.config["URL"] = url
     # data_store = ApiDataStore()

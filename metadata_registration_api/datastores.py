@@ -20,10 +20,9 @@ class ApiDataStore(IDataStore):
     def __init__(self, url=None):
 
         if not url:
-            if str_to_bool(os.environ.get("SSL", "false")):
-                http_prefix = "https"
-            else:
-                http_prefix = "http"
+            http_prefix = (
+                "https" if str_to_bool(os.environ.get("SSL", "false")) else "http"
+            )
             self.url = f"{http_prefix}://{os.environ['API_HOST']}:{os.environ['PORT']}"
         else:
             self.url = url
