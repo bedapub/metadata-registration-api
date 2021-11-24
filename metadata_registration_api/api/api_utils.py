@@ -73,6 +73,6 @@ def get_cv_items_map(key="name", value="label"):
 
 
 def get_mask(request):
-    mask_header = app.config['RESTX_MASK_HEADER']
+    mask_header = app.config["RESTX_MASK_HEADER"]
     mask = request.headers.get(mask_header)
     return mask
