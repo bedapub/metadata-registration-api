@@ -529,7 +529,7 @@ def get_samples_validation_forms(payload):
     forms = {}
     for entity_name, validate in validate_dict.items():
         if validate:
-            if not entity_name in forms.keys():
+            if not entity_name in form_names.keys():
                 raise Exception(
                     f"The validation of '{entity_name}' is set to True but the"
                     " corresponding form name is missing from 'form_names'."
