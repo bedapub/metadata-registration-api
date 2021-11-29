@@ -42,6 +42,13 @@ export_get_parser.add_argument(
     help="File format",
 )
 export_get_parser.add_argument(
+    "include_study_data",
+    type=inputs.boolean,
+    location="args",
+    default=True,
+    help="If true, will append study level data to each row",
+)
+export_get_parser.add_argument(
     "prop_to_ignore",
     type=str,
     location="args",
@@ -61,6 +68,15 @@ export_get_parser.add_argument(
     location="args",
     default=True,
     help="If true, will replace property name by labels and header prefixes by shorter suffixes",
+)
+
+export_get_parser_rdt = export_get_parser
+export_get_parser_rdt.add_argument(
+    "include_dataset_data",
+    type=inputs.boolean,
+    location="args",
+    default=True,
+    help="If true, will append dataset level data to each row",
 )
 
 # Routes
@@ -108,14 +124,24 @@ class DownloadSamples(Resource):
         study = expand_json_strings(study)
 
         # 4. Convert to flat format (denormalized)
-        converter = NormConverter(nested_data=study)
-        data_flat = converter.get_denorm_data_2_from_nested(
-            vars_to_denorm=["samples"],
-            use_parent_key=True,
-            sep=header_sep,
-            initial_parent_key="",
-            missing_value="",
-        )
+        if args["include_study_data"]:
+            converter = NormConverter(nested_data=study)
+            data_flat = converter.get_denorm_data_2_from_nested(
+                vars_to_denorm=["samples"],
+                use_parent_key=True,
+                sep=header_sep,
+                initial_parent_key="",
+                missing_value="",
+            )
+        else:
+            converter = NormConverter(nested_data=study["samples"])
+            data_flat = converter.get_denorm_data_2_from_nested(
+                vars_to_denorm=[],
+                use_parent_key=True,
+                sep=header_sep,
+                initial_parent_key="samples",
+                missing_value="",
+            )
 
         return download_denorm_file(
             request_args=args,
@@ -133,7 +159,7 @@ class DownloadSamples(Resource):
 @api.param("study_id", "The study identifier")
 @api.param("dataset_uuid", "The dataset identifier")
 class DownloadReadouts(Resource):
-    _get_parser = export_get_parser
+    _get_parser = export_get_parser_rdt
 
     @token_required
     @api.doc(parser=_get_parser)
@@ -204,8 +230,8 @@ class DownloadReadouts(Resource):
         study["datasets"] = dataset
 
         # 4. Expand JSON string properties
-        dataset = expand_json_strings(dataset)
         study = expand_json_strings(study)
+        dataset = expand_json_strings(dataset)
 
         # 5. Convert to flat format (denormalized)
         # 5.1. Readouts
@@ -218,16 +244,18 @@ class DownloadReadouts(Resource):
             missing_value="",
         )
 
-        # 5.2. Add dataset data
         nb_lines = len(list(data_flat.values())[0])
-        for dataset_prop, value in dataset.items():
-            if not dataset_prop in ["readouts"]:
-                data_flat[f"datasets__{dataset_prop}"] = [value] * nb_lines
+        # 5.2. Add dataset data
+        if args["include_dataset_data"]:
+            for dataset_prop, value in dataset.items():
+                if not dataset_prop in ["readouts"]:
+                    data_flat[f"datasets__{dataset_prop}"] = [value] * nb_lines
 
         # 5.3. Add study data
-        for study_prop, value in study.items():
-            if not study_prop in ["datasets"]:
-                data_flat[study_prop] = [value] * nb_lines
+        if args["include_study_data"]:
+            for study_prop, value in study.items():
+                if not study_prop in ["datasets"]:
+                    data_flat[study_prop] = [value] * nb_lines
 
         return download_denorm_file(
             request_args=args,
