@@ -1,9 +1,9 @@
-dynamic-form==0.3.3
+dynamic-form==0.3.4
 # -e git+https://github.com/bedapub/dynamic-form.git@master#egg=dynamic-form
 # -e /home/cyrlop/Roche/dynamic-form/
 Flask==2.0.2
 flask-restx==0.5.1
-Flask-WTF==0.15.1
+Flask-WTF==1.0.0
 Flask-Cors==3.0.10
 gunicorn==20.1.0
 gunicorn[gevent]
@@ -20,4 +20,4 @@ study-state-machine==0.2.4
 -e git+https://github.com/bedapub/metadata-registration-lib.git@master#egg=metadata-registration-lib
 #-e /home/cyrlop/Roche/metadata-registration-lib
 Werkzeug==2.0.2
-WTForms==2.3.3
+WTForms==3.0.0
