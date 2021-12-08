@@ -7,7 +7,7 @@ from flask_restx import Namespace, reqparse, Resource, inputs
 
 from metadata_registration_lib.api_utils import map_key_value_from_dict_list
 from metadata_registration_lib.data_utils import NormConverter, expand_json_strings
-from metadata_registration_lib.file_utils import write_file_from_denorm_data_2
+from metadata_registration_lib.file_writing_utils import write_file_from_denorm_data_2
 
 from metadata_registration_api.api.api_utils import (
     get_json,
