@@ -199,7 +199,7 @@ class DownloadReadouts(Resource):
             raise Exception(f"Dataset '{dataset_uuid}' not found in study '{study_id}'")
 
         if not "readouts" in dataset:
-            raise Exception(f"Dataset '{dataset_uuid}' doesn't have exeperiments data")
+            raise Exception(f"Dataset '{dataset_uuid}' doesn't have readouts data")
 
         if not "samples" in study:
             raise Exception(f"The given study '{study_id}' doesn't have samples data")
