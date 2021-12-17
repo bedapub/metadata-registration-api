@@ -182,6 +182,7 @@ class ApiStudySamples(Resource):
 
         # 6. Check unicity of specified properties
         check_samples_unicity(study_converter.get_form_format()["samples"])
+        custom_sample_validation(study_converter.get_form_format()["samples"])
 
         # 7. Update study state, data and upload on DB
         message = f"Added {len(sample_uuids)} samples (replace = {replace})"
@@ -299,8 +300,8 @@ class ApiStudySample(Resource):
         validate_sample_against_form(
             sample_converter.get_form_format(), validate_dict, forms
         )
-
         check_samples_unicity(study_converter.get_form_format()["samples"])
+        custom_sample_validation(study_converter.get_form_format()["samples"])
 
         # 6. Update study state, data and upload on DB
         message = "Added sample"
@@ -471,8 +472,8 @@ class ApiStudySampleId(Resource):
         validate_sample_against_form(
             sample_converter.get_form_format(), validate_dict, forms
         )
-
         check_samples_unicity(study_converter.get_form_format()["samples"])
+        custom_sample_validation(study_converter.get_form_format()["samples"])
 
         # 8. Update study state, data and upload on DB
         message = "Updated sample"
@@ -568,3 +569,16 @@ def check_samples_unicity(samples_form_format):
                 )
             else:
                 unique_values.append(value)
+
+
+def custom_sample_validation(samples_form_format):
+    """
+    Custom validation of samples
+    Example: no ";" allowing in "sample_id"
+    """
+
+    for sample in samples_form_format:
+        if ";" in sample["sample_id"]:
+            raise Exception(
+                f"The character ';' is not allowed in the property 'sample_id'"
+            )
