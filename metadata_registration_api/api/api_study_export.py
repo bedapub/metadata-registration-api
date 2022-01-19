@@ -14,7 +14,7 @@ from metadata_registration_api.api.api_utils import (
     get_property_map,
     get_cv_items_map,
 )
-from .api_study_dataset import find_study_id_from_lvl1_uuid
+from ..mongo_utils import find_study_id_from_lvl1_uuid
 from .decorators import token_required
 
 import tempfile
