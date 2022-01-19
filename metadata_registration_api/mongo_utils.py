@@ -37,7 +37,7 @@ def get_states(app, q={}):
 ##### Agregations
 ################################################
 def find_study_id_from_lvl1_uuid(lvl1_prop, lvl1_uuid, prop_name_to_id):
-    """Find parent study given a dataset_uuid"""
+    """Find parent study id given a lvl1_uuid (ex: dataset_uuid)"""
     study_id = None
 
     aggregated_studies = get_aggregated_studies(
@@ -187,7 +187,7 @@ def get_aggregated_studies(prop_map, level_1="dataset", level_2=None):
             },
         ]
         pipeline = pipeline_lvl1 + pipeline_lvl1_format
-        aggregated_studies = Study.objects().aggregate(pipeline)
+        aggregated_studies = Study.objects().aggregate(pipeline, allowDiskUse=True)
 
         return aggregated_studies
 
@@ -334,6 +334,6 @@ def get_aggregated_studies(prop_map, level_1="dataset", level_2=None):
             },
         ]
         pipeline = pipeline_lvl1 + pipeline_lvl2
-        aggregated_studies = Study.objects().aggregate(pipeline)
+        aggregated_studies = Study.objects().aggregate(pipeline, allowDiskUse=True)
 
         return aggregated_studies

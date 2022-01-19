@@ -36,6 +36,7 @@ from . import api_study_sample
 from . import api_study_export
 from . import api_user
 from . import api_state
+from . import api_ids
 
 api.add_namespace(api_props.api, path=os.environ.get("API_EP_PROPERTY", "/properties"))
 api.add_namespace(api_ctrl_voc.api, path=os.environ.get("API_EP_CTRL_VOC", "/ctrl_voc"))
@@ -48,6 +49,7 @@ api.add_namespace(api_study_sample.api, path=os.environ.get("API_EP_STUDY", "/st
 api.add_namespace(api_study_export.api, path=os.environ.get("API_EP_STUDY", "/studies"))
 api.add_namespace(api_user.api, path=os.environ.get("API_EP_USER", "/users"))
 api.add_namespace(api_state.api, path=os.environ.get("API_EP_STATE", "/states"))
+api.add_namespace(api_ids.api, path=os.environ.get("API_EP_IDS", "/ids"))
 
 
 @api.errorhandler(TokenException)
