@@ -7,6 +7,7 @@ from flask_restx import Api
 from mongoengine.errors import NotUniqueError, DoesNotExist
 from dynamic_form.errors import DynamicFormException
 from study_state_machine.errors import StateMachineException
+from werkzeug.exceptions import HTTPException
 
 from metadata_registration_api.errors import (
     TokenException,
@@ -79,6 +80,18 @@ def handle_does_not_exist_error(error):
         "error_type": str(error.__class__.__name__),
         "message": f"The entry does not exist: {str(error)}",
     }, 404
+
+
+@api.errorhandler(HTTPException)
+def http_error_handler(error):
+    if hasattr(error, "response") and hasattr(error.response, "status"):
+        status_code = error.response.status_code
+    else:
+        status_code = 404
+    return {
+        "error type": str(error.__class__.__name__),
+        "message": f"{error}",
+    }, status_code
 
 
 @api.errorhandler(Exception)

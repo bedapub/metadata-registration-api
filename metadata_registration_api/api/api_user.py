@@ -3,10 +3,11 @@ import jwt
 
 from werkzeug.security import check_password_hash
 from flask import current_app as app
-from flask import abort
 
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
+from werkzeug.exceptions import Forbidden
+from werkzeug import Response
 
 from metadata_registration_api.api.decorators import token_required
 from metadata_registration_api.model import User
@@ -70,9 +71,10 @@ class Login(Resource):
         user = User.objects(email=email).first()
 
         if not user or not check_password_hash(user.password, password):
-            abort(
-                403,
+            # abort() doesn't work because of the way errors are handled in __init__.py
+            raise Forbidden(
                 "The email does not exists or the email password combination is wrong",
+                response=Response(status=403),
             )
 
         # Create token
