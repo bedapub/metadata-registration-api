@@ -110,7 +110,7 @@ class ApiUser(Resource):
     @api.doc(parser=parser)
     @api.marshal_with(user_model_id)
     def get(self):
-        """ Fetch a list with all entries """
+        """Fetch a list with all entries"""
         args = self.parser.parse_args()
 
         include_deactivated = args["deactivated"]
@@ -127,7 +127,7 @@ class ApiUser(Resource):
     @api.expect(user_model)
     @api.response(201, "Success", post_response_model)
     def post(self, user=None):
-        """ Add a new entry """
+        """Add a new entry"""
         entry = User(**api.payload)
         entry = entry.save()
         return {"message": f"Add user '{entry.firstname}'", "id": str(entry.id)}, 201
@@ -135,7 +135,7 @@ class ApiUser(Resource):
     @token_required
     @api.doc(parser=_delete_parser)
     def delete(self, user=None):
-        """ Delete all entries"""
+        """Delete all entries"""
 
         args = self._delete_parser.parse_args()
 
@@ -171,7 +171,7 @@ class ApiUserId(Resource):
     @token_required
     @api.expect(user_model)
     def put(self, id, user=None):
-        """ Update an entry given its unique identifier """
+        """Update an entry given its unique identifier"""
         entry = User.objects(id=id).get()
         entry.update(**api.payload)
         # Needed to hash password
@@ -182,7 +182,7 @@ class ApiUserId(Resource):
     @token_required
     @api.doc(parser=_delete_parser)
     def delete(self, id, user=None):
-        """ Delete an entry given its unique identifier """
+        """Delete an entry given its unique identifier"""
 
         args = self._delete_parser.parse_args()
         force_delete = args["complete"]
