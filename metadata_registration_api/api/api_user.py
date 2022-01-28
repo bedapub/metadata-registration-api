@@ -71,7 +71,7 @@ class Login(Resource):
 
         if not user or not check_password_hash(user.password, password):
             abort(
-                401,
+                403,
                 "The email does not exists or the email password combination is wrong",
             )
 
