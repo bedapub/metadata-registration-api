@@ -3,6 +3,7 @@ import jwt
 
 from werkzeug.security import check_password_hash
 from flask import current_app as app
+from flask import abort
 
 from flask_restx import Namespace, Resource, fields
 from flask_restx import reqparse, inputs
@@ -69,8 +70,9 @@ class Login(Resource):
         user = User.objects(email=email).first()
 
         if not user or not check_password_hash(user.password, password):
-            raise Exception(
-                "The email does not exists or the email password combination is wrong"
+            abort(
+                401,
+                "The email does not exists or the email password combination is wrong",
             )
 
         # Create token
