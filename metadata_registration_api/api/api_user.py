@@ -57,6 +57,8 @@ login_model = api.model(
 @api.route("/login")
 class Login(Resource):
     @api.expect(login_model)
+    @api.response(200, "Success")
+    @api.response(403, "Forbidden: wrong credentials")
     def post(self):
         """Fetch an access token to perform requests which require elevated privileges
 
