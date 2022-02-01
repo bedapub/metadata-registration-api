@@ -1,10 +1,12 @@
 import os
 from distutils.util import strtobool
 
-from gevent import monkey
+# Gunicorn only code for geven worker class
+if strtobool(os.getenv("IS_GUNICORN", "false")):
+    from gevent import monkey
 
-monkey.patch_all()
-import os
+    monkey.patch_all()
+
 import logging
 import time
 
