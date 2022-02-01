@@ -1,3 +1,6 @@
+import os
+from distutils.util import strtobool
+
 from gevent import monkey
 
 monkey.patch_all()
@@ -9,7 +12,6 @@ from flask import Flask, request, g
 from flask_cors import CORS
 from mongoengine import connect
 
-from metadata_registration_lib.other_utils import str_to_bool
 from metadata_registration_api.datastores import MongoEngineDataStore
 from metadata_registration_api.mongo_utils import get_states
 from metadata_registration_api.api import api
@@ -48,18 +50,18 @@ def config_app(app):
         if not env_variable in os.environ:
             raise Exception(f"The environment variable {env_variable} is required")
 
-    app.config["LOG_ALL_REQUESTS"] = str_to_bool(os.getenv("LOG_ALL_REQUESTS", "false"))
+    app.config["LOG_ALL_REQUESTS"] = strtobool(os.getenv("LOG_ALL_REQUESTS", "false"))
 
     # Load app secret and convert to byte string
     app.secret_key = os.environ["APP_SECRET"].encode()
     app.config["WTF_CSRF_ENABLED"] = False
 
     # Disable checking access token
-    app.config["CHECK_ACCESS_TOKEN"] = str_to_bool(
+    app.config["CHECK_ACCESS_TOKEN"] = strtobool(
         os.getenv("CHECK_ACCESS_TOKEN", "true")
     )
 
-    app.config["SSL"] = str_to_bool(os.environ.get("SSL", "false"))
+    app.config["SSL"] = strtobool(os.environ.get("SSL", "false"))
 
     # Load mongo database credentials
     app.config["MONGODB_DB"] = os.environ["MONGODB_DB"]
@@ -82,7 +84,7 @@ def config_app(app):
         "HOST": os.environ.get("ES_HOST"),
         "PORT": os.environ.get("ES_PORT"),
         "INDEX": os.environ.get("ES_INDEX"),
-        "SECURE": str_to_bool(os.environ.get("ES_SECURE", "false")),
+        "SECURE": strtobool(os.environ.get("ES_SECURE", "false")),
         "USERNAME": os.environ.get("ES_USERNAME"),
         "PASSWORD": os.environ.get("ES_PASSWORD"),
         "USE": os.environ.get("ES_USE"),

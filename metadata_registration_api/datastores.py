@@ -1,6 +1,7 @@
 import logging
 import os
 from urllib.parse import urljoin
+from distutils.util import strtobool
 
 import requests
 from flask_restx import marshal
@@ -8,8 +9,6 @@ from flask_restx import marshal
 
 from dynamic_form import IDataStore
 from dynamic_form.errors import DataStoreException
-
-from metadata_registration_lib.other_utils import str_to_bool
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class ApiDataStore(IDataStore):
 
         if not url:
             http_prefix = (
-                "https" if str_to_bool(os.environ.get("SSL", "false")) else "http"
+                "https" if strtobool(os.environ.get("SSL", "false")) else "http"
             )
             self.url = f"{http_prefix}://{os.environ['API_HOST']}:{os.environ['PORT']}"
         else:
